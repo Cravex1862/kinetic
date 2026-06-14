@@ -22,6 +22,8 @@ import { SpringEnter, StaggerContainer, FadeBlur, SlideInOut, CardReveal, PulseS
 import { Cursor as MotionCursor, SmoothScroll, FocusZoom, TextTyper, ChartAnimate, DragAndDrop, TypingGhostCursor, MarqueeTrack, ProgressRing } from './primitives/MotionSDK';
 import { BarChart, LineChart, PieChart, AreaChart, DonutChart, MetricFunnel, ScatterPlot, SparklineTicker } from './primitives/ChartsSDK';
 import { CustomCard, GlassmorphicCard, ProfileHeaderCard, FeatureBenefitCard, PricingPlanCard, KanbanTaskCard, BillingInvoiceCard, SettingsToggleCard, PushNotificationToast } from './primitives/CardSDK';
+import { Morph, type EasingPreset } from './primitives/MorphSDK';
+import { morphSchemas } from './primitives/MorphRegistry';
 
 // ─── Config state ────────────────────────────────────────────
 type GlowState = { enabled: boolean; color: string; intensity: number; spread: number };
@@ -139,6 +141,18 @@ const DemoPage: React.FC = () => {
   const [knCfg, setKnCfg] = useState({ priorityLabel: 'High Priority', title: 'Implement user auth', status: 'High Priority' });
   const [ivCfg, setIvCfg] = useState({ status: 'paid' as 'paid' | 'pending' | 'overdue', description: 'Stripe Subscription — Pro Plan', amount: '$249.00', dueDate: 'Paid Jun 1' });
   const [tgCfg, setTgCfg] = useState({ size: 'md' as 'sm' | 'md', transitionMs: 150, label: 'Email notifications', description: 'Receive weekly report digests' });
+
+  // ─── Morph demo configs ──────────────────────────────────────
+  const [morphCfg, setMorphCfg] = useState({
+    fromPanelSize: 'small' as 'small' | 'medium' | 'large',
+    toPanelSize: 'large' as 'small' | 'medium' | 'large',
+    fromUrl: 'https://old.app.com',
+    toUrl: 'https://new.app.com',
+    fromStyle: 'mac' as 'mac' | 'windows',
+    toStyle: 'windows' as 'mac' | 'windows',
+    morphDuration: 60,
+    morphEasing: 'ease-in-out' as EasingPreset,
+  });
 
   // ─── Structural demos (always visible, no play needed) ──────
 
@@ -1183,6 +1197,70 @@ const DemoPage: React.FC = () => {
               <SettingsToggleCard glowConfig={glow} label={tgCfg.label} description={tgCfg.label} toggled={true} onToggle={() => {}}
                 toggleSize={tgCfg.size as 'sm' | 'md'} transitionDuration={tgCfg.transitionMs} />
             </Card>
+          </div>
+        </section>
+
+        {/* ─── Morph Engine Demo ─────────────────────────────── */}
+        <section className="mb-16">
+          <h2 className="mb-4 text-2xl font-bold text-white">Morph Engine</h2>
+          <p className="mb-4 text-sm text-gray-400">Keyframe-based layout morphing — the AI sets <code>from</code>, <code>to</code>, <code>duration</code>, and <code>easing</code>; the engine interpolates everything.</p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
+              <span className="mb-2 block text-xs font-medium text-cyan-400">From Keyframe</span>
+              <div className="flex flex-wrap gap-2">
+                <select value={morphCfg.fromPanelSize} onChange={e => setMorphCfg(p => ({...p, fromPanelSize: e.target.value as 'small' | 'medium' | 'large'}))} className="rounded bg-gray-800 px-1 py-0.5 text-xs text-gray-300">
+                  <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
+                </select>
+                <input value={morphCfg.fromUrl} onChange={e => setMorphCfg(p => ({...p, fromUrl: e.target.value}))} className="w-28 rounded bg-gray-800 px-1 py-0.5 text-xs text-gray-300" placeholder="URL" />
+                <select value={morphCfg.fromStyle} onChange={e => setMorphCfg(p => ({...p, fromStyle: e.target.value as 'mac' | 'windows'}))} className="rounded bg-gray-800 px-1 py-0.5 text-xs text-gray-300">
+                  <option value="mac">Mac</option><option value="windows">Windows</option>
+                </select>
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
+              <span className="mb-2 block text-xs font-medium text-amber-400">To Keyframe</span>
+              <div className="flex flex-wrap gap-2">
+                <select value={morphCfg.toPanelSize} onChange={e => setMorphCfg(p => ({...p, toPanelSize: e.target.value as 'small' | 'medium' | 'large'}))} className="rounded bg-gray-800 px-1 py-0.5 text-xs text-gray-300">
+                  <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
+                </select>
+                <input value={morphCfg.toUrl} onChange={e => setMorphCfg(p => ({...p, toUrl: e.target.value}))} className="w-28 rounded bg-gray-800 px-1 py-0.5 text-xs text-gray-300" placeholder="URL" />
+                <select value={morphCfg.toStyle} onChange={e => setMorphCfg(p => ({...p, toStyle: e.target.value as 'mac' | 'windows'}))} className="rounded bg-gray-800 px-1 py-0.5 text-xs text-gray-300">
+                  <option value="mac">Mac</option><option value="windows">Windows</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-4 rounded-lg border border-gray-700 bg-gray-900/50 p-3">
+            <label className="flex items-center gap-2 text-xs text-gray-400">
+              Duration (frames) <input type="range" min={15} max={150} value={morphCfg.morphDuration} onChange={e => setMorphCfg(p => ({...p, morphDuration: +e.target.value}))} className="w-20 accent-indigo-500" />
+              <span className="w-8 text-right text-gray-500">{morphCfg.morphDuration}</span>
+            </label>
+            <select value={morphCfg.morphEasing} onChange={e => setMorphCfg(p => ({...p, morphEasing: e.target.value as EasingPreset}))} className="rounded bg-gray-800 px-2 py-1 text-xs text-gray-300">
+              <option value="ease-in-out">Ease In-Out</option><option value="ease-in">Ease In</option><option value="ease-out">Ease Out</option><option value="linear">Linear</option><option value="bounce">Bounce</option>
+            </select>
+          </div>
+          <div className="mt-4">
+            <AnimDeck name="Morph BrowserFrame" maxFrames={morphCfg.morphDuration + 10}>
+              {(frame) => {
+                const from = { panelSize: morphCfg.fromPanelSize, url: morphCfg.fromUrl, windowStyle: morphCfg.fromStyle };
+                const to = { panelSize: morphCfg.toPanelSize, url: morphCfg.toUrl, windowStyle: morphCfg.toStyle };
+                return (
+                  <div className="flex h-full w-full items-center justify-center bg-gray-950 p-4">
+                    <Morph from={from} to={to} schema={morphSchemas.BrowserFrame} frame={frame} duration={morphCfg.morphDuration} easing={morphCfg.morphEasing}>
+                      {(resolved: Record<string, unknown>) => (
+                        <BrowserFrame glowConfig={glow}
+                          panelSize={resolved.panelSize as 'small' | 'medium' | 'large'}
+                          url={resolved.url as string}
+                          windowStyle={resolved.windowStyle as 'mac' | 'windows'}
+                        >
+                          <div className="flex items-center justify-center text-gray-400"><span className="text-sm">Morphing content</span></div>
+                        </BrowserFrame>
+                      )}
+                    </Morph>
+                  </div>
+                );
+              }}
+            </AnimDeck>
           </div>
         </section>
 
