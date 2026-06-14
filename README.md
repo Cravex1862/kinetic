@@ -1,6 +1,6 @@
 # kinetic
 
-Heavily WIP. This is barely anything of what this project is gonna be.
+> **Early development** — this is a foundation being laid. The full scope is much larger.
 
 ## License
 
