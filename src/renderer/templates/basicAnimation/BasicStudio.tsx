@@ -32,7 +32,7 @@ const Btn: React.FC<{ active: boolean; onClick: () => void; children: React.Reac
     <button onClick={onClick} className={`flex h-6 w-6 items-center justify-center text-xs transition-colors ${active ? 'bg-indigo-600 text-white' : 'bg-gray-900 text-gray-400 hover:text-gray-200'}`}>{children}</button>
 );
 
-const Studio: React.FC<StudioProps> = ({ project, onBack }) => {
+const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
     const [frame, setFrame] = useState(0);
     const [playing, setPlaying] = useState(false);
     const [res, setRes] = useState(RESOLUTIONS[0]);
@@ -312,60 +312,60 @@ const Studio: React.FC<StudioProps> = ({ project, onBack }) => {
                     </div>
                 </div>
             </main>
-                {cur && (
-                    <aside className='flex w-[280px] flex-shirnk-0 flex-col border-1 -border-gray-500 bg-gray-900/40 p-3 space-y-3'>
-                        <div className='flex justify-between items-center border-b border-gray-800 bg-gray-900/40 p-4 overflow-y-auto'>
-                        <h3 className='mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500'>Component Inspector</h3>
-                            {cur.components.map((node, componentIdx) => (
-                                <div key={componentIdx} className='mb-6 rounded-lg border border-gray-800 bg-gray-950/40 p-3 space-y-3'>
-                                    <div className='flex justify-between items-center border-b border-gray-800 pb-1.5'>
-                                        <span className='text-xs font-bold text-indigo-400'>
-                                            {node.type}
-                                        </span>
-                                    </div>
-                                {Object.entries(node.props).map(([key,val]) => {
-                                    if(typeof val === 'number') {
-                                        return (
-                                            <div key={key} className="space-y-1">
-                                            <div className='flex justify-between text-[10px] text gray-400'>
-                                                <span>{key}</span>
-                                                <span>{val}</span>
-                                            </div>
-                                            <input 
-                                                type='range' 
-                                                min={0}
-                                                value={val}
-                                                onChange={(e)=> updateComponentProp(componentIdx, key, Number(e.target.value))}
-                                                className='w-full h-1 bg-gray-850 rounded accent-indigo-500' />
-                                            
-                                            </div>
-                                        );
-                                    }
-                                    if (typeof val === 'boolean'){
-                                        return (
-                                            <div key={key} className='flex justify-between items-center text-[10px] text-gray-400'>
-                                                <span>{key}</span>
-                                                <input
-                                                    type='checkbox'
-                                                    checked={val}
-                                                    onChange={(e)=>{
-                                                        updateComponentProp(componentIdx,key,e.target.value)
-
-                                                    }}
-                                                    className='w-full rounded border border-gray-700 bg0gray-950 px-2 py-1 text-[10px] text-white outline=none'>
-
-                                                    </input>
-                                                
-                                             </div>
-
-                                        );
-                                    }
-                                    return null;
-                                )})
-                            ))}
-                        </div>
-                    </aside>
-                )}
+            {cur && (
+                <aside className="flex w-[280px] flex-shrink-0 flex-col border-l border-gray-800 bg-gray-900/40 p-4 overflow-y-auto">
+                    <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Component Inspector</h3>
+                    <div className="space-y-4">
+                        {cur.components.map((node, componentIdx) => (
+                            <div key={componentIdx} className="rounded-lg border border-gray-800 bg-gray-950/40 p-3 space-y-3">
+                                <div className="border-b border-gray-800 pb-1.5">
+                                    <span className="text-xs font-bold text-indigo-400">
+                                        {node.type}
+                                    </span>
+                                </div>
+                                <div className="space-y-3">
+                                    {Object.entries(node.props).map(([key, val]) => {
+                                        if (typeof val === 'number') {
+                                            return (
+                                                <div key={key} className="space-y-1">
+                                                    <div className="flex justify-between text-[10px] text-gray-400">
+                                                        <span>{key}</span>
+                                                        <span>{val}</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min={0}
+                                                        max={100}
+                                                        value={val}
+                                                        onChange={(e) => updateComponentProp(componentIdx, key, Number(e.target.value))}
+                                                        className="w-full h-1 bg-gray-800 rounded accent-indigo-500"
+                                                    />
+                                                </div>
+                                            );
+                                        }
+                                        if (typeof val === 'boolean') {
+                                            return (
+                                                <div key={key} className="flex justify-between items-center text-[10px] text-gray-400">
+                                                    <span>{key}</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={val}
+                                                        onChange={(e) => {
+                                                            updateComponentProp(componentIdx, key, e.target.checked);
+                                                        }}
+                                                        className="h-3.5 w-3.5 rounded border border-gray-750 bg-gray-950 text-indigo-600 focus:ring-0 outline-none"
+                                                    />
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </aside>
+            )}
         </div>
     );
 };
