@@ -12,6 +12,16 @@ const electronAPI = {
 
   getAppVersion: (): Promise<string> =>
     ipcRenderer.invoke('get-app-version'),
+
+  exportVideo: (options: {
+    compositionId: string;
+    outputPath: string;
+    framesPerScene: number[];
+    fps: number;
+    width: number;
+    height: number;
+  }): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('export-video', options),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

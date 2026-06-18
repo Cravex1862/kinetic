@@ -1,3 +1,4 @@
+import { CursorClick, MenuExpand, ScrollReveal } from './InteractionSDK';
 import type { MorphSchema } from './MorphSDK';
 
 /** Central registry of morph schemas for all animatable components. */
@@ -110,5 +111,42 @@ export const morphSchemas: Record<string, MorphSchema> = {
     title: { type: 'string' },
     body: { type: 'string' },
     time: { type: 'string' },
+  },
+  CursorClick: {
+    clickX: {type:'number'},
+    clickY: {type: 'number'},
+    radius: { type: 'number'},
+    pulseColor: {type: 'string'},
+    showHand: { type : 'boolean'},
+    handSize: { type : 'number'},
+    startFrame: {type: 'number'},
+  },
+  ScrollReveal:{
+    scrollDistance: {type : 'number'},
+    direction: {type: 'string'},
+    startFrame: {type: 'number'},
+    duration: {type : 'number'},
+    containerHeight : {type : 'number'},
+  },
+  MetricCounter: {
+    from: {type: 'number'},
+    to: {type: 'number'},
+    duration: {type : 'number'},
+    startFrame: {type:'number'},
+    prefix: {type : 'string'},
+    suffix: {type: 'string'},
+    decimals : {type : 'number'},
+    easing: { type : 'string'},
+  },
+  ToggleAnimate: {
+    toggled : {type : 'boolean'},
+    switchDuration : { type: 'number'},
+    label: {type : 'string'},
+    size: {type: 'string'},
+  },
+  MenuExpand:{
+    expanded: {type: 'boolean'},
+    duration: {type: 'number'},
+    maxHeight: {type : 'number'},
   },
 };

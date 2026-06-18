@@ -230,7 +230,7 @@ function AccordionExpandInner(props: AccordionExpandProps) {
   return <AccordionExpandStatic {...props} frame={frame} />;
 }
 
-function AccordionExpandStatic({ children, expanded, duration = 30, frame }: Required<AccordionExpandProps> & { frame: number }) {
+function AccordionExpandStatic({ children, expanded, duration = 30, frame }: AccordionExpandProps & { frame: number }) {
   const hasToggled = useRef(false);
   const startRef = useRef(frame);
   const startExpandedRef = useRef(expanded);
@@ -295,7 +295,7 @@ function RotateFlipInner(props: RotateFlipProps) {
   return <RotateFlipStatic {...props} frame={frame} />;
 }
 
-function RotateFlipStatic({ children, axis = 'Y', startFrame = 0, endFrame = 30, frame }: Required<RotateFlipProps> & { frame: number }) {
+function RotateFlipStatic({ children, axis = 'Y', startFrame = 0, endFrame = 30, frame }: RotateFlipProps & { frame: number }) {
   const effectiveEnd = endFrame - startFrame;
   const adjusted = Math.max(0, frame - startFrame);
   const progress = Math.min(adjusted / Math.max(effectiveEnd, 1), 1);
@@ -336,7 +336,7 @@ function GlitchIntroInner(props: GlitchIntroProps) {
   return <GlitchIntroStatic {...props} frame={frame} />;
 }
 
-function GlitchIntroStatic({ children, duration = 5, frame }: Required<GlitchIntroProps> & { frame: number }) {
+function GlitchIntroStatic({ children, duration = 5, frame }: GlitchIntroProps & { frame: number }) {
   if (frame >= duration) return <>{children}</>;
 
   const offsetX = interpolate(frame, [0, 1, 2, 3, 4], [0, -3, 4, -2, 0], { extrapolateRight: 'clamp' });

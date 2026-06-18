@@ -1,6 +1,19 @@
-# AI-generated project metadata (not part of source)
+# Local project metadata and documentation (not part of source)
+devlogs/
+task.md
+tasks.md
+implementation.md
+implementation_plan.md
 AGENTS.md
+agents.md
 Plans.md
+plans.md
 
 node_modules/
 dist/
+
+# Session and temporary files
+opencode_session_*.json
+*.manifest.json
+
+

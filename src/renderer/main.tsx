@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { DemoPage } from './DemoPage';
+import AppRouter from './pages/AppRouter';
 import './index.css';
 
 const container = document.getElementById('root');
@@ -10,6 +10,6 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <DemoPage />
+    <AppRouter />
   </StrictMode>,
 );

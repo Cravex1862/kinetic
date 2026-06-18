@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { error } from 'console';
+import { stdout } from 'process';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -61,7 +63,31 @@ function registerIpcHandlers(): void {
   ipcMain.handle('get-app-version', (): string => {
     return app.getVersion();
   });
-}
+
+  ipcMain.handle('export-video', async (_event, options): Promise<{ success: boolean; error?: string}> => {
+    try{
+      const {exec} = require('child_process');
+      const cmd = `npx remotion render src/render/Root.tsx ${options.compositionId}${options.outputPath} --width=${options.width} --height=${options.height} --fps=${options.fps}`;
+
+      return new Promise((resolve) => {
+        exec(cmd, {
+          cwd:app.getAppPath() }, (err: any, stdout: any, stderr: any) => {
+            if (err){
+              resolve({success:false, error:stderr || err.message});
+
+            }
+            else{
+              resolve({ success: true });
+            }
+          }
+      )
+      })
+    }
+    catch (err){
+      return { success: false, error : String(err)};
+    }
+  }   );
+
 
 app.whenReady().then(() => {
   registerIpcHandlers();
@@ -78,4 +104,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
-});
+})}

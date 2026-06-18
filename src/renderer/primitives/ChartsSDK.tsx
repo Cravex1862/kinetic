@@ -29,7 +29,7 @@ interface BarChartProps {
 
 type BarChartAllProps = BarChartProps & { frame?: number };
 
-function BarChartStatic({ data, width, height, barSpacing = 8, maxValue, barRadius = 4, showValues = false, glowConfig, animDuration = 30, delay = 0, frame }: Required<BarChartAllProps>) {
+function BarChartStatic({ data, width, height, barSpacing = 8, maxValue, barRadius = 4, showValues = false, glowConfig, animDuration = 30, delay = 0, frame }: BarChartAllProps) {
   return <BarChartSvg data={data} width={width} height={height} barSpacing={barSpacing} maxValue={maxValue} barRadius={barRadius} showValues={showValues} glowConfig={glowConfig} frame={frame} animDuration={animDuration} delay={delay} />;
 }
 
@@ -38,7 +38,7 @@ function BarChartRemotion(props: BarChartProps) {
   return <BarChartSvg {...props} frame={frame} />;
 }
 
-function BarChartSvg({ data, width, height, barSpacing, maxValue, barRadius = 4, showValues = false, glowConfig, frame, animDuration, delay }: BarChartAllProps & { animDuration: number; delay: number; barRadius: number; showValues: boolean }) {
+function BarChartSvg({ data, width, height, barSpacing = 8, maxValue, barRadius = 4, showValues = false, glowConfig, frame = 0, animDuration = 30, delay = 0 }: BarChartAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const globalProgress = Math.min(adjusted / animDuration, 1);
   const chartBottom = height;
@@ -98,7 +98,7 @@ interface LineChartProps {
 
 type LineChartAllProps = LineChartProps & { frame?: number };
 
-function LineChartStatic({ data, width, height, lineColor = '#6366f1', lineWidth = 3, showPoints = true, showGrid = true, showArea = false, showLabels = true, glowConfig, animDuration = 30, delay = 0, frame }: Required<LineChartAllProps>) {
+function LineChartStatic({ data, width, height, lineColor = '#6366f1', lineWidth = 3, showPoints = true, showGrid = true, showArea = false, showLabels = true, glowConfig, animDuration = 30, delay = 0, frame }: LineChartAllProps) {
   return <LineChartSvg data={data} width={width} height={height} lineColor={lineColor} lineWidth={lineWidth} showPoints={showPoints} showGrid={showGrid} showArea={showArea} showLabels={showLabels} glowConfig={glowConfig} frame={frame} animDuration={animDuration} delay={delay} />;
 }
 
@@ -107,7 +107,7 @@ function LineChartRemotion(props: LineChartProps) {
   return <LineChartSvg {...props} frame={frame} />;
 }
 
-function LineChartSvg({ data, width, height, lineColor, lineWidth, showPoints, showGrid, showArea, showLabels, glowConfig, frame, animDuration, delay }: LineChartAllProps & { animDuration: number; delay: number; lineColor: string; lineWidth: number; showPoints: boolean; showGrid: boolean; showArea: boolean; showLabels: boolean }) {
+function LineChartSvg({ data, width, height, lineColor = '#6366f1', lineWidth = 3, showPoints = true, showGrid = true, showArea = false, showLabels = true, glowConfig, frame = 0, animDuration = 30, delay = 0 }: LineChartAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const progress = Math.min(adjusted / animDuration, 1);
   const eased = Easing.inOut(Easing.ease)(progress);
@@ -190,7 +190,7 @@ interface PieChartProps {
 
 type PieChartAllProps = PieChartProps & { frame?: number };
 
-function PieChartStatic({ data, size, innerRadius = 0, showLabels = true, glowConfig, animDuration = 30, delay = 0, frame }: Required<PieChartAllProps>) {
+function PieChartStatic({ data, size, innerRadius = 0, showLabels = true, glowConfig, animDuration = 30, delay = 0, frame }: PieChartAllProps) {
   return <PieChartSvg data={data} size={size} innerRadius={innerRadius} showLabels={showLabels} glowConfig={glowConfig} frame={frame} animDuration={animDuration} delay={delay} />;
 }
 
@@ -199,7 +199,7 @@ function PieChartRemotion(props: PieChartProps) {
   return <PieChartSvg {...props} frame={frame} />;
 }
 
-function PieChartSvg({ data, size, innerRadius, showLabels, glowConfig, frame, animDuration, delay }: PieChartAllProps & { animDuration: number; delay: number; innerRadius: number; showLabels: boolean }) {
+function PieChartSvg({ data, size, innerRadius = 0, showLabels = true, glowConfig, frame = 0, animDuration = 30, delay = 0 }: PieChartAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const progress = Math.min(adjusted / animDuration, 1);
   const eased = Easing.out(Easing.bezier(0.34, 1.56, 0.64, 1))(progress);
@@ -295,7 +295,7 @@ interface AreaChartProps {
 
 type AreaChartAllProps = AreaChartProps & { frame?: number };
 
-function AreaChartStatic({ data, width, height, lineColor = '#6366f1', fillColor, lineWidth = 3, showPoints = false, glowConfig, animDuration = 30, delay = 0, frame }: Required<AreaChartAllProps>) {
+function AreaChartStatic({ data, width, height, lineColor = '#6366f1', fillColor, lineWidth = 3, showPoints = false, glowConfig, animDuration = 30, delay = 0, frame }: AreaChartAllProps) {
   return <AreaChartSvg data={data} width={width} height={height} lineColor={lineColor} fillColor={fillColor} lineWidth={lineWidth} showPoints={showPoints} glowConfig={glowConfig} animDuration={animDuration} delay={delay} frame={frame} />;
 }
 
@@ -304,7 +304,7 @@ function AreaChartRemotion(props: AreaChartProps) {
   return <AreaChartSvg {...props} frame={frame} animDuration={props.animDuration ?? 30} delay={props.delay ?? 0} />;
 }
 
-function AreaChartSvg({ data, width, height, lineColor = '#6366f1', fillColor, lineWidth = 3, showPoints = false, glowConfig, frame, animDuration, delay }: AreaChartAllProps & { animDuration: number; delay: number; showPoints: boolean }) {
+function AreaChartSvg({ data, width, height, lineColor = '#6366f1', fillColor, lineWidth = 3, showPoints = false, glowConfig, frame = 0, animDuration = 30, delay = 0 }: AreaChartAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const progress = Math.min(adjusted / animDuration, 1);
   const eased = Easing.inOut(Easing.ease)(progress);
@@ -388,7 +388,7 @@ interface DonutChartProps {
 
 type DonutChartAllProps = DonutChartProps & { frame?: number };
 
-function DonutChartStatic({ data, size, innerRadius = 28, centerTextSlot, showLabels = true, glowConfig, animDuration = 30, delay = 0, frame }: Required<DonutChartAllProps>) {
+function DonutChartStatic({ data, size, innerRadius = 28, centerTextSlot, showLabels = true, glowConfig, animDuration = 30, delay = 0, frame }: DonutChartAllProps) {
   return <DonutChartSvg data={data} size={size} innerRadius={innerRadius} centerTextSlot={centerTextSlot} showLabels={showLabels} glowConfig={glowConfig} animDuration={animDuration} delay={delay} frame={frame} />;
 }
 
@@ -397,7 +397,7 @@ function DonutChartRemotion(props: DonutChartProps) {
   return <DonutChartSvg {...props} frame={frame} animDuration={props.animDuration ?? 30} delay={props.delay ?? 0} />;
 }
 
-function DonutChartSvg({ data, size, innerRadius = 28, centerTextSlot, showLabels, glowConfig, frame, animDuration, delay }: DonutChartAllProps & { animDuration: number; delay: number; innerRadius: number; showLabels: boolean }) {
+function DonutChartSvg({ data, size, innerRadius = 28, centerTextSlot, showLabels = true, glowConfig, frame = 0, animDuration = 30, delay = 0 }: DonutChartAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const progress = Math.min(adjusted / animDuration, 1);
   const eased = Easing.out(Easing.bezier(0.34, 1.56, 0.64, 1))(progress);
@@ -482,7 +482,7 @@ interface MetricFunnelProps {
 
 type MetricFunnelAllProps = MetricFunnelProps & { frame?: number };
 
-function MetricFunnelStatic({ data, width, height, orientation = 'vertical', showPercent = false, glowConfig, animDuration = 30, delay = 0, frame }: Required<MetricFunnelAllProps>) {
+function MetricFunnelStatic({ data, width, height, orientation = 'vertical', showPercent = false, glowConfig, animDuration = 30, delay = 0, frame }: MetricFunnelAllProps) {
   return <MetricFunnelSvg data={data} width={width} height={height} orientation={orientation} showPercent={showPercent} glowConfig={glowConfig} animDuration={animDuration} delay={delay} frame={frame} />;
 }
 
@@ -491,7 +491,7 @@ function MetricFunnelRemotion(props: MetricFunnelProps) {
   return <MetricFunnelSvg {...props} frame={frame} animDuration={props.animDuration ?? 30} delay={props.delay ?? 0} />;
 }
 
-function MetricFunnelSvg({ data, width, height, orientation = 'vertical', showPercent = false, glowConfig, frame, animDuration, delay }: MetricFunnelAllProps & { animDuration: number; delay: number; showPercent: boolean }) {
+function MetricFunnelSvg({ data, width, height, orientation = 'vertical', showPercent = false, glowConfig, frame = 0, animDuration = 30, delay = 0 }: MetricFunnelAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const progress = Math.min(adjusted / animDuration, 1);
 
@@ -552,7 +552,7 @@ interface ScatterPlotProps {
 
 type ScatterPlotAllProps = ScatterPlotProps & { frame?: number };
 
-function ScatterPlotStatic({ points, width, height, gridSize = 20, pointSize = 6, showGrid = true, glowConfig, animDuration = 30, delay = 0, frame }: Required<ScatterPlotAllProps>) {
+function ScatterPlotStatic({ points, width, height, gridSize = 20, pointSize = 6, showGrid = true, glowConfig, animDuration = 30, delay = 0, frame }: ScatterPlotAllProps) {
   return <ScatterPlotSvg points={points} width={width} height={height} gridSize={gridSize} pointSize={pointSize} showGrid={showGrid} glowConfig={glowConfig} animDuration={animDuration} delay={delay} frame={frame} />;
 }
 
@@ -561,7 +561,7 @@ function ScatterPlotRemotion(props: ScatterPlotProps) {
   return <ScatterPlotSvg {...props} frame={frame} animDuration={props.animDuration ?? 30} delay={props.delay ?? 0} />;
 }
 
-function ScatterPlotSvg({ points, width, height, gridSize = 20, pointSize = 6, showGrid = true, glowConfig, frame, animDuration, delay }: ScatterPlotAllProps & { animDuration: number; delay: number; gridSize: number; pointSize: number; showGrid: boolean }) {
+function ScatterPlotSvg({ points, width, height, gridSize = 20, pointSize = 6, showGrid = true, glowConfig, frame = 0, animDuration = 30, delay = 0 }: ScatterPlotAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const progress = Math.min(adjusted / animDuration, 1);
   const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7'];
@@ -610,7 +610,7 @@ interface SparklineTickerProps {
 
 type SparklineTickerAllProps = SparklineTickerProps & { frame?: number };
 
-function SparklineTickerStatic({ data, width, height, lineColor = '#6366f1', lineWidth = 2, showDot = true, glowConfig, animDuration = 30, delay = 0, frame }: Required<SparklineTickerAllProps>) {
+function SparklineTickerStatic({ data, width, height, lineColor = '#6366f1', lineWidth = 2, showDot = true, glowConfig, animDuration = 30, delay = 0, frame }: SparklineTickerAllProps) {
   return <SparklineSvg data={data} width={width} height={height} lineColor={lineColor} lineWidth={lineWidth} showDot={showDot} glowConfig={glowConfig} animDuration={animDuration} delay={delay} frame={frame} />;
 }
 
@@ -619,7 +619,7 @@ function SparklineTickerRemotion(props: SparklineTickerProps) {
   return <SparklineSvg {...props} frame={frame} animDuration={props.animDuration ?? 30} delay={props.delay ?? 0} />;
 }
 
-function SparklineSvg({ data, width, height, lineColor = '#6366f1', lineWidth = 2, showDot = true, glowConfig, frame, animDuration, delay }: SparklineTickerAllProps & { animDuration: number; delay: number; showDot: boolean }) {
+function SparklineSvg({ data, width, height, lineColor = '#6366f1', lineWidth = 2, showDot = true, glowConfig, frame = 0, animDuration = 30, delay = 0 }: SparklineTickerAllProps) {
   const adjusted = Math.max(0, frame - delay);
   const progress = Math.min(adjusted / animDuration, 1);
 

@@ -9,11 +9,12 @@ type GlowStyle = {
   willChange: string;
 };
 
-function buildGlowFilter(glow: GlowConfig): Partial<GlowStyle> {
-  if (!glow.enabled) return {};
+function buildGlowFilter(glow?: GlowConfig): Partial<GlowStyle> {
+  const g = glow || {enabled:true, color: `rgba(99,102,241, 0.25)`, intensity: 1, spread:15};
+  if (!glow || !glow.enabled) return {};
   const blurPx = glow.intensity * 6;
   return {
-    filter: `drop-shadow(0 0 ${glow.spread}px ${glow.color}) drop-shadow(0 0 ${blurPx}px ${glow.color})`,
+    filter: `drop-shadow(0 0 ${glow.spread}px ${glow.color}) drop-shadow(0 0 ${blurPx}px ${glow.color}))`,
     willChange: 'filter',
   };
 }
@@ -24,7 +25,8 @@ const aspectRatioMap: Record<AspectRatio, string> = {
   '9:16': '9 / 16',
   '4:3': '4 / 3',
   '1:1': '1 / 1',
-};
+}; 
+
 
 // ─── BrowserFrame ────────────────────────────────────────────
 interface BrowserFrameProps {
