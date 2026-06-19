@@ -7,10 +7,11 @@ import {
 import { ComponentRenderer } from '../../scenes/ComponentRenderer';
 import { AudioVisualizer } from '../../primitives/AudioVisualizer';
 
-interface StudioProps { project: ProjectData; 
+interface StudioProps {
+    project: ProjectData;
     onBack: () => void;
     onRename: (newTitle: string) => void;
- }
+}
 
 const FPS = 30;
 const SIZES = Array.from({ length: 63 }, (_, i) => i + 10);
@@ -57,7 +58,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
                         setAvailableFonts(families);
                     }
                 })
-                .catch(() => {});
+                .catch(() => { });
         }
     }, []);
 
@@ -93,7 +94,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
         return (
             <div key={label} className="space-y-2">
                 <span className="text-xs font-medium text-gray-400">{label}</span>
-            <div className="flex gap-1.5">
+                <div className="flex gap-1.5">
                     <select value={f.fontFamily} onChange={(e) => upd(label, { fontFamily: e.target.value })} className="flex-1 rounded-md border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-white outline-none">
                         {availableFonts.map((font) => <option key={font} value={font}>{font}</option>)}
                     </select>
@@ -128,7 +129,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
     };
 
     const cur = scenes[activeScene];
-    const updateComponentProp = (componentIndex : number, propKey : string, propValue : any) => {
+    const updateComponentProp = (componentIndex: number, propKey: string, propValue: any) => {
         setLocalScenes(prev => {
             const copy = JSON.parse(JSON.stringify(prev));
             copy[activeScene].components[componentIndex].props[propKey] = propValue;
@@ -136,37 +137,37 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
         });
     };
     return (
-        
+
         <div className="flex h-screen bg-gray-950 text-white">
             <aside className="flex w-[280px] flex-shrink-0 flex-col border-r border-gray-800 bg-gray-900/40">
                 <div className="flex items-center gap-2 border-b border-gray-800 px-4 py-3">
                     <button onClick={onBack} className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300">&larr;</button>
                     {isEditingName ? (
                         <div className='flex items-center gap-1.5 min-w-0'>
-                            <input type='text' value={tempName} onChange={(e)=> setTempName(e.target.value)} className='rounded border border-gray-700 bg-gray-950px-2 py-0.5 text-xs text-white outline-none w-32 focus:border-indigo-500'>
+                            <input type='text' value={tempName} onChange={(e) => setTempName(e.target.value)} className='rounded border border-gray-700 bg-gray-950px-2 py-0.5 text-xs text-white outline-none w-32 focus:border-indigo-500'>
 
                             </input>
-                            <button 
+                            <button
                                 onClick={() => {
-                                    if(tempName.trim()){
+                                    if (tempName.trim()) {
                                         onRename(tempName.trim());
                                     }
                                     setIsEditingName(false);
                                 }}
                                 className='flex h-5 w-5 items-center justify-center rounded bg-ingigo-600 text-xs text-white hover:bg-indigo-500'>
-                                    &#10003;
-                                </button>
-                </div>
+                                &#10003;
+                            </button>
+                        </div>
                     ) : (
-                        <span 
-                            onClick={()=> {
+                        <span
+                            onClick={() => {
                                 setTempName(project.title);
                                 setIsEditingName(true);
                             }}
                             className='truncate text-sm font-medium text-white cursor-pointer hover:text-indigo-400'
                             title='Click to Rename'>
-                                {project.title}
-                            </span>
+                            {project.title}
+                        </span>
                     )}
 
                 </div>
@@ -249,13 +250,14 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
                         {cur ? (
                             <div
                                 style={{
-                                    opacity: localFrame < 5 ? localFrame / 5 : localFrame > cur.duration -5 ? (cur.duration -5 ) ? `translateX(${(cur.duration) - 5 - localFrame *10}px)` : `none`,
-                                    transition : `none`,
+                                    opacity: localFrame < 5 ? localFrame / 5 : localFrame > cur.duration - 5 ? (cur.duration - localFrame) / 5 : 1,
+                                    transform: localFrame > cur.duration - 5 ? `translateX(${(cur.duration - 5 - localFrame) * 20}px)` : 'none',
+                                    transition: 'none',
                                 }}
                                 className="w-full h-full relative"
-                                >
-                                
-                                {cur.components.map((node, i) => (
+                            >
+
+                                {cur.components.map((node: any, i: number) => (
                                     <ComponentRenderer key={i} node={node} keyframes={cur.keyframes} localFrame={localFrame} />
                                 ))}
                                 {/* Debug Overlay */}
@@ -316,7 +318,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
                 <aside className="flex w-[280px] flex-shrink-0 flex-col border-l border-gray-800 bg-gray-900/40 p-4 overflow-y-auto">
                     <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Component Inspector</h3>
                     <div className="space-y-4">
-                        {cur.components.map((node, componentIdx) => (
+                        {cur.components.map((node: any, componentIdx: number) => (
                             <div key={componentIdx} className="rounded-lg border border-gray-800 bg-gray-950/40 p-3 space-y-3">
                                 <div className="border-b border-gray-800 pb-1.5">
                                     <span className="text-xs font-bold text-indigo-400">
@@ -326,16 +328,46 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
                                 <div className="space-y-3">
                                     {Object.entries(node.props).map(([key, val]) => {
                                         if (typeof val === 'number') {
+
+                                                                            let min = 0;
+                                            let max = 100;
+                                            let step = 1;
+                                            if (key === "lat" || key === "pinLat") {
+                                                min = -90;
+                                                max = 90;
+                                                step = 0.0001;
+                                            }
+                                            else if (key === 'lng' || key === "pinLng") {
+                                                min = -180;
+                                                max = 180;
+                                                step = 0.0001;
+                                            }
+                                            else if (key === 'zoom') {
+                                                min = 0;
+                                                max = 20;
+                                                step = 0.1;
+                                            }
+                                            else if (key === "routeProgress") {
+                                                min = 0;
+                                                max = 1;
+                                                step = 0.01;
+                                            }
+                                            else if (key === "pinScale") {
+                                                min = 0.1;
+                                                max = 5;
+                                                step = 0.1;
+                                            }
                                             return (
                                                 <div key={key} className="space-y-1">
                                                     <div className="flex justify-between text-[10px] text-gray-400">
                                                         <span>{key}</span>
-                                                        <span>{val}</span>
+                                                        <span>{typeof val === 'number' && (key.includes('lat') || key.includes('lng')) ? Number(val).toFixed(4) : val}</span>
                                                     </div>
                                                     <input
                                                         type="range"
-                                                        min={0}
-                                                        max={100}
+                                                        min={min}
+                                                        max={max}
+                                                        step={step}
                                                         value={val}
                                                         onChange={(e) => updateComponentProp(componentIdx, key, Number(e.target.value))}
                                                         className="w-full h-1 bg-gray-800 rounded accent-indigo-500"
@@ -357,6 +389,30 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename }) => {
                                                     />
                                                 </div>
                                             );
+                                        }
+                                        if (typeof val === "string") {
+                                            if (key === "styleVariant") {
+                                                return (
+                                                    <div key={key}
+                                                        className="flex justify-between items-center text-[10px] text-gray-400">
+                                                        <span>{key}</span>
+                                                        <select
+                                                            value={val}
+                                                            onChange={(e) => updateComponentProp(componentIdx, key, e.target.value)}
+                                                            className='rounded border border-gray-700 bg-gray-950 px-2 py-0.5 text-[10px] text-white outline-none'>
+                                                            <option value="standard">
+                                                                Standard
+                                                            </option>
+                                                            <option value="dark">
+                                                                Dark
+                                                            </option>
+                                                            <option value="neon">
+                                                                Neon
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                )
+                                            }
                                         }
                                         return null;
                                     })}
