@@ -13,9 +13,8 @@ thinking/
 
 node_modules/
 dist/
+releases/
 
 # Session and temporary files
 opencode_session_*.json
 *.manifest.json
-
-

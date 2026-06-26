@@ -1,6 +1,8 @@
 {
   "name": "kinetic",
   "version": "1.0.0",
+  "description": "Desktop studio to generate After-Effects-style videos programmatically",
+  "author": "Ashwin",
   "private": true,
   "main": "dist/main/index.js",
   "scripts": {
