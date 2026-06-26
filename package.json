@@ -2,14 +2,18 @@
   "name": "kinetic",
   "version": "1.0.0",
   "description": "Desktop studio to generate After-Effects-style videos programmatically",
-  "author": "Ashwin",
+  "author": "Ashwin <ashwin@example.com>",
   "private": true,
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.node.json --watch\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "tsc -p tsconfig.node.json && vite build",
     "preview": "npx remotion preview src/renderer/Root.tsx",
-    "package": "npm run build && electron-builder"
+    "package": "npm run build && electron-builder",
+    "package:win": "npm run build && electron-builder --win",
+    "package:linux": "npm run build && electron-builder --linux",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:all": "npm run build && electron-builder --win --linux --mac"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.0",
@@ -36,7 +40,7 @@
   },
   "build": {
     "appId": "com.kinetic.app",
-    "productName": "Kinetic",
+    "productName": "Kinetic Alpha",
     "directories": {
       "output": "releases"
     },
@@ -45,20 +49,21 @@
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": [
+        "portable"
+      ]
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Kinetic"
+    "portable": {
+      "artifactName": "Kinetic-Alpha.exe"
     },
     "mac": {
-      "target": "dmg"
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "dmg": {
-      "title": "Kinetic Installer",
+      "title": "Kinetic Alpha Installer",
       "contents": [
         {
           "x": 130,
