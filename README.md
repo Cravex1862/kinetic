@@ -1,63 +1,62 @@
 # Kinetic
 
-A desktop studio that translates user descriptions and narration scripts into professional, keyframed After-Effects-style videos with motion graphics and animations. **Note: This project is in active development and this is the first iteration being updated to GitHub**.
+Kinetic is a desktop app that takes a script you write and turns it into a video with animations and moving graphics. **Note: This project is in active development and this is the first iteration being updated to GitHub**.
 
----
+![Kinetic Logo](kinetic_brand/logo_with_text.png)
+
+**Try it out:** You can download the latest version for your computer on the releases page or run it locally following the guide below.
 
 ## Quick Start
 
+You can start the app on your computer using these two commands:
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Start the local Electron studio
 npm run dev
 ```
 
 ## Features
-- **4-Stage Automated Orchestration:** Automatically translates single-sentence prompts and raw narration scripts into structural layouts, keyframe transitions, and voiceover captions.
-- **Interactive Component Inspector:** Modify parameters like size, border radius, colors, and switch toggles in real-time with automatic live updates on the timeline canvas.
-- **The Morph Engine:** A keyframe interpolation system that calculates transitions between visual states (numbers, colors, vectors, and booleans) without requiring manual animation code.
-- **Audio Waveform Integration:** Upload background music or voiceovers and sync visuals to a real-time reactive canvas timeline.
-- **Production Video Compiler:** Compiles dynamic React nodes into high-fidelity MP4 files locally on your machine using Remotion.
 
----
+* **AI generation**: You write a script or prompt and the AI sets up all the slides and movements.
+* **Easy editing**: You can edit layouts, colors, and sizes using the sidebar controls on the screen.
+* **Morph transitions**: A custom movement engine handles transitions so you don't have to write math or code.
+* **Audio sync**: You can upload a song or a voice clip and the graphics bounce along with the sound.
+* **MP4 rendering**: You can render the whole project into a real MP4 video file on your computer.
 
-## How to Run Locally 
 
-### System Prerequisites
-- **Node.js**: Version 18+ (20 recommended)
-- **FFmpeg**: Must be installed on your system path (required by Remotion to compile React elements into video frames).
+## How to Run It Locally
 
-### Setup and Start 
+You need to install a couple of things first. Make sure you have Node.js version 18 or higher. You also need to install FFmpeg on your computer and make sure it's added to your environment path. It's necessary because the video exporter needs FFmpeg to stitch the video frames together.
 
-1. Clone the repository and install the modules:
+Follow these steps:
+
+1. Clone the repository to your computer:
 ```bash
 git clone https://github.com/Cravex1862/kinetic.git
 cd kinetic
+```
+
+2. Install all the packages:
+```bash
 npm install
 ```
 
-2. Start the development server and open the Electron studio window:
+3. Start the application:
 ```bash
 npm run dev
 ```
-3. Set your API credentials in the Dashboard's settings panel to activate the generation pipeline.
 
----
+4. Go to the settings page in the app and type in your Gemini API key so the AI generator can talk to the models.
 
-## How it Works 
+## How It Works
 
-Kinetic is built using Electron, React, and Remotion. Unlike standard video generation engines that rely on pixel-warping neural video models, Kinetic approached video generation programmatically. It coordinates a pipeline of four distinct layout compilers (Manager, Layout, Animation, and Copywriter) to convert natural language instructions into declarative JSON node graphs.
+I built this app using Electron, React, and Remotion. Most AI video tools make weird, blurry videos where the text is messed up and hard to read. I didn't do that. Instead, my app reads your prompt and builds a layout with actual React components.
 
-These graphs are processed by our custom Morph Engine ([MorphSDK.tsx](src/renderer/primitives/MorphSDK.tsx)), which performs frame-accurate mathematical interpolation between component states. This guarantees that text remains razor-sharp, interfaces render without artifacting, and video files compile deterministically on the client machine using Remotion's command-line renderer.
+Then, I use a morphing library that calculates the movement between visual states. This keeps the text sharp at any size. Remotion takes these React components and exports them frame by frame into an MP4 file. It takes some computing power, but the video looks perfect.
 
----
+## Credits
 
-## Credits & Acknowledgements
-
-- Built on [Remotion](https://www.remotion.dev) for programmatic React video rendering.
-- Desktop application wrapper powered by [Electron](https://www.electronjs.org).
-- Interface iconography provided by [Phosphor Icons](https://phosphoricons.com).
+* [Remotion](https://www.remotion.dev) for rendering React components into video files.
+* [Electron](https://www.electronjs.org) for packaging React into a desktop application.
+* [Phosphor Icons](https://phosphoricons.com) for the interface icons I used.
 
 

@@ -9,10 +9,22 @@ import type { SceneOutput, PipelineState, ComponentTree, AnimationPlan } from '.
 
 export type PipelineCallback = (state: PipelineState) => void;
 
+export interface ResumeState {
+    scenes: any[];
+    componentTrees: ComponentTree[];
+    animationPlans: AnimationPlan[];
+    copies: Array<{ captions: string[]; labels: string[]; voiceover: string }>;
+}
+
+
 export async function runPipeline(
     prompt: string,
     narration: string,
     onState: PipelineCallback,
+    savePath?: string,
+    resumeState?: ResumeState,
+    onCheckpoint?: (checkpoint: any) => void,
+    projectTitle?: string
 ): Promise<SceneOutput[]> {
     const config = getStoredConfig();
     if (!config) {
@@ -20,23 +32,58 @@ export async function runPipeline(
         return [];
     }
 
-    // Step 1: Manager → Storyboard
-    onState({ status: 'storyboarding', progress: 0.1 });
-    const storyResult = await runManager(config, prompt, narration);
-    if (!storyResult.storyboard || storyResult.error) {
-        onState({ status: 'error', progress: 0.1, error: storyResult.error || 'Storyboarding failed' });
-        return [];
+    // Save initial checkpoint marking it as unfinished
+    try {
+        const initialData = {
+            title: projectTitle || 'Untitled',
+            prompt,
+            narration,
+            scenes: resumeState?.scenes || [],
+            unfinished: true,
+            generationState: resumeState ? {
+                scenes: resumeState.scenes,
+                componentTrees: resumeState.componentTrees,
+                animationPlans: resumeState.animationPlans,
+                copies: resumeState.copies,
+            } : undefined,
+            savePath
+        };
+        if (savePath && window.electronAPI?.writeFile) {
+            window.electronAPI.writeFile(savePath, JSON.stringify(initialData, null, 2));
+        }
+        if (onCheckpoint) {
+            onCheckpoint(initialData);
+        }
+    } catch (e) {
+        console.error("Failed to save initial unfinished state:", e);
     }
-    const { scenes } = storyResult.storyboard;
+
+    let scenes: any[] = [];
+
+    if (resumeState) {
+        scenes = resumeState.scenes;
+    } else {
+        onState({ status: 'storyboarding', progress: 0.1 });
+        const storyResult = await runManager(config, prompt, narration);
+        if (!storyResult.storyboard || storyResult.error) {
+            onState({ status: 'error', progress: 0.1, error: storyResult.error || 'Storyboarding failed' });
+            return [];
+        }
+        scenes = storyResult.storyboard.scenes;
+    }
+
+
     const total = scenes.length;
 
-    const componentTrees: ComponentTree[] = [];
-    const animationPlans: AnimationPlan[] = [];
-    const copies: Array<{ captions: string[]; labels: string[]; voiceover: string }> = [];
+    const componentTrees: ComponentTree[] = resumeState ? [...resumeState.componentTrees] : [];
+    const animationPlans: AnimationPlan[] = resumeState ? [...resumeState.animationPlans] : [];
+    const copies: Array<{ captions: string[]; labels: string[]; voiceover: string }> = resumeState ? [...resumeState.copies] : [];
 
-    const delay = (ms:number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const startIndex = componentTrees.length;
 
-    for (let i = 0; i < total; i++) {
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (let i = startIndex; i < total; i++) {
         const scene = scenes[i];
         const progressBase = 0.1 + (i / total) * 0.85;
 
@@ -66,22 +113,35 @@ export async function runPipeline(
         } else {
             copies.push(copyResult.copy);
         }
-        try{
+        try {
             const partialScenes = compileAllScenes(
-                scenes.slice(0, i+1),
+                scenes.slice(0, i + 1),
                 componentTrees,
                 animationPlans,
                 copies
             );
-        localStorage.setItem('kinetic-unfinished-project', JSON.stringify({
-            title: 'Unfinished Project',
-            prompt,
-            narration,
-            scenes: partialScenes,
-            status: 'unfinished'
-        }));
+            const checkpointData = {
+                title: projectTitle || 'Untitled',
+                prompt,
+                narration,
+                scenes: partialScenes,
+                unfinished: true,
+                generationState: {
+                    scenes,
+                    componentTrees,
+                    animationPlans,
+                    copies,
+                },
+                savePath
+            };
+            if (savePath && window.electronAPI?.writeFile) {
+                window.electronAPI.writeFile(savePath, JSON.stringify(checkpointData, null, 2));
+            }
+            if (onCheckpoint) {
+                onCheckpoint(checkpointData);
+            }
         }
-        catch(e){
+        catch (e) {
             console.error("Failed to save checkpoint:", e)
         }
     }
@@ -89,6 +149,26 @@ export async function runPipeline(
     // Step 5: Compile
     onState({ status: 'compiling', progress: 0.98 });
     const output = compileAllScenes(scenes, componentTrees, animationPlans, copies);
+
+    const finishedData = {
+        title: projectTitle || 'Untitled',
+        prompt,
+        narration,
+        scenes: output,
+        unfinished: false,
+        savePath
+    };
+
+    try {
+        if (savePath && window.electronAPI?.writeFile) {
+            window.electronAPI.writeFile(savePath, JSON.stringify(finishedData, null, 2));
+        }
+    } catch (e) {
+        console.error("Failed to save finished project file:", e);
+    }
+    if (onCheckpoint) {
+        onCheckpoint(finishedData);
+    }
 
     onState({ status: 'done', progress: 1, output });
     return output;

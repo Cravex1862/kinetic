@@ -31,7 +31,7 @@ export async function runManager(config: AgentConfig, prompt: string, narration:
   if (result.error) return { error: result.error };
 
   try {
-    const cleaned = result.content.replace(/```json/gi,'').replace(/```/gi,'').trim()
+    const cleaned = result.content.replace(/```json/gi, '').replace(/```/gi, '').trim()
     const parsed = JSON.parse(cleaned) as { scenes: StoryboardScene[] };
     if (!parsed.scenes || !Array.isArray(parsed.scenes) || parsed.scenes.length === 0) {
       return { error: 'Manager returned empty storyboard' };

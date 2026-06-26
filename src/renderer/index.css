@@ -7,9 +7,10 @@ html, body, #root {
   padding: 0;
   width: 100%;
   min-height: 100vh;
-  background: #030712;
+  background-color: #121212;
 }
 
 body {
   overflow-y: auto;
+  background-color: #121212;
 }

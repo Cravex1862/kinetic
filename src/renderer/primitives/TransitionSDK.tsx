@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useCurrentFrame, spring, interpolate, Easing, Sequence } from 'remotion';
 import { StyleConfig, configToStyle } from './types';
+import { useFrame } from './useFrame';
 
 // ─── SpringEnter ─────────────────────────────────────────────
 interface SpringEnterProps {
@@ -11,6 +12,7 @@ interface SpringEnterProps {
   stiffness?: number;
   overshootClamping?: boolean;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const SpringEnter: React.FC<SpringEnterProps> = ({
@@ -21,8 +23,9 @@ export const SpringEnter: React.FC<SpringEnterProps> = ({
   stiffness = 100,
   overshootClamping = false,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const adjustedFrame = Math.floor(frame * speed);
   const springValue = spring({
@@ -83,6 +86,7 @@ interface FadeBlurProps {
   duration?: number;
   startBlur?: number;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const FadeBlur: React.FC<FadeBlurProps> = ({
@@ -90,8 +94,9 @@ export const FadeBlur: React.FC<FadeBlurProps> = ({
   duration = 30,
   startBlur = 10,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const progress = Math.min(frame / effectiveDur, 1);
@@ -117,6 +122,7 @@ interface SlideInOutProps {
   duration?: number;
   fade?: boolean;
   style?: StyleConfig;
+  frame?: number;
 }
 
 const entryOffsets: Record<Direction, (dist: number) => { x: number; y: number }> = {
@@ -133,8 +139,9 @@ export const SlideInOut: React.FC<SlideInOutProps> = ({
   duration = 30,
   fade = true,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const progress = Math.min(frame / effectiveDur, 1);
@@ -157,14 +164,16 @@ interface CardRevealProps {
   children: React.ReactNode;
   duration?: number;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const CardReveal: React.FC<CardRevealProps> = ({
   children,
   duration = 30,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const progress = Math.min(frame / effectiveDur, 1);
@@ -187,6 +196,7 @@ interface PulseScaleProps {
   minScale?: number;
   maxScale?: number;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const PulseScale: React.FC<PulseScaleProps> = ({
@@ -195,8 +205,9 @@ export const PulseScale: React.FC<PulseScaleProps> = ({
   minScale = 0.95,
   maxScale = 1.05,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const effectiveCycle = Math.floor(cycleFrames / speed);
   const cycle = frame % effectiveCycle;

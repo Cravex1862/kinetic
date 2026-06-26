@@ -24,7 +24,7 @@ function createWindow(): void {
   const isDev = !app.isPackaged;
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://127.0.0.1:5173');
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -51,6 +51,15 @@ function registerIpcHandlers(): void {
       return '';
     }
   });
+  ipcMain.handle('write-file', async (_event, filePath: string, content: string): Promise<boolean> => {
+    try {
+      fs.writeFileSync(filePath, content, 'utf-8');
+      return true;
+    } catch (err: any) {
+      console.error('Failed to write file:', err);
+      return false;
+    }
+  });
 
   ipcMain.handle('select-directory', async (): Promise<string | null> => {
     if (!mainWindow) return null;
@@ -64,29 +73,142 @@ function registerIpcHandlers(): void {
     return app.getVersion();
   });
 
-  ipcMain.handle('export-video', async (_event, options): Promise<{ success: boolean; error?: string}> => {
-    try{
-      const {exec} = require('child_process');
-      const cmd = `npx remotion render src/render/Root.tsx ${options.compositionId}${options.outputPath} --width=${options.width} --height=${options.height} --fps=${options.fps}`;
+  ipcMain.handle('export-video', async (_event, options): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { exec } = require('child_process');
+
+      // Write a temporary props file so that Remotion gets all the layout and keyframe data
+      const tempPropsPath = path.join(app.getPath('temp'), `kinetic_render_props_${Date.now()}.json`);
+      fs.writeFileSync(tempPropsPath, JSON.stringify(options.props || {}));
+
+      const cmd = `npx remotion render "src/renderer/Root.tsx" "${options.compositionId}" "${options.outputPath}" --width=${options.width} --height=${options.height} --fps=${options.fps} --props="${tempPropsPath}"`;
+
+      console.log('Starting render command:', cmd);
 
       return new Promise((resolve) => {
-        exec(cmd, {
-          cwd:app.getAppPath() }, (err: any, stdout: any, stderr: any) => {
-            if (err){
-              resolve({success:false, error:stderr || err.message});
-
+        const renderProcess = exec(cmd, {
+          cwd: app.getAppPath()
+        }, (err: any, stdout: any, stderr: any) => {
+          // Clean up the temporary file
+          try {
+            if (fs.existsSync(tempPropsPath)) {
+              fs.unlinkSync(tempPropsPath);
             }
-            else{
-              resolve({ success: true });
-            }
+          } catch (e) {
+            console.error('Failed to clean up temp props file:', e);
           }
-      )
+
+          if (err) {
+            console.error('Render Failed! Error:', stderr || err.message);
+            resolve({ success: false, error: stderr || err.message });
+          }
+          else {
+            console.log('Render Completed Successfully!');
+            resolve({ success: true });
+          }
+        });
+
+        renderProcess.stdout.on('data', (data: string) => {
+          const text = data.trim();
+          console.log(text);
+
+          const match = text.match(/Rendered\s+(?:frame\s+)?(\d+)\s*\/(\d+)/i) ||
+            text.match(/Rendered\s+(?:frame\s+)?(\d+)\s+\((\d+)\s+frames/i) ||
+            text.match(/Rendered\s+(?:frame\s+)?(\d+)/i);
+          if (match) {
+            const currentFrame = parseInt(match[1], 10);
+            const totalFrames = match[2] ? parseInt(match[2], 10) : 100;
+            _event.sender.send('render-progress', {
+              frame: currentFrame,
+              total: totalFrames,
+              status: 'rendering'
+            });
+          }
+        });
+
+        renderProcess.stderr.on('data', (data: string) => {
+          console.warn(data.trim());
+        });
       })
     }
-    catch (err){
-      return { success: false, error : String(err)};
+    catch (err) {
+      return { success: false, error: String(err) };
     }
-  }   );
+  });
+  ipcMain.handle('select-file', async (): Promise<string | null> => {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [{
+        name: 'JSON Files',
+        extensions: ['json']
+      }],
+    });
+    return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
+  });
+  ipcMain.handle('show-item-in-folder', async (_event, filePath: string): Promise<boolean> => {
+    try {
+      const { shell } = require('electron');
+      shell.showItemInFolder(filePath);
+      return true;
+    }
+    catch {
+      return false;
+    }
+  })
+  ipcMain.handle('create-directory', async (_event, dirPath: string): Promise<boolean> => {
+    try {
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, {
+          recursive: true
+        })
+      }
+      return true;
+    }
+    catch (err) {
+      console.error('Failed to create directory:', err);
+      return false;
+    }
+  });
+
+  ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string): Promise<boolean> => {
+    try {
+      fs.renameSync(oldPath, newPath);
+      return true;
+    }
+    catch (err) {
+      console.error('Failed to move file:', err);
+      return false;
+    }
+  });
+  ipcMain.handle('delete-file', async (_event, filePath: string): Promise<boolean> => {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        return true;
+      }
+      return false;
+    }
+    catch (err) {
+      console.error('Failed to delete file:', err);
+      return false;
+    }
+  }
+  );
+  ipcMain.handle('delete-directory', async (_event, dirPath: string): Promise<boolean> => {
+    try {
+      if (fs.existsSync(dirPath)) {
+        fs.rmSync(dirPath, { recursive: true, force: true });
+      }
+      return true;
+    }
+    catch (err) {
+      console.error("Failed to delete directory", err);
+      return false;
+    }
+  });
+
+}
 
 
 app.whenReady().then(() => {
@@ -104,4 +226,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
-})}
+})

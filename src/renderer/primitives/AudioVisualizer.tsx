@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { AudioAnalyzer } from '../utils/audioAnalyzer';
+import { useFrame } from './useFrame';
 
 const globalAnalyzer = new AudioAnalyzer();
 let isLoaded = false;
@@ -8,14 +9,26 @@ let isLoaded = false;
 export interface AudioVisualizerProps {
     audioUrl: string;
     glowColor?: string;
+    frame?: number;
+    fps?: number;
 }
 
 export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
     audioUrl,
-    glowColor = "#6366f1"
+    glowColor = "#6366f1",
+    frame: propFrame,
+    fps: propFps,
 }) => {
-    const frame = useCurrentFrame();
-    const { fps } = useVideoConfig();
+    const frame = useFrame(propFrame);
+    let fps = propFps;
+    if (fps === undefined) {
+        try {
+            const config = useVideoConfig();
+            fps = config.fps;
+        } catch {
+            fps = 30;
+        }
+    }
     const [ready, setReady] = useState(isLoaded);
 
     useEffect(() => {

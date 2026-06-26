@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { interpolate, spring, Easing, useCurrentFrame } from 'remotion';
+import { interpolate, interpolateColors, spring, Easing, useCurrentFrame } from 'remotion';
 import { useFrame } from './useFrame';
 import { configToStyle, type StyleConfig } from './types';
 
@@ -30,6 +30,32 @@ export function CursorClick({
   const elapsed = Math.max(0, currentFrame - startFrame);
   const duration = 20;
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [layoutSize, setLayoutSize] = React.useState({ w: 1024, h: 576 });
+
+  React.useLayoutEffect(() => {
+    const canvasEl = containerRef.current?.closest('.relative') || containerRef.current?.parentElement;
+    if (!canvasEl) return;
+    setLayoutSize({
+      w: canvasEl.clientWidth || 1024,
+      h: canvasEl.clientHeight || 576,
+    });
+  }, []);
+
+  const ratio = layoutSize.w / layoutSize.h;
+  let designW = 1920;
+  let designH = 1080;
+  if (Math.abs(ratio - 9 / 16) < 0.1) {
+    designW = 1080;
+    designH = 1920;
+  } else if (Math.abs(ratio - 1.0) < 0.1) {
+    designW = 1080;
+    designH = 1080;
+  }
+
+  const layoutX = clickX * (layoutSize.w / designW);
+  const layoutY = clickY * (layoutSize.h / designH);
+
   const pulseProgress = Math.min(elapsed / duration, 1);
   const eased = Easing.out(Easing.ease)(pulseProgress);
 
@@ -48,6 +74,7 @@ export function CursorClick({
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'absolute',
         top: 0,
@@ -64,8 +91,8 @@ export function CursorClick({
         style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible' }}
       >
         <circle
-          cx={clickX}
-          cy={clickY}
+          cx={layoutX}
+          cy={layoutY}
           r={pulseRadius}
           fill="none"
           stroke={pulseColor}
@@ -74,7 +101,7 @@ export function CursorClick({
         />
 
         {showHand && handElapsed >= 5 && (
-          <g transform={`translate(${clickX}, ${clickY})`} opacity={handOpacity}>
+          <g transform={`translate(${layoutX}, ${layoutY})`} opacity={handOpacity}>
             <path
               d="M5 3L19 14L12 15L9 21L5 3Z"
               fill={pulseColor}
@@ -216,7 +243,7 @@ export function ToggleAnimate({
   const progress = Math.min(elapsed / switchDuration, 1);
   const dims = toggleSizes[size];
   const knobX = interpolate(progress, [0, 1], [2, dims.width - dims.knob - 2], { extrapolateRight: 'clamp' });
-  const knobColor = interpolate(progress, [0, 0.5, 1], toggled ? ['#374151', '#6366f1', '#6366f1'] : ['#6366f1', '#374151', '#374151'], { extrapolateRight: 'clamp' });
+  const knobColor = interpolateColors(progress, [0, 0.5, 1], toggled ? ['#374151', '#6366f1', '#6366f1'] : ['#6366f1', '#374151', '#374151']);
   const us = configToStyle(style);
 
   return (

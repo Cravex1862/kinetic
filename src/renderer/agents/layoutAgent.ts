@@ -30,9 +30,18 @@ Available components:
 - MetricCounter: {from,to,duration,prefix,suffix,decimals}
 - ToggleAnimate: {toggled, label, size}
 - MenuExpand: {expanded, maxHeight}
-- Cursor: {startX, startY, endX, endY, duration}
+- Cursor: {startX, startY, targetId, clickFrame, duration}
 - TextTyper: {text, charsPerFrame, showCursor}
 - ProgressRing: { targetPercentage, size, duration}
+- Map: { lat,lng,zoom,pinLat, pinLng, pinScale,routeProgress, styleVariant: "standard" || "dark" || "neon" }
+
+Every primitive component can optionally accept:
+- id : string (unique identifier)
+- signalIn : {sourceId: string, event: 'click', action: 'expand' | "toggle" | "show" }
+- signalOut : { event:string, frame: number }
+
+Rules for Clicks:
+- To animate a cursor click, set "targetId" on the Cursor to match "id" of the target component, and specify "clickFrame".
 
 Output a JSON component tree. Every component must have "type" and "props". Use "children" for nesting.
 Return valid JSON only.

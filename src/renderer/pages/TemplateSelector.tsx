@@ -1,66 +1,172 @@
-import React from 'react';
-import { BoundingBox, WaveSine, MagnifyingGlass } from '@phosphor-icons/react';
+import React, { useState } from 'react';
+import { ArrowLeft, Folder, PlugsConnected, FilmStrip, Browser, GameController, Star, Layout } from '@phosphor-icons/react';
+import logoIcon from '../../../kinetic_brand/logo_transparent.svg';
 
 interface TemplateSelectorProps {
-  onSelect: (template: 'basic-animation') => void;
+  onSelect: (template: string, selectedDir: string) => void;
   onBack: () => void;
+  initialDirectory: string;
+  onSelectDirectory: (dir: string) => void;
 }
 
-const templates: {
-  key: 'basic-animation';
-  label: string;
-  icon: React.ReactNode;
-  features: string[];
-}[] = [
+const templates = [
   {
     key: 'basic-animation',
-    label: 'Basic Animation',
-    icon: <BoundingBox size={36} weight="duotone" className="text-indigo-400" />,
-    features: ['Up to 1 min long', 'Fast tight motion'],
+    title: 'Basic Animation',
+    description: 'Use this for any regular animations needed',
+    comingSoon: false,
+    gradient: 'from-blue-600/10 to-indigo-600/10 border-indigo-500/20 group-hover:border-indigo-500/50 hover:bg-indigo-950/10',
+    thumbnail: (
+      <svg className="w-full h-full text-indigo-400/80" fill="none" viewBox="0 0 100 60">
+        <rect x="10" y="10" width="80" height="40" rx="4" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
+        <circle cx="50" cy="30" r="12" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M44 30 L56 30 M50 24 L50 36" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    )
+  },
+  {
+    key: 'youtube-videos',
+    title: 'Youtube Videos',
+    description: 'Use this for creating full length youtube videos.',
+    comingSoon: true,
+    gradient: 'from-red-600/5 to-pink-600/5 border-red-500/10 group-hover:border-red-500/35',
+    thumbnail: (
+      <svg className="w-full h-full text-red-500/60" fill="none" viewBox="0 0 100 60">
+        <rect x="10" y="10" width="80" height="40" rx="4" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" />
+        <polygon points="45,22 62,30 45,38" fill="currentColor" />
+        <line x1="15" x2="85" y1="44" y2="44" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4" />
+      </svg>
+    )
+  },
+  {
+    key: 'saas-demo-videos',
+    title: 'SaaS Demo Videos',
+    description: 'Use this for creating product demos for your SaaS',
+    comingSoon: true,
+    gradient: 'from-emerald-600/5 to-teal-600/5 border-emerald-500/10 group-hover:border-emerald-500/35',
+    thumbnail: (
+      <svg className="w-full h-full text-emerald-500/60" fill="none" viewBox="0 0 100 60">
+        <rect x="10" y="10" width="80" height="40" rx="4" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" />
+        <rect x="15" y="15" width="18" height="30" rx="2" fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth="1" strokeOpacity="0.4" />
+        <line x1="38" x2="80" y1="20" y2="20" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.5" />
+        <line x1="38" x2="70" y1="28" y2="28" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.3" />
+        <line x1="38" x2="75" y1="36" y2="36" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.3" />
+      </svg>
+    )
+  },
+  {
+    key: 'minecraft-style',
+    title: 'Minecraft Style',
+    description: 'Use this for creating any minecraft styled explainer',
+    comingSoon: true,
+    gradient: 'from-amber-600/5 to-yellow-600/5 border-amber-500/10 group-hover:border-amber-500/35',
+    thumbnail: (
+      <svg className="w-full h-full text-amber-500/60" fill="none" viewBox="0 0 100 60">
+        <rect x="25" y="10" width="15" height="15" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="42" y="10" width="15" height="15" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="59" y="10" width="15" height="15" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="33" y="28" width="15" height="15" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="50" y="28" width="15" height="15" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    )
+  },
+  {
+    key: 'logo-animator',
+    title: 'Logo Animator',
+    description: 'Use this for animating your logo.',
+    comingSoon: true,
+    gradient: 'from-purple-600/5 to-violet-600/5 border-purple-500/10 group-hover:border-purple-500/32',
+    thumbnail: (
+      <svg className="w-full h-full text-purple-400/60" fill="none" viewBox="0 0 100 60">
+        <path d="M50 12 L75 42 L25 42 Z" fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="50" cy="30" r="6" fill="currentColor" />
+      </svg>
+    )
+  },
+  {
+    key: 'ui-ux-walkthrough',
+    title: 'UI/UX Walkthrough',
+    description: 'Use this for creating a UI to demo to people before coding it',
+    comingSoon: true,
+    gradient: 'from-cyan-600/5 to-sky-600/5 border-cyan-500/10 group-hover:border-cyan-500/35',
+    thumbnail: (
+      <svg className="w-full h-full text-cyan-400/60" fill="none" viewBox="0 0 100 60">
+        <rect x="15" y="15" width="30" height="20" rx="3" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" />
+        <rect x="55" y="25" width="30" height="20" rx="3" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" />
+        <path d="M45 25 L55 35" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
+      </svg>
+    )
   }
 ];
 
-const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack }) => {
+const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, initialDirectory, onSelectDirectory }) => {
+  const [selectedDir, setSelectedDir] = useState(initialDirectory);
+  
+  const handleBrowse = async () => {
+    if (window.electronAPI?.selectDirectory) {
+      const dir = await window.electronAPI.selectDirectory();
+      if (dir) {
+        setSelectedDir(dir);
+        onSelectDirectory(dir);
+      }
+    }
+  };
+
   return (
-    <div className="flex h-screen flex-col items-center justify-center bg-gray-950 text-white">
-      <div className="mb-2 flex items-center gap-2">
-        <button
-          onClick={onBack}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
-        >
-          &larr;
-        </button>
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold">K</div>
-        <span className="text-sm font-semibold">kinetic</span>
-      </div>
-
-      <h1 className="mb-10 mt-4 text-center text-sm font-medium uppercase tracking-widest text-gray-500">
-        Select a Template
-      </h1>
-
-      <div className="flex gap-6">
-        {templates.map((t) => (
+    <div className="flex h-screen flex-col bg-gray-950 text-white overflow-hidden font-sans">
+      <header className="flex items-center justify-between border-b border-gray-800/80 px-8 py-4 bg-gray-900/10">
+        <div className="flex items-center gap-3">
           <button
-            key={t.key}
-            onClick={() => onSelect(t.key)}
-            className="group flex w-[200px] flex-col items-center gap-5 rounded-xl border-2 border-dashed border-gray-700 bg-gray-900/60 px-6 py-10 text-center transition-all hover:border-indigo-500/50 hover:bg-gray-900"
+            onClick={onBack}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-800 bg-gray-900 text-gray-400 hover:text-white hover:border-gray-700 transition-all hover:scale-105"
+            title="Go Back"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-800 transition-colors group-hover:bg-indigo-600/10">
-              {t.icon}
-            </div>
-
-            <span className="text-sm font-semibold text-white">{t.label}</span>
-
-            <ul className="space-y-1.5">
-              {t.features.map((f, i) => (
-                <li key={i} className="text-xs leading-relaxed text-gray-500">
-                  &bull; {f}
-                </li>
-              ))}
-            </ul>
+            <ArrowLeft size={16} weight="bold" />
           </button>
-        ))}
-      </div>
+          <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{
+            filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.55)) brightness(1.2)'
+          }} />
+          <span className="text-sm font-semibold tracking-wide text-white">kinetic</span>
+          <span className="text-xs text-gray-500">/</span>
+          <span className="text-xs text-gray-400">Template Selector</span>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-xl border border-gray-850 bg-gray-900/50 px-3.5 py-1.5 text-xs text-gray-400 shadow-inner">
+          <span className="font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Selected Directory</span>
+          <span className="truncate max-w-[280px] text-gray-200 font-mono" title={selectedDir}>{selectedDir || 'None Selected'}</span>
+          <button onClick={handleBrowse} className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors ml-2">Browse</button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto px-12 py-10 flex flex-col items-center">
+        <div className="w-full max-w-5xl mb-8 flex flex-col items-start">
+          <h2 className="text-lg font-bold text-white tracking-wide">Choose a Template Below</h2>
+          <p className="text-xs text-gray-500 mt-1">Select the canvas layout that fits your animation style</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 w-full max-w-5xl pb-12">
+          {templates.map((t) => (
+            <button key={t.key}
+              onClick={() => onSelect(t.key, selectedDir)}
+              className={`group flex flex-col text-left rounded-2xl border bg-gray-900/30 p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 ${t.gradient}`}>
+              <div className="relative aspect-video w-full rounded-xl bg-gray-950/80 border border-gray-900 flex items-center justify-center overflow-hidden mb-4">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:10px_10px] opacity-10" />
+                {t.thumbnail}
+                {t.comingSoon && (
+                  <div className="absolute top-2 right-2 rounded-full bg-gray-900/80 border border-gray-800 px-2 py-0.5 text-[8px] font-semibold text-gray-500 uppercase tracking-widest">
+                    Coming Soon
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col flex-1 px-1">
+                <span className="text-sm font-bold text-white tracking-wide group-hover:text-indigo-400 transition-colors">{t.title}</span>
+                <span className="text-xs text-gray-500 mt-1.5 leading-relaxed flex-1">{t.description}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </main>
     </div>
   );
 };

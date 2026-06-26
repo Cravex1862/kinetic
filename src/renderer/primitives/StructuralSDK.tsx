@@ -10,11 +10,11 @@ type GlowStyle = {
 };
 
 function buildGlowFilter(glow?: GlowConfig): Partial<GlowStyle> {
-  const g = glow || {enabled:true, color: `rgba(99,102,241, 0.25)`, intensity: 1, spread:15};
+  const g = glow || { enabled: true, color: `rgba(99,102,241, 0.25)`, intensity: 1, spread: 15 };
   if (!glow || !glow.enabled) return {};
   const blurPx = glow.intensity * 6;
   return {
-    filter: `drop-shadow(0 0 ${glow.spread}px ${glow.color}) drop-shadow(0 0 ${blurPx}px ${glow.color}))`,
+    filter: `drop-shadow(0 0 ${glow.spread}px ${glow.color}) drop-shadow(0 0 ${blurPx}px ${glow.color})`,
     willChange: 'filter',
   };
 }
@@ -25,7 +25,7 @@ const aspectRatioMap: Record<AspectRatio, string> = {
   '9:16': '9 / 16',
   '4:3': '4 / 3',
   '1:1': '1 / 1',
-}; 
+};
 
 
 // ─── BrowserFrame ────────────────────────────────────────────
@@ -36,6 +36,11 @@ interface BrowserFrameProps {
   panelSize?: 'small' | 'medium' | 'large';
   windowStyle?: 'mac' | 'windows';
   style?: StyleConfig;
+  rotateX?: number;
+  rotateY?: number;
+  rotateZ?: number;
+  perspective?: number;
+  translateZ?: number;
 }
 
 const panelPadding: Record<string, string> = {
@@ -51,11 +56,28 @@ export const BrowserFrame: React.FC<BrowserFrameProps> = ({
   panelSize = 'medium',
   windowStyle = 'mac',
   style,
+  rotateX,
+  rotateY,
+  rotateZ,
+  perspective,
+  translateZ,
 }) => {
   const glow = buildGlowFilter(glowConfig);
   const us = configToStyle(style);
+
+  const transformParts = [];
+  if (perspective !== undefined) transformParts.push(`perspective(${perspective}px)`);
+  if (rotateX !== undefined) transformParts.push(`rotateX(${rotateX}deg)`);
+  if (rotateY !== undefined) transformParts.push(`rotateY(${rotateY}deg)`);
+  if (rotateZ !== undefined) transformParts.push(`rotateZ(${rotateZ}deg)`);
+  if (translateZ !== undefined) transformParts.push(`translateZ(${translateZ}px)`);
+
+  const transformStyle: React.CSSProperties = transformParts.length > 0 ? {
+    transform: transformParts.join(' '),
+    transformStyle: 'preserve-3d',
+  } : {};
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-900 shadow-2xl" style={{ ...glow, ...us }}>
+    <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-900 shadow-2xl flex flex-col" style={{ width: '100%', height: '100%', ...glow, ...us, ...transformStyle }}>
       <div className="flex items-center gap-2 border-b border-gray-700 bg-gray-800 px-4 py-3">
         {windowStyle === 'mac' ? (
           <div className="flex gap-1.5">
@@ -81,7 +103,7 @@ export const BrowserFrame: React.FC<BrowserFrameProps> = ({
           </div>
         )}
       </div>
-      <div className={`bg-gray-900 ${panelPadding[panelSize]}`} style={us}>{children}</div>
+      <div className={`bg-gray-900 flex-1 ${panelPadding[panelSize]}`} style={us}>{children}</div>
     </div>
   );
 };
@@ -112,7 +134,7 @@ export const AppCanvas: React.FC<AppCanvasProps> = ({
   return (
     <div
       className="relative flex items-center justify-center overflow-hidden bg-gray-950"
-      style={{ aspectRatio: aspectRatioMap[aspectRatio], ...dims, ...glow, ...us }}
+      style={{ width: '100%', height: '100%', aspectRatio: aspectRatioMap[aspectRatio], ...dims, ...glow, ...us }}
     >
       {children}
     </div>
@@ -130,6 +152,11 @@ interface MockWindowProps {
   height?: number;
   windowStyle?: 'mac' | 'windows';
   style?: StyleConfig;
+  rotateX?: number;
+  rotateY?: number;
+  rotateZ?: number;
+  perspective: number;
+  translateZ: number;
 }
 
 export const MockWindow: React.FC<MockWindowProps> = ({
@@ -142,14 +169,30 @@ export const MockWindow: React.FC<MockWindowProps> = ({
   height = 300,
   windowStyle = 'mac',
   style,
+  rotateX,
+  rotateY,
+  rotateZ,
+  perspective,
+  translateZ,
 }) => {
   const glow = buildGlowFilter(glowConfig);
   const us = configToStyle(style);
+  const transformParts = [];
+  if (perspective !== undefined) transformParts.push(`perspective(${perspective}px)`);
+  if (rotateX !== undefined) transformParts.push(`rotateX(${rotateX}deg)`);
+  if (rotateY !== undefined) transformParts.push(`rotateY(${rotateY}deg)`);
+  if (rotateZ !== undefined) transformParts.push(`rotateZ(${rotateZ}deg)`);
+  if (translateZ !== undefined) transformParts.push(`translateZ(${translateZ}px)`);
+
+  const transformStyle: React.CSSProperties = transformParts.length > 0 ? {
+    transform: transformParts.join(' '),
+    transformStyle: 'preserve-3d',
+  } : {};
   if (!visible) return null;
   return (
     <div
       className="absolute z-50 overflow-hidden rounded-lg border border-gray-600 bg-gray-800 shadow-2xl"
-      style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px`, ...glow, ...us }}
+      style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px`, ...glow, ...us, ...transformStyle }}
     >
       <div className="flex items-center gap-1.5 border-b border-gray-700 bg-gray-800 px-3 py-2" style={us}>
         {windowStyle === 'mac' ? (
@@ -196,7 +239,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     </div>
   );
   return (
-    <div className="flex h-full w-full" style={{ ...glow }}>
+    <div className="flex" style={{ width: '100%', height: '100%', ...glow }}>
       {sidebarPosition === 'left' && sidebar}
       <div className="flex-1 overflow-auto bg-gray-950" style={us}>{children}</div>
       {sidebarPosition === 'right' && sidebar}
@@ -387,7 +430,7 @@ export const SplitHeroLayout: React.FC<SplitHeroLayoutProps> = ({
   const us = configToStyle(style);
   const leftPct = `${Math.round(splitRatio * 100)}%`;
   return (
-    <div className="flex h-full w-full" style={{ ...glow, ...us }}>
+    <div className="flex" style={{ width: '100%', height: '100%', ...glow, ...us }}>
       <div className="flex items-center justify-center p-8" style={{ width: leftPct, ...us }}>
         {leftPanel}
       </div>

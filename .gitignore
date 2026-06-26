@@ -1,13 +1,15 @@
 # Local project metadata and documentation (not part of source)
+# Ignore all markdown files by default
+*.md
+**/*.md
+
+# Exceptions for root README and design guidelines
+!README.md
+!design_guidelines.md
+
+# Ignore specific directories and metadata
 devlogs/
-task.md
-tasks.md
-implementation.md
-implementation_plan.md
-AGENTS.md
-agents.md
-Plans.md
-plans.md
+thinking/
 
 node_modules/
 dist/

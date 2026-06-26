@@ -1,13 +1,15 @@
 import React from 'react';
 import { useCurrentFrame, interpolate, Easing } from 'remotion';
 import { StyleConfig, configToStyle } from './types';
+import { useFrame } from './useFrame';
 
 // ─── Cursor ──────────────────────────────────────────────────
 interface CursorProps {
   startX: number;
   startY: number;
-  endX: number;
-  endY: number;
+  endX?: number;
+  endY?: number;
+  targetId?: string;
   clickFrame?: number;
   duration?: number;
   controlPointOffset?: number;
@@ -15,6 +17,7 @@ interface CursorProps {
   cursorColor?: string;
   cursorSize?: number;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const Cursor: React.FC<CursorProps> = ({
@@ -22,6 +25,7 @@ export const Cursor: React.FC<CursorProps> = ({
   startY,
   endX,
   endY,
+  targetId,
   clickFrame,
   duration = 30,
   controlPointOffset = 120,
@@ -29,8 +33,62 @@ export const Cursor: React.FC<CursorProps> = ({
   cursorColor = 'white',
   cursorSize = 24,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
+  const cursorRef = React.useRef<HTMLDivElement>(null);
+  const [scale, setScale] = React.useState({ x: 1, y: 1 });
+  const [layoutSize, setLayoutSize] = React.useState({ w: 1024, h: 576 });
+  const [resolvedEnd, setResolvedEnd] = React.useState<{ x: number; y: number } | null>(null);
+
+  React.useLayoutEffect(() => {
+    const canvasEl = cursorRef.current?.closest('.relative') || cursorRef.current?.parentElement;
+    if (!canvasEl) return;
+
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const ratio = canvasRect.width / canvasRect.height;
+    
+    // Detect standard design size based on aspect ratio
+    let designW = 1920;
+    let designH = 1080;
+    let defaultW = 1024;
+    let defaultH = 576;
+    if (Math.abs(ratio - 9 / 16) < 0.1) {
+      designW = 1080;
+      designH = 1920;
+      defaultW = 576;
+      defaultH = 1024;
+    } else if (Math.abs(ratio - 1.0) < 0.1) {
+      designW = 1080;
+      designH = 1080;
+      defaultW = 576;
+      defaultH = 576;
+    }
+
+    const scaleX = canvasRect.width / designW;
+    const scaleY = canvasRect.height / designH;
+    setScale({ x: scaleX, y: scaleY });
+
+    const clientW = canvasEl.clientWidth || defaultW;
+    const clientH = canvasEl.clientHeight || defaultH;
+    setLayoutSize({ w: clientW, h: clientH });
+
+    if (targetId) {
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        const actualEl = targetEl.firstElementChild || targetEl;
+        const targetRect = actualEl.getBoundingClientRect();
+        setResolvedEnd({
+          x: (targetRect.left - canvasRect.left + targetRect.width / 2) / (scaleX || 1),
+          y: (targetRect.top - canvasRect.top + targetRect.height / 2) / (scaleY || 1),
+        });
+      }
+    }
+  }, [targetId, frame]);
+
+  const finalEndX = resolvedEnd ? resolvedEnd.x : (endX !== undefined ? endX : startX);
+  const finalEndY = resolvedEnd ? resolvedEnd.y : (endY !== undefined ? endY : startY);
+
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const progress = Math.min(frame / effectiveDur, 1);
@@ -40,13 +98,28 @@ export const Cursor: React.FC<CursorProps> = ({
 
   const cp1x = startX + controlPointOffset;
   const cp1y = startY;
-  const cp2x = endX - controlPointOffset;
-  const cp2y = endY;
+  const cp2x = finalEndX - controlPointOffset;
+  const cp2y = finalEndY;
 
   const t = eased;
   const u = 1 - t;
-  const x = u * u * u * startX + 3 * u * u * t * cp1x + 3 * u * t * t * cp2x + t * t * t * endX;
-  const y = u * u * u * startY + 3 * u * u * t * cp1y + 3 * u * t * t * cp2y + t * t * t * endY;
+  const x = u * u * u * startX + 3 * u * u * t * cp1x + 3 * u * t * t * cp2x + t * t * t * finalEndX;
+  const y = u * u * u * startY + 3 * u * u * t * cp1y + 3 * u * t * t * cp2y + t * t * t * finalEndY;
+
+  // Detect coordinate layout aspect ratio mapping
+  const ratio = layoutSize.w / layoutSize.h;
+  let designW = 1920;
+  let designH = 1080;
+  if (Math.abs(ratio - 9 / 16) < 0.1) {
+    designW = 1080;
+    designH = 1920;
+  } else if (Math.abs(ratio - 1.0) < 0.1) {
+    designW = 1080;
+    designH = 1080;
+  }
+
+  const layoutX = x * (layoutSize.w / designW);
+  const layoutY = y * (layoutSize.h / designH);
 
   let clickScale = 1;
   const isClickActive = clickFrame !== undefined && frame >= clickFrame;
@@ -67,10 +140,11 @@ export const Cursor: React.FC<CursorProps> = ({
 
   return (
     <div
+      ref={cursorRef}
       className="pointer-events-none absolute z-[999]"
       style={{
-        left: `${x}px`,
-        top: `${y}px`,
+        left: `${layoutX}px`,
+        top: `${layoutY}px`,
         transform: `translate(-50%, -50%) scale(${clickScale})`,
         willChange: 'transform, left, top',
         ...us,
@@ -96,6 +170,7 @@ interface SmoothScrollProps {
   duration?: number;
   scrollDirection?: 'vertical' | 'horizontal';
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const SmoothScroll: React.FC<SmoothScrollProps> = ({
@@ -104,8 +179,9 @@ export const SmoothScroll: React.FC<SmoothScrollProps> = ({
   duration = 60,
   scrollDirection = 'vertical',
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const progress = Math.min(frame / effectiveDur, 1);
@@ -130,6 +206,7 @@ interface FocusZoomProps {
   originX?: number;
   originY?: number;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const FocusZoom: React.FC<FocusZoomProps> = ({
@@ -139,8 +216,9 @@ export const FocusZoom: React.FC<FocusZoomProps> = ({
   originX = 50,
   originY = 50,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const progress = Math.min(frame / effectiveDur, 1);
@@ -165,6 +243,7 @@ interface TextTyperProps {
   textColor?: string;
   fontSize?: number;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const TextTyper: React.FC<TextTyperProps> = ({
@@ -175,8 +254,9 @@ export const TextTyper: React.FC<TextTyperProps> = ({
   textColor,
   fontSize,
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const adjustedChars = charsPerFrame * speed;
   const charsToShow = Math.min(Math.floor(frame * adjustedChars), text.length);
@@ -216,8 +296,7 @@ function easingFn(easingType: string, progress: number): number {
 }
 
 function ChartAnimateInner({ children, duration = 30, delay = 0, easingType = 'outBack', style, frame }: ChartAnimateProps) {
-  const internalFrame = useCurrentFrame();
-  const f = frame ?? internalFrame;
+  const f = useFrame(frame);
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const adjustedFrame = Math.max(0, f - delay);
@@ -267,6 +346,7 @@ interface DragAndDropProps {
   liftHeight?: number;
   dropShadowColor?: string;
   style?: StyleConfig;
+  frame?: number;
 }
 
 export const DragAndDrop: React.FC<DragAndDropProps> = ({
@@ -279,8 +359,9 @@ export const DragAndDrop: React.FC<DragAndDropProps> = ({
   liftHeight = 8,
   dropShadowColor = 'rgba(0, 0, 0, 0.4)',
   style,
+  frame: propFrame,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFrame(propFrame);
   const speed = style?.speed ?? 1;
   const effectiveDur = Math.floor(duration / speed);
   const progress = Math.min(frame / effectiveDur, 1);

@@ -1,22 +1,25 @@
 import React, { useState } from 'react';
-import { TextB, TextItalic, TextUnderline, UploadSimple, ArrowUp } from '@phosphor-icons/react';
+import { TextB, TextItalic, TextUnderline, UploadSimple, ArrowUp, ArrowLeft, Sparkle } from '@phosphor-icons/react';
+import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
 import { runPipeline } from './BasicPipeline';
 import type { PipelineState } from '../../agents/types';
+import { callLLM, getStoredConfig } from '../../agents/llmClient';
+
+import type { ProjectData } from '../../pages/AppRouter';
 
 interface AnimationGeneratorProps {
-    onBack: () => void;
-    onGenerate: (data: {
-        title: string;
-        prompt: string;
-        narration: string;
-        scenes?: import('../../agents/types').SceneOutput[];
-        showVisualizer?: boolean;
-    }) => void;
+    project: ProjectData | null;
+    onBack: (updatedProject?: ProjectData) => void;
+    onGenerate: (data: ProjectData) => void;
+    onUpdateProject?: (data: ProjectData) => void;
+    customAlert: (title: string, message: string) => Promise<void>;
+    customConfirm: (title: string, message: string, buttons?: any[]) => Promise<any>;
 }
 
 const SIZE_OPTIONS = Array.from({ length: 63 }, (_, i) => i + 10);
 
 type FontRow = 'Title Font' | 'Heading' | 'Paragraph';
+
 
 interface FontSettings {
     fontFamily: string;
@@ -44,16 +47,147 @@ const colorSwatches = [
     { label: 'Success', defaultColor: '#22c55e' },
 ];
 
-const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate }) => {
-    const [instructions, setInstructions] = useState('');
-    const [narration, setNarration] = useState('');
+const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, onUpdateProject, project, customAlert, customConfirm }) => {
+    const [instructions, setInstructions] = useState(project?.prompt || '');
+    const [narration, setNarration] = useState(project?.narration || '');
+    const [useNarration, setUseNarration] = useState(!!project?.narration);
     const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
-    const [fonts, setFonts] = useState<Record<FontRow, FontSettings>>(defaultFonts);
-    const [swatches, setSwatches] = useState<Record<string, string>>(
-        Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])),
+    const [fonts, setFonts] = useState<Record<FontRow, FontSettings>>(project?.fonts as any || defaultFonts);
+    const [swatches, setSwatches] = useState<Record<string, string>>(project?.colors || Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])),
     );
     const [showVisualizer, setShowVisualizer] = useState(false);
     const [availableFonts, setAvailableFonts] = useState<string[]>(['Inter', 'Roboto', 'Poppins', 'DM Sans']);
+
+    const [rightPanelWidth, setRightPanelWidth] = useState(320);
+    const [isRefining, setIsRefining] = useState(false);
+    const [bgDescription, setBgDescription] = useState(project?.bgDescription || '');
+    const [backgroundImage, setBackgroundImage] = useState(project?.colors?.backgroundImage || '');
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleBack = () => {
+        if (project) {
+            onBack({
+                ...project,
+                prompt: instructions,
+                narration: useNarration ? narration : '',
+                fonts,
+                colors: { ...swatches, backgroundImage },
+                bgDescription,
+                showVisualizer
+            });
+        } else {
+            onBack();
+        }
+    };
+
+    const handleResume = async () => {
+        if (!project || !project.generationState) return;
+        setPipelineState({ status: 'storyboarding', progress: 0.1 });
+        const resumeState = {
+            scenes: project.generationState.scenes,
+            componentTrees: project.generationState.componentTrees,
+            animationPlans: project.generationState.animationPlans,
+            copies: project.generationState.copies,
+        };
+        const onCheckpoint = (checkpoint: any) => {
+            if (onUpdateProject && project) {
+                onUpdateProject({
+                    ...project,
+                    ...checkpoint,
+                    fonts,
+                    colors: { ...swatches, backgroundImage },
+                    bgDescription,
+                    showVisualizer
+                });
+            }
+        };
+        const output = await runPipeline(
+            instructions,
+            useNarration ? narration : '',
+            setPipelineState,
+            project.savePath,
+            resumeState,
+            onCheckpoint,
+            project.title
+        );
+        if (output && output.length > 0) {
+            onGenerate({
+                ...project,
+                prompt: instructions,
+                narration: useNarration ? narration : '',
+                scenes: output,
+                showVisualizer,
+                fonts,
+                colors: { ...swatches, backgroundImage },
+                bgDescription,
+                unfinished: false,
+                generationState: undefined,
+            })
+        }
+    };
+
+    const handleRightMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startWidth = rightPanelWidth;
+
+        const onMouseMove = (moveEvent: MouseEvent) => {
+            const newWidth = Math.max(240, Math.min(460, startWidth - (moveEvent.clientX - startX)));
+            setRightPanelWidth(newWidth);
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    };
+
+    const handleRefinePrompt = async () => {
+        if (!instructions.trim()) return;
+        const config = getStoredConfig();
+        if (!config) {
+            await customAlert("Setup Required", 'Please configure API keys first using the settings menu');
+            return;
+        }
+        setIsRefining(true);
+        try {
+            const systemPrompt = "You are an AI prompt engineer for motion-graphics video generation. " +
+                "Take the user's basic description of the video animation they want to create and refine it to be descriptive, " +
+                "detailed, professional, and optimized for generating high-quality animation frames. " +
+                "Keep it concise but visually descriptive (e.g. mention layouts, layout flows, shapes and motion style). " +
+                "Return ONLY the refined prompt text, with no introductory, greeting, or meta text. Do not wrap it in quotes.";
+
+            const response = await callLLM(config, systemPrompt, instructions);
+            if (response.error) {
+                await customAlert("AI Error", `Error refining prompt: ${response.error}`);
+            }
+            else if (response.content) {
+                setInstructions(response.content.trim());
+            }
+        }
+        catch (err) {
+            await customAlert("AI Error", `Failed to refine prompt: ${err}`);
+        }
+        finally {
+            setIsRefining(false);
+        }
+    };
+
+    const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64 = event.target?.result as string;
+                setBackgroundImage(base64);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
 
     React.useEffect(() => {
         if ('queryLocalFonts' in window) {
@@ -65,7 +199,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                         setAvailableFonts(families);
                     }
                 })
-                .catch(() => {});
+                .catch(() => { });
         }
     }, []);
 
@@ -97,18 +231,48 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
             [row]: { ...prev[row], fontFamily },
         }));
     };
-    
-    
+
+
     const handleGenerate = async () => {
-        if (!instructions.trim() && !narration.trim()) return;
+        const finalNarration = useNarration ? narration : '';
+        if (!instructions.trim() && !finalNarration.trim()) return;
         setPipelineState({ status: 'storyboarding', progress: 0 });
-        const output = await runPipeline(instructions, narration, setPipelineState);
+        const onCheckpoint = (checkpoint: any) => {
+            if (onUpdateProject && project) {
+                onUpdateProject({
+                    ...project,
+                    ...checkpoint,
+                    fonts,
+                    colors: { ...swatches, backgroundImage },
+                    bgDescription,
+                    showVisualizer
+                });
+            }
+        };
+        const output = await runPipeline(
+            instructions,
+            finalNarration,
+            setPipelineState,
+            project?.savePath,
+            undefined,
+            onCheckpoint,
+            project?.title
+        );
         if (output && output.length > 0) {
-            onGenerate({ title: 'Untitled',
-                         prompt: instructions,
-                         narration, 
-                         scenes: output,
-                         showVisualizer  });
+            onGenerate({
+                ...project,
+                title: project?.title || 'Untitled',
+                prompt: instructions,
+                narration: finalNarration,
+                scenes: output,
+                showVisualizer,
+                fonts,
+                colors: { ...swatches, backgroundImage },
+                bgDescription,
+                unfinished: false,
+                generationState: undefined,
+                savePath: project?.savePath || ''
+            });
         }
     };
 
@@ -195,38 +359,72 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                 {/* Header */}
                 <header className="flex items-center gap-2 border-b border-gray-800 px-6 py-3">
                     <button
-                        onClick={onBack}
+                        onClick={handleBack}
                         className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
                     >
-                        &larr;
+                        <ArrowLeft size={16} />
                     </button>
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold">K</div>
+                    <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.55)) brightness(1.2)' }} />
                     <span className="text-sm font-semibold text-white">kinetic</span>
                     <span className="text-sm text-gray-600">/</span>
                     <span className="text-sm text-gray-400">Basic Animation</span>
                 </header>
+
                 <div className="flex flex-1 flex-col p-6 overflow-hidden gap-4 min-h-0">
- 
+
                     {/* Instructions Section */}
-                    <section className="flex flex-1 flex-col min-h-0">
+                    <section className={`flex flex-col min-h-0 ${useNarration ? 'flex-1' : 'flex-[1_0_0%]'}`}>
                         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Instructions</h3>
-                        <textarea
-                            value={instructions}
-                            onChange={(e) => setInstructions(e.target.value)}
-                            placeholder="Describe the animation you want to create..."
-                            className="w-full flex-1 resize-none rounded-lg border border-gray-700 bg-gray-900/50 px-3 py-2 text-sm text-white placeholder-gray-600 outline-none transition-colors focus:border-indigo-500 min-h-0"
-                        />
+                        <div className="relative flex-1 min-h-0">
+                            <textarea
+                                value={instructions}
+                                onChange={(e) => setInstructions(e.target.value)}
+                                placeholder="Describe the animation you want to create..."
+                                className="w-full h-full resize-none rounded-lg border border-gray-700 bg-gray-900/50 pl-3 pr-10 py-2 text-sm text-white placeholder-gray-600 outline-none transition-colors focus:border-indigo-500"
+                            />
+                            <button onClick={handleRefinePrompt} disabled={isRefining || !instructions.trim()}
+                                className='absolute bottom-3 right-3 flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600/80 text-indigo-200 transition-colors hover:bg-indigo-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed'
+                                title="Refine Prompt with AI">
+                                {isRefining ? (
+                                    <svg
+                                        className="animate-spin h-3.5 w-3.5 text-white"
+                                        fill="none"
+                                        viewBox='0 0 24 24'>
+                                        <circle
+                                            className='opacity-25'
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4" />
+                                        <path className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>)
+                                    : (
+                                        <Sparkle size={14}
+                                            weight="fill"
+                                            className='text-cyan-300' />
+                                    )}
+                            </button>
+                        </div>
                     </section>
- 
+
+
                     {/* Narration Section */}
-                    <section className="flex flex-1 flex-col min-h-0">
-                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Narration Script</h3>
-                        <textarea
-                            value={narration}
-                            onChange={(e) => setNarration(e.target.value)}
-                            placeholder="Enter voiceover script... (Each paragraph becomes a scene)"
-                            className="w-full flex-1 resize-none rounded-lg border border-gray-700 bg-gray-900/50 px-3 py-2 text-sm text-white placeholder-gray-600 outline-none transition-colors focus:border-indigo-500 min-h-0"
-                        />
+                    <section className={`flex flex-col min-h-0 ${useNarration ? 'flex-1' : 'flex-none'}`} >
+                        <div className='flex items-center justify-between mb-2'>
+                            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Narration Script</h3>
+                            <input type='checkbox' checked={useNarration} onChange={(e) => setUseNarration(e.target.checked)} className='h-4 w-4 rounded border-gray-700 bg-gray-900 text-indigo-600 accent-indigo-600 outline-none' />
+                        </div>
+                        {useNarration && (
+                            <textarea
+                                value={narration}
+                                onChange={(e) => setNarration(e.target.value)}
+                                placeholder="Enter voiceover script... (Each paragraph becomes a scene)"
+                                className="w-full flex-1 resize-none rounded-lg border border-gray-700 bg-gray-900/50 px-3 py-2 text-sm text-white placeholder-gray-600 outline-none transition-colors focus:border-indigo-500 min-h-0"
+                            />
+                        )}
                     </section>
 
                     {/* Generate Button / Progress */}
@@ -258,26 +456,43 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                         <div className='flex flex-col gap-4'>
                             <div className='flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/30 px-3 py-2.5'>
                                 <span className='text-sm font-medium text-gray-400'>Enable Audio Visualizer</span>
-                                <input 
-                                    type='checkbox' 
-                                    checked={showVisualizer} 
-                                    onChange={(e) => setShowVisualizer(e.target.checked)} 
+                                <input
+                                    type='checkbox'
+                                    checked={showVisualizer}
+                                    onChange={(e) => setShowVisualizer(e.target.checked)}
                                     className='h-4 w-4 rounded border-gray-700 bg-gray-900 text-indigo-600 accent-indigo-600 outline-none'
                                 />
                             </div>
-                            <button
-                                onClick={handleGenerate}
-                                className="rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
-                            >
-                                Generate
-                            </button>
+                            {project?.unfinished ? (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleGenerate}
+                                        className="flex-1 rounded-lg border border-gray-700 bg-gray-900/50 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        Start Over
+                                    </button>
+                                    <button
+                                        onClick={handleResume}
+                                        className="flex-[2] rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+                                    >
+                                        Resume Generation
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleGenerate}
+                                    className="rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+                                >
+                                    Generate
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* Right Panel — Typography + Colors */}
-            <div className="flex w-80 flex-col overflow-y-auto border-l border-gray-800 bg-gray-900/30 p-5">
+            <div className="w-1 cursor-col-resize bg-gray-800/40 hover:bg-indigo-600 transition-colors self-stretch z-10 flex-shrink-0" onMouseDown={handleRightMouseDown} />
+            <aside style={{ width: `${rightPanelWidth}px` }}
+                className='flex flex-shrink-0 flex-col overflow-y-auto border-l border-gray-800 bg-gray-900/30 p-5'>
                 {/* Typography Section */}
                 <section className="mb-8">
                     <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Typography</h3>
@@ -289,7 +504,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                 </section>
 
                 {/* Colors Section */}
-                <section>
+                <section className="mb-6">
                     <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Colors</h3>
                     <div className="space-y-3">
                         {colorSwatches.map((s) => (
@@ -308,7 +523,46 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                         ))}
                     </div>
                 </section>
-            </div>
+
+                <section className='mt-6 pt-6 border-t border-gray-800'>
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Background Image</h3>
+                    <div className='relative'>
+                        <input type="text"
+                            value={bgDescription}
+                            onChange={e => {
+                                setBgDescription(e.target.value)
+                            }}
+                            placeholder='Describe Background'
+                            className='w-full rounded-lg border border-gray-700 bg-gray-900/50 pl-3 pr-10 py-2 text-xs text-white placeholder-gray-600 outline-none transition-colors focus:border-indigo-500'
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className='absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md hover:bg-gray-850 text-gray-400 hover:text-white transition-colors'
+                            title='Upload Background Image'
+                        >
+                            <Sparkle size={14}
+                                weight='fill'
+                                className='text-cyan-300' />
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/*"
+                            onChange={handleBackgroundUpload}
+                            className='hidden' />
+                    </div>
+                    {backgroundImage && (
+                        <div className='mt-3 flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 p-2 text-xs'>
+                            <span className='text-gray-400 truncate max-w-[150px]'>Image loaded</span>
+                            <button
+                                onClick={() => setBackgroundImage('')}
+                                className='text-red-400 hover:text-red-300 font-medium'>
+                                Remove
+                            </button>
+                        </div>
+                    )}
+                </section>
+            </aside>
         </div>
     );
 };

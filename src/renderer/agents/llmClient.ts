@@ -138,6 +138,7 @@ return { content: '', error: 'Max API retry attempts exceeded' };
 export function getStoredConfig(): AgentConfig | null {
   const apiKey = localStorage.getItem('kinetic-api-key');
   const provider = localStorage.getItem('kinetic-provider') as Provider | null;
+  const model = localStorage.getItem('kinetic-model') || undefined;
   if (!apiKey || !provider) return null;
-  return { apiKey, provider };
+  return { apiKey, provider, model };
 }
