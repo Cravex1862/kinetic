@@ -20,7 +20,6 @@ const SIZE_OPTIONS = Array.from({ length: 63 }, (_, i) => i + 10);
 
 type FontRow = 'Title Font' | 'Heading' | 'Paragraph';
 
-
 interface FontSettings {
     fontFamily: string;
     bold: boolean;
