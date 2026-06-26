@@ -79,6 +79,7 @@
     },
     "linux": {
       "target": [
+        "AppImage",
         "deb"
       ],
       "category": "Video"
