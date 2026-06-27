@@ -22,6 +22,7 @@ interface StudioProps {
 const FPS = 30;
 const SIZES = Array.from({ length: 63 }, (_, i) => i + 10);
 const RESOLUTIONS = [
+    { label: '4k', w: 3840, h: 2160 },
     { label: '1080p', w: 1920, h: 1080 },
     { label: '720p', w: 1280, h: 720 },
     { label: '480p', w: 854, h: 480 },
@@ -36,7 +37,7 @@ const DEF_FONTS: Record<FontRow, FS> = {
 };
 
 const Btn: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
-    <button onClick={onClick} className={`flex h-6 w-6 items-center justify-center text-xs transition-colors ${active ? 'bg-indigo-600 text-white' : 'bg-gray-900 text-gray-400 hover:text-gray-200'}`}>{children}</button>
+    <button onClick={onClick} className={`flex h-6 w-6 items-center justify-center text-xs transition-colors ${active ? 'bg-purple-600 text-white' : 'bg-gray-900 text-gray-400 hover:text-gray-200'}`}>{children}</button>
 );
 
 const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProject, customAlert, customConfirm }) => {
@@ -337,7 +338,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                                 setTempName(project.title);
                                 setIsEditingName(true);
                             }}
-                            className='truncate text-sm font-medium text-white cursor-pointer hover:text-indigo-400'
+                            className='truncate text-sm font-medium text-white cursor-pointer hover:text-purple-400'
                             title='Click to Rename'>
                             {project.title}
                         </span>
@@ -350,7 +351,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                             Soundtrack
                         </h3>
                         <label className='flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-gray-700 bg-gray-900/50 p-4 transition-colors hover:bg-gray-800' >
-                            <span className='text-xs text-indigo-400'>Upload MP3 / WAV</span>
+                            <span className='text-xs text-purple-400'>Upload MP3 / WAV</span>
                             <input
                                 type='file'
                                 accept='audio/*'
@@ -374,7 +375,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                                         type="checkbox"
                                         checked={showVisualizer}
                                         onChange={(e) => setShowVisualizer(e.target.checked)}
-                                        className="h-3.5 w-3.5 rounded border-gray-700 bg-gray-950 text-indigo-600 focus:ring-0 outline-none"
+                                        className="h-3.5 w-3.5 rounded border-gray-700 bg-gray-950 text-purple-600 focus:ring-0 outline-none accent-purple-600"
                                     />
                                 </div>
                             </>
@@ -413,13 +414,13 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                         ))}</div>}
                     </section>
                     <div className="mt-auto pt-4">
-                        <button onClick={handleApply} className="w-full rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500">Apply</button>
+                        <button onClick={handleApply} className="w-full rounded-lg bg-purple-600 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-500">Apply</button>
                     </div>
                 </div>
             </aside>
             {/* Draggable Divider for Left Sidebar */}
             <div
-                className="w-1 cursor-col-resize bg-gray-800/40 hover:bg-indigo-650 transition-colors self-stretch z-10 flex-shrink-0"
+                className="w-1 cursor-col-resize bg-gray-900 hover:bg-purple-500/50 transition-colors self-stretch z-10 flex-shrink-0"
                 onMouseDown={handleLeftMouseDown}
             />
 
@@ -429,7 +430,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                         {RESOLUTIONS.map((r) => <option key={r.label} value={r.label}>{r.label} ({r.w}&times;{r.h})</option>)}
                     </select>
                     <div className="flex items-center gap-3">
-                        <button onClick={handleExport} className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-500">Export MP4</button>
+                        <button onClick={handleExport} className="rounded-lg bg-purple-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-500">Export MP4</button>
                         <button className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"><Gear size={16} /></button>
                     </div>
                 </div>
@@ -512,7 +513,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                             { icon: CaretDoubleRight, title: 'Skip to end', action: () => { setFrame(Math.max(maxFrames - 1, 0)); setPlaying(false); } },
                         ].map((b, i) =>
                             b.isPlay ? (
-                                <button key={i} onClick={b.action} className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-600 text-sm text-white transition-colors hover:bg-indigo-500" title={b.title}>
+                                <button key={i} onClick={b.action} className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-600 text-sm text-white transition-colors hover:bg-purple-500" title={b.title}>
                                     {playing ? <Pause size={16} /> : <Play size={16} />}
                                 </button>
                             ) : (
@@ -525,12 +526,12 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                     <div className="mt-3 flex items-center gap-3">
                         <span className="w-10 text-right text-[10px] text-gray-500">{frame}</span>
                         <div className="relative flex-1">
-                            <input type="range" min={0} max={Math.max(maxFrames - 1, 0)} value={frame} onChange={(e) => { setFrame(Number(e.target.value)); setPlaying(false); }} className="w-full accent-indigo-500" />
+                            <input type="range" min={0} max={Math.max(maxFrames - 1, 0)} value={frame} onChange={(e) => { setFrame(Number(e.target.value)); setPlaying(false); }} className="w-full accent-purple-500" />
                             {scenes.length > 1 && (
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-1">
                                     {scenes.map((s, i) => {
                                         const start = scenes.slice(0, i).reduce((a, c) => a + c.duration, 0);
-                                        return <div key={s.sceneId} className={`h-1 rounded-full transition-colors ${i === activeScene ? 'bg-indigo-500' : 'bg-gray-700'}`} style={{ position: 'absolute', left: `${(start / maxFrames) * 100}%`, width: `${(s.duration / maxFrames) * 100}%` }} />;
+                                        return <div key={s.sceneId} className={`h-1 rounded-full transition-colors ${i === activeScene ? 'bg-purple-500' : 'bg-gray-700'}`} style={{ position: 'absolute', left: `${(start / maxFrames) * 100}%`, width: `${(s.duration / maxFrames) * 100}%` }} />;
                                     })}
                                 </div>
                             )}
@@ -543,7 +544,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                 <>
                     {/* Draggable Divider for Right Sidebar */}
                     <div
-                        className="w-1 cursor-col-resize bg-gray-800/40 hover:bg-indigo-650 transition-colors self-stretch z-10 flex-shrink-0"
+                        className="w-1 cursor-col-resize bg-gray-900 hover:bg-purple-500/50 transition-colors self-stretch z-10 flex-shrink-0"
                         onMouseDown={handleRightMouseDown}
                     />
                     <aside
@@ -557,7 +558,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                                 return (
                                     <div key={index} className="rounded-lg border border-gray-800 bg-gray-950/40 p-3 space-y-3">
                                         <div className="border-b border-gray-800 pb-1.5 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-indigo-400">
+                                            <span className="text-xs font-bold text-purple-400">
                                                 {indent > 0 ? '— '.repeat(indent) : ''}{node.type}
                                             </span>
                                             <span className="text-[10px] text-gray-500 font-mono">
@@ -609,7 +610,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                                                                 step={step}
                                                                 value={val}
                                                                 onChange={(e) => updateComponentProp(path, key, Number(e.target.value))}
-                                                                className="w-full h-1 bg-gray-800 rounded accent-indigo-500"
+                                                                className="w-full h-1 bg-gray-800 rounded accent-purple-500"
                                                             />
                                                         </div>
                                                     );
@@ -624,7 +625,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                                                                 onChange={(e) => {
                                                                     updateComponentProp(path, key, e.target.checked);
                                                                 }}
-                                                                className="h-3.5 w-3.5 rounded border border-gray-750 bg-gray-950 text-indigo-600 focus:ring-0 outline-none"
+                                                                className="h-3.5 w-3.5 rounded border border-gray-750 bg-gray-950 text-purple-600 focus:ring-0 outline-none accent-purple-600"
                                                             />
                                                         </div>
                                                     );

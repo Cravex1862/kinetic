@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle } from '@phosphor-icons/react';
+import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle, Flag, OpenAiLogo } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent.svg';
 
 interface SettingsProps {
@@ -96,7 +96,6 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
     );
 
     if (confirmClear) {
-      // Simulate clean cache
       await customAlert("Cache Cleaned", "Temporary build frames and render compile directories have been cleared.");
     }
   };
@@ -113,70 +112,65 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
     if (confirmReset) {
       localStorage.clear();
-      // Reload the page to boot app state
       window.location.reload();
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white overflow-hidden font-sans">
+    <div className="flex h-screen bg-gray-950 text-white overflow-hidden font-sans page-enter">
       {/* Sidebar Navigation */}
-      <aside className="w-64 flex flex-col border-r border-gray-800 bg-gray-900/40 backdrop-blur-md">
+      <aside className="w-64 flex flex-col border-r border-gray-900 bg-gray-950">
         {/* Header Title */}
-        <div className="flex items-center gap-3 border-b border-gray-800 px-6 py-4">
+        <div className="flex items-center gap-3 border-b border-gray-900 px-6 py-4">
           <button
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-900 hover:text-purple-400"
             title="Return to Dashboard"
           >
             <ArrowLeft size={18} />
           </button>
-          <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.55)) brightness(1.2)' }} />
-          <span className="text-sm font-semibold tracking-wide text-white">Settings</span>
+          <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)' }} />
+          <span className="text-sm font-bold tracking-wide text-white">Settings</span>
         </div>
 
         {/* Tab Items List */}
         <nav className="flex-1 px-4 py-6 space-y-2">
           <button
             onClick={() => setActiveTab('ai')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'ai'
-                ? 'bg-indigo-600/10 border border-indigo-500/30 text-indigo-400'
-                : 'border border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'
-            }`}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'ai'
+                ? 'bg-purple-600/10 border border-purple-500/30 text-purple-400 shadow-md shadow-purple-500/5'
+                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+              }`}
           >
             <Cpu size={18} />
             <span>AI Configurations</span>
           </button>
           <button
             onClick={() => setActiveTab('video')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'video'
-                ? 'bg-indigo-600/10 border border-indigo-500/30 text-indigo-400'
-                : 'border border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'
-            }`}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'video'
+                ? 'bg-purple-600/10 border border-purple-500/30 text-purple-400 shadow-md shadow-purple-500/5'
+                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+              }`}
           >
             <VideoCamera size={18} />
             <span>Video & Renderer</span>
           </button>
           <button
             onClick={() => setActiveTab('workspace')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'workspace'
-                ? 'bg-indigo-600/10 border border-indigo-500/30 text-indigo-400'
-                : 'border border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'
-            }`}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'workspace'
+                ? 'bg-purple-600/10 border border-purple-500/30 text-purple-400 shadow-md shadow-purple-500/5'
+                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+              }`}
           >
             <Folder size={18} />
             <span>Workspace & Files</span>
           </button>
           <button
             onClick={() => setActiveTab('danger')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'danger'
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'danger'
                 ? 'bg-red-500/10 border border-red-500/30 text-red-400'
-                : 'border border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-red-400/80'
-            }`}
+                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-red-400/80'
+              }`}
           >
             <Trash size={18} />
             <span>Maintenance & Reset</span>
@@ -184,10 +178,10 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
         </nav>
 
         {/* Save Settings CTA */}
-        <div className="p-4 border-t border-gray-800 bg-gray-900/20">
+        <div className="p-4 border-t border-gray-900">
           <button
             onClick={handleSave}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 active:scale-[0.98] transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-xl premium-button-primary py-2.5 text-sm font-bold shadow-lg shadow-purple-600/10 active:scale-[0.98] transition-all"
           >
             <Check size={16} weight="bold" />
             <span>Save Settings</span>
@@ -200,7 +194,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
         <div className="max-w-2xl w-full">
           {/* Tab 1: AI Settings */}
           {activeTab === 'ai' && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">AI Configurations</h2>
                 <p className="text-sm text-gray-400 leading-relaxed">
@@ -208,7 +202,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 </p>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-gray-800/60">
+              <div className="space-y-4 pt-4 border-t border-gray-900">
                 {/* Provider Selector */}
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Active Provider</label>
@@ -217,16 +211,42 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                       <button
                         key={key}
                         onClick={() => setProvider(key)}
-                        className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all text-center ${
-                          provider === key
-                            ? 'border-indigo-500 bg-indigo-600/10 text-indigo-300'
+                        className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${provider === key
+                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
                             : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
-                        }`}
+                          }`}
                       >
-                        {key === 'openai' && 'OpenAI'}
-                        {key === 'anthropic' && 'Anthropic'}
-                        {key === 'google' && 'Google'}
-                        {key === 'hackclub' && 'HackClub Proxy'}
+                        {key === 'openai' && (
+                          <>
+                            <OpenAiLogo size={16} className="text-white" />
+                            <span>OpenAI</span>
+                          </>
+                        )}
+                        {key === 'anthropic' && (
+                          <>
+                            <span className="font-extrabold text-amber-500 tracking-tighter text-xs select-none mr-0.5 leading-none">A\</span>
+                            <span>Anthropic</span>
+                          </>
+                        )}
+                        {key === 'google' && (
+                          <>
+                            <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
+                              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+                              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+                            </svg>
+                            <span>Google</span>
+                          </>
+                        )}
+                        {key === 'hackclub' && (
+                          <>
+                            <div className="h-3.5 w-3.5 rounded-full bg-orange-600 flex items-center justify-center text-[9px] font-extrabold text-white font-sans select-none leading-none">
+                              h
+                            </div>
+                            <span>HackClub</span>
+                          </>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -240,12 +260,12 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder={
                       provider === 'openai' ? 'sk-proj-...' :
-                      provider === 'anthropic' ? 'sk-ant-...' :
-                      provider === 'google' ? 'AIzaSy...' :
-                      'hckc_...'
+                        provider === 'anthropic' ? 'sk-ant-...' :
+                          provider === 'google' ? 'AIzaSy...' :
+                            'hckc_...'
                     }
                     type="password"
-                    className="w-full rounded-xl border border-gray-800 bg-gray-900/30 px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-indigo-500 focus:bg-gray-900/50 transition-all"
+                    className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
                   />
                 </div>
 
@@ -255,7 +275,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                     <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Model Selector</label>
                     <button
                       onClick={() => setUseCustomModel(!useCustomModel)}
-                      className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors flex items-center gap-1"
+                      className="text-xs text-purple-400 hover:text-purple-300 font-bold transition-colors flex items-center gap-1"
                     >
                       <Sparkle size={13} weight="fill" />
                       <span>{useCustomModel ? 'Use Preset Models' : 'Use Custom Model Name'}</span>
@@ -268,16 +288,16 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                       onChange={(e) => setCustomModel(e.target.value)}
                       placeholder="e.g. gemini-2.5-pro-preview"
                       type="text"
-                      className="w-full rounded-xl border border-gray-800 bg-gray-900/30 px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-indigo-500 focus:bg-gray-900/50 transition-all"
+                      className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
                     />
                   ) : (
                     <select
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="w-full rounded-xl border border-gray-800 bg-gray-900/30 px-4 py-2.5 text-sm text-white outline-none focus:border-indigo-500 focus:bg-gray-900/50 transition-all"
+                      className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
                     >
                       {(MODEL_PRESETS[provider] || []).map((m) => (
-                        <option key={m} value={m} className="bg-gray-900 text-white">
+                        <option key={m} value={m} className="bg-gray-950 text-white">
                           {m}
                         </option>
                       ))}
@@ -290,7 +310,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
           {/* Tab 2: Video & Render Settings */}
           {activeTab === 'video' && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">Video & Renderer Configuration</h2>
                 <p className="text-sm text-gray-400 leading-relaxed">
@@ -298,21 +318,21 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 </p>
               </div>
 
-              <div className="space-y-6 pt-4 border-t border-gray-800/60">
+              <div className="space-y-6 pt-4 border-t border-gray-900">
                 {/* Resolution Config */}
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Default Render Size</label>
                   <div className="flex gap-2">
-                    {['1080p', '720p', '480p'].map((val) => (
+                    {['4k', '1080p', '720p', '480p'].map((val) => (
                       <button
                         key={val}
                         onClick={() => setResolution(val)}
-                        className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all text-center ${
-                          resolution === val
-                            ? 'border-indigo-500 bg-indigo-600/10 text-indigo-300'
+                        className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${resolution === val
+                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
                             : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
-                        }`}
+                          }`}
                       >
+                        {val === '4k' && '4K (3840x2160)'}
                         {val === '1080p' && '1080p (1920x1080)'}
                         {val === '720p' && '720p (1280x720)'}
                         {val === '480p' && '480p (854x480)'}
@@ -329,11 +349,10 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                       <button
                         key={val}
                         onClick={() => setAspectRatio(val)}
-                        className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all text-center ${
-                          aspectRatio === val
-                            ? 'border-indigo-500 bg-indigo-600/10 text-indigo-300'
+                        className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${aspectRatio === val
+                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
                             : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
-                        }`}
+                          }`}
                       >
                         {val === '16:9' && '16:9 Horizontal (YouTube, Demos)'}
                         {val === '9:16' && '9:16 Vertical (Shorts, Reels)'}
@@ -350,11 +369,10 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                       <button
                         key={val}
                         onClick={() => setFps(val)}
-                        className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all text-center ${
-                          fps === val
-                            ? 'border-indigo-500 bg-indigo-600/10 text-indigo-300'
+                        className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${fps === val
+                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
                             : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
-                        }`}
+                          }`}
                       >
                         {val} Frames Per Second
                       </button>
@@ -367,7 +385,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
           {/* Tab 3: Workspace Config */}
           {activeTab === 'workspace' && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">Workspace & File Paths</h2>
                 <p className="text-sm text-gray-400 leading-relaxed">
@@ -375,7 +393,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 </p>
               </div>
 
-              <div className="space-y-5 pt-4 border-t border-gray-800/60">
+              <div className="space-y-5 pt-4 border-t border-gray-900">
                 {/* Default workspace directory picker */}
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Default Workspace Path</label>
@@ -388,7 +406,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                     />
                     <button
                       onClick={handleSelectWorkspace}
-                      className="px-4 py-2.5 rounded-xl border border-gray-700 bg-gray-900 text-sm font-medium hover:border-gray-600 hover:text-white transition-colors"
+                      className="px-4 py-2.5 rounded-xl border border-gray-800 bg-gray-900 text-sm font-medium hover:border-purple-500/40 hover:text-purple-400 transition-colors"
                     >
                       Browse
                     </button>
@@ -400,7 +418,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
           {/* Tab 4: Maintenance & Danger Zone */}
           {activeTab === 'danger' && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">App Maintenance & Resets</h2>
                 <p className="text-sm text-gray-400 leading-relaxed">
@@ -408,9 +426,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 </p>
               </div>
 
-              <div className="space-y-6 pt-4 border-t border-gray-800/60">
+              <div className="space-y-6 pt-4 border-t border-gray-900">
                 {/* Cache Clean widget */}
-                <div className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900/10 p-5">
+                <div className="flex items-center justify-between rounded-xl border border-gray-900 bg-gray-900/10 p-5">
                   <div className="flex flex-col gap-1 pr-6">
                     <h4 className="text-sm font-semibold text-white">Clean Render Cache</h4>
                     <p className="text-xs text-gray-500 leading-relaxed">
@@ -419,7 +437,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                   </div>
                   <button
                     onClick={handleClearCache}
-                    className="flex-shrink-0 rounded-lg border border-gray-700 hover:border-gray-500 px-4 py-2 text-xs font-medium text-gray-300 hover:text-white transition-all"
+                    className="flex-shrink-0 rounded-lg border border-gray-700 hover:border-purple-500/40 hover:text-purple-400 px-4 py-2 text-xs font-semibold text-gray-300 transition-all"
                   >
                     Clear Cache
                   </button>

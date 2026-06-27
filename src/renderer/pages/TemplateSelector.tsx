@@ -15,9 +15,9 @@ const templates = [
     title: 'Basic Animation',
     description: 'Use this for any regular animations needed',
     comingSoon: false,
-    gradient: 'from-blue-600/10 to-indigo-600/10 border-indigo-500/20 group-hover:border-indigo-500/50 hover:bg-indigo-950/10',
+    gradient: 'from-blue-600/10 to-purple-600/10 border-purple-500/20 group-hover:border-purple-500/50 hover:bg-purple-950/10',
     thumbnail: (
-      <svg className="w-full h-full text-indigo-400/80" fill="none" viewBox="0 0 100 60">
+      <svg className="w-full h-full text-purple-400/80" fill="none" viewBox="0 0 100 60">
         <rect x="10" y="10" width="80" height="40" rx="4" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
         <circle cx="50" cy="30" r="12" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.5" />
         <path d="M44 30 L56 30 M50 24 L50 36" stroke="currentColor" strokeWidth="1.5" />
@@ -113,28 +113,34 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, i
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gray-950 text-white overflow-hidden font-sans">
-      <header className="flex items-center justify-between border-b border-gray-800/80 px-8 py-4 bg-gray-900/10">
+    <div className="flex h-screen flex-col bg-gray-950 text-white overflow-hidden font-sans page-enter">
+      <header className="flex items-center justify-between border-b border-gray-900 px-8 py-4 bg-gray-950">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-800 bg-gray-900 text-gray-400 hover:text-white hover:border-gray-700 transition-all hover:scale-105"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-800 bg-gray-900 text-gray-400 hover:text-white hover:border-purple-500/40 transition-all hover:scale-105"
             title="Go Back"
           >
             <ArrowLeft size={16} weight="bold" />
           </button>
-          <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{
-            filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.55)) brightness(1.2)'
-          }} />
-          <span className="text-sm font-semibold tracking-wide text-white">kinetic</span>
-          <span className="text-xs text-gray-500">/</span>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+            title="Return to Dashboard"
+          >
+            <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{
+              filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)'
+            }} />
+            <span className="text-sm font-bold tracking-wide text-white">kinetic</span>
+          </button>
+          <span className="text-xs text-gray-700">/</span>
           <span className="text-xs text-gray-400">Template Selector</span>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-gray-850 bg-gray-900/50 px-3.5 py-1.5 text-xs text-gray-400 shadow-inner">
+        <div className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/20 px-3.5 py-1.5 text-xs text-gray-400">
           <span className="font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Selected Directory</span>
           <span className="truncate max-w-[280px] text-gray-200 font-mono" title={selectedDir}>{selectedDir || 'None Selected'}</span>
-          <button onClick={handleBrowse} className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors ml-2">Browse</button>
+          <button onClick={handleBrowse} className="text-purple-400 hover:text-purple-300 font-bold transition-colors ml-2">Browse</button>
         </div>
       </header>
 
@@ -147,8 +153,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, i
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 w-full max-w-5xl pb-12">
           {templates.map((t) => (
             <button key={t.key}
-              onClick={() => onSelect(t.key, selectedDir)}
-              className={`group flex flex-col text-left rounded-2xl border bg-gray-900/30 p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 ${t.gradient}`}>
+              onClick={() => {
+                if (!t.comingSoon) {
+                  onSelect(t.key, selectedDir);
+                }
+              }}
+              disabled={t.comingSoon}
+              className={`group flex flex-col text-left rounded-2xl border bg-gray-900/30 p-4 transition-all duration-300 ${t.comingSoon ? 'opacity-50 cursor-not-allowed border-gray-900' : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/5 ' + t.gradient}`}>
               <div className="relative aspect-video w-full rounded-xl bg-gray-950/80 border border-gray-900 flex items-center justify-center overflow-hidden mb-4">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:10px_10px] opacity-10" />
                 {t.thumbnail}
@@ -160,7 +171,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, i
               </div>
 
               <div className="flex flex-col flex-1 px-1">
-                <span className="text-sm font-bold text-white tracking-wide group-hover:text-indigo-400 transition-colors">{t.title}</span>
+                <span className="text-sm font-bold text-white tracking-wide group-hover:text-purple-400 transition-colors">{t.title}</span>
                 <span className="text-xs text-gray-500 mt-1.5 leading-relaxed flex-1">{t.description}</span>
               </div>
             </button>

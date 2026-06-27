@@ -2,15 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   width: 100%;
   min-height: 100vh;
-  background-color: #121212;
+  background-color: #121212 !important;
+  /* Original clean grey background */
+  color: #f9fafb;
+  scrollbar-gutter: stable;
+  /* Reserves scrollbar width to prevent snapping layout shifts */
 }
 
 body {
   overflow-y: auto;
-  background-color: #121212;
+  background-color: #121212 !important;
+}
+
+/* Premium classes targeting card container and text input styles */
+.premium-card {
+  background-color: #18181b !important;
+  /* Zinc-900 card color */
+  border: 1px solid #27272a !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, border-color, box-shadow;
+}
+
+.premium-card:hover {
+  transform: scale(1.01) !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.18) !important;
+}
+
+.premium-input,
+textarea,
+input[type="text"],
+select {
+  background-color: #18181b !important;
+  /* Zinc-900 card color */
+  border: 1px solid #27272a !important;
+  color: #f9fafb !important;
+  transition: border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: border-color, box-shadow;
+}
+
+.premium-input:focus,
+textarea:focus,
+input[type="text"]:focus,
+select:focus {
+  border-color: #8b5cf6 !important;
+  outline: none !important;
+  box-shadow: 0 0 8px 1px rgba(139, 92, 246, 0.25) !important;
+}
+
+/* Force all sidebars, containers, cards, and list modules to match the main bg color exactly */
+.bg-gray-900,
+.bg-gray-900\/40,
+.bg-gray-900\/50,
+.bg-gray-900\/80,
+.bg-gray-950\/40,
+aside,
+.border-gray-800,
+.border-gray-900,
+.border-gray-800\/60,
+.border-gray-800\/80 {
+  background-color: #121212 !important;
+  border-color: #27272a !important;
+}
+
+/* Base body background is dark grey */
+html,
+body,
+#root,
+.bg-gray-950 {
+  background-color: #121212 !important;
+}
+
+/* Force folder groups to match the bg color exactly */
+.bg-gray-900\/10,
+.bg-gray-900\/20 {
+  background-color: #121212 !important;
+  border-color: #27272a !important;
+}
+
+/* Custom Scrollbar styling for premium dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+
+/* Page Transition Fades */
+.page-enter {
+  animation: pageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.premium-button-primary {
+  background-color: #8b5cf6;
+  color: #ffffff;
+  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: background-color, box-shadow, transform;
+}
+
+.premium-button-primary:hover {
+  background-color: #7c3aed;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+}
+
+.premium-button-secondary {
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  color: #d1d5db;
+  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: background-color, border-color, color;
+}
+
+.premium-button-secondary:hover {
+  background-color: #27272a;
+  border-color: #3f3f46;
+  color: #f3f4f6;
 }

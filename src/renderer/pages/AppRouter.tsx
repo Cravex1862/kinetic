@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import type { SceneOutput } from '../agents/types';
 import BasicGenerator from '../templates/basicAnimation/BasicGenerator';
 import BasicStudio from '../templates/basicAnimation/BasicStudio';
 import TemplateSelector from './TemplateSelector';
 import Settings from './Settings';
+import SetupWizard from './SetupWizard';
 
 export interface ProjectData {
   id?: string;
@@ -44,6 +45,8 @@ export interface CustomAlertState {
 const AppRouter: React.FC = () => {
   const [alertState, setAlertState] = useState<CustomAlertState | null>(null);
 
+
+
   const customAlert = (title: string, message: string): Promise<void> => {
     return new Promise((resolve) => {
       setAlertState({
@@ -79,7 +82,10 @@ const AppRouter: React.FC = () => {
     });
   };
 
-  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'basic-studio' | 'settings'>('dashboard');
+  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'basic-studio' | 'settings' | 'setup'>(() => {
+    const completed = localStorage.getItem('kinetic-setup-completed') === 'true';
+    return completed ? 'dashboard' : 'setup';
+  });
   const [project, setProject] = useState<ProjectData | null>(null);
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [workspaceDir, setWorkSpaceDir] = useState<string>(localStorage.getItem('kinetic-workspace-dir') || '');
@@ -237,29 +243,44 @@ const AppRouter: React.FC = () => {
   }
 
   const handleCreateFolder = async (name: string, color: string) => {
-    let currentWorkspace = workspaceDir;
-    if (!currentWorkspace) {
-      if (!window.electronAPI?.selectDirectory) return;
-      const selected = await window.electronAPI.selectDirectory();
-      if (!selected) return;
-      currentWorkspace = selected;
-      setWorkSpaceDir(selected);
-      localStorage.setItem('kinetic-workspace-dir', selected);
-    }
+    try {
+      let currentWorkspace = workspaceDir;
+      if (!currentWorkspace) {
+        if (!window.electronAPI?.selectDirectory) {
+          // No electron API fallback
+          const folderPath = `virtual://${name}`;
+          setFolders(prev => [...(Array.isArray(prev) ? prev : []), { path: folderPath, name, color, collapsed: false }]);
+          return;
+        }
+        const selected = await window.electronAPI.selectDirectory();
+        if (!selected) return;
+        currentWorkspace = selected;
+        setWorkSpaceDir(selected);
+        localStorage.setItem('kinetic-workspace-dir', selected);
+      }
 
-    const seperator = currentWorkspace.includes('\\') ? '\\' : '/';
-    const folderPath = `${currentWorkspace}${seperator}${name}`;
+      const seperator = currentWorkspace.includes('\\') ? '\\' : '/';
+      const folderPath = `${currentWorkspace}${seperator}${name}`;
 
-    if (window.electronAPI?.createDirectory) {
-      const ok = await window.electronAPI.createDirectory(folderPath);
-      if (ok) {
-        setFolders(prev => [...prev, { path: folderPath, name, color, collapsed: false }]);
+      if (window.electronAPI?.createDirectory) {
+        const ok = await window.electronAPI.createDirectory(folderPath);
+        if (ok) {
+          setFolders(prev => [...(Array.isArray(prev) ? prev : []), { path: folderPath, name, color, collapsed: false }]);
+        }
+        else {
+          await customAlert("Folder Error", "Failed to create the physical folder");
+        }
       }
       else {
-        await customAlert("Folder Error", "Failed to create the physical folder");
+        // Safe fallback for web preview
+        setFolders(prev => [...(Array.isArray(prev) ? prev : []), { path: folderPath, name, color, collapsed: false }]);
       }
     }
-  }
+    catch (err: any) {
+      console.error('Folder creation failed:', err);
+      await customAlert("Folder Creation Error", err.message || String(err));
+    }
+  };
 
   const handleMoveProject = async (projectPath: string, targetFolderPath: string | null) => {
     if (!window.electronAPI?.moveFile) return;
@@ -378,7 +399,7 @@ const AppRouter: React.FC = () => {
   };
 
   return (
-    <div className='h-screen w-full bg-gray-950 font-sans text-white selection:bg-indigo-500/30'>
+    <div className='h-screen w-full bg-gray-950 font-sans text-white selection:bg-purple-600/30'>
       {page === 'dashboard' && (
         <Dashboard
           onNewProject={handleNewProject}
@@ -516,6 +537,12 @@ const AppRouter: React.FC = () => {
           customConfirm={customConfirm}
         />
       )}
+      {page === 'setup' && (
+        <SetupWizard
+          onComplete={() => setPage('dashboard')}
+          customAlert={customAlert}
+        />
+      )}
       {alertState && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
           <div className="w-[420px] rounded-2xl border border-gray-800 bg-gray-900/95 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
@@ -532,13 +559,12 @@ const AppRouter: React.FC = () => {
                   <button
                     key={index}
                     onClick={() => alertState.resolve(btn.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
-                      isCancel
-                        ? 'border border-gray-700 bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white'
-                        : btn.isDanger
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${isCancel
+                      ? 'border border-gray-700 bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white'
+                      : btn.isDanger
                         ? 'bg-red-600 hover:bg-red-500 text-white'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                    }`}
+                        : 'bg-purple-600 hover:bg-purple-500 text-white'
+                      }`}
                   >
                     {btn.label}
                   </button>
