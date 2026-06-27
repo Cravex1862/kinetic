@@ -82,7 +82,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <h2 className="text-xl font-bold text-white tracking-wide">Create New Folder</h2>
             <div className="mt-6 space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Folder Name</label>
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Folder Name</label>
                 <input
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
@@ -99,13 +99,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Folder Color</label>
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Folder Color</label>
                 <div className="flex gap-2.5 pt-1">
                   {Object.keys(FOLDER_COLORS).map((c) => (
                     <button
                       key={c}
                       onClick={() => setNewFolderColor(c)}
-                      className={`h-7 w-7 rounded-full border-2 transition-all ${SOLID_COLORS[c]} ${newFolderColor === c ? 'scale-110 border-white ring-2 ring-purple-500/40 shadow-lg shadow-purple-500/20' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                      aria-label={`Color: ${c}`}
+                      className={`h-8 w-8 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 ${SOLID_COLORS[c]} ${newFolderColor === c ? 'scale-110 border-white ring-2 ring-purple-500/40 shadow-lg shadow-purple-500/20' : 'border-transparent opacity-70 hover:opacity-100 hover:scale-105'}`}
                     />
                   ))}
                 </div>
@@ -150,7 +151,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <h2 className="text-xl font-bold text-white tracking-wide">Rename Folder</h2>
             <div className="mt-6 space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">New Name</label>
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">New Name</label>
                 <input
                 value={renameFolderName}
                   onChange={(e) => setRenameFolderName(e.target.value)}
@@ -193,8 +194,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="absolute top-6 right-6">
         <button
           onClick={onOpenSettings}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105"
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
           title="Config Settings"
+          aria-label="Open Settings"
         >
           <Gear size={20} />
         </button>
@@ -347,21 +349,23 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     <span className="ml-1 px-1.5 py-0.5 rounded-md bg-gray-800 text-[10px] font-semibold text-gray-400">{displayedFolderProjects.length}</span>
                                   </button>
 
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5">
                                     <button
                                       onClick={() => {
                                         setRenameFolderTarget(f);
                                         setRenameFolderName(f.name);
                                       }}
-                                      className="p-1.5 text-gray-400 hover:text-purple-400 transition-colors"
+                                      className="p-2 text-gray-400 hover:text-purple-400 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
                                       title="Rename Folder"
+                                      aria-label={`Rename folder ${f.name}`}
                                     >
                                       <PencilSimple size={15} />
                                     </button>
                                     <button
                                       onClick={() => onDeleteFolder(f.path)}
-                                      className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
+                                      className="p-2 text-gray-400 hover:text-red-400 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
                                       title="Delete Folder"
+                                      aria-label={`Delete folder ${f.name}`}
                                     >
                                       <Trash size={15} />
                                     </button>

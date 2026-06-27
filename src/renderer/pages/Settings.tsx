@@ -212,7 +212,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
               <div className="space-y-4 pt-4 border-t border-gray-900">
                 {/* Provider Selector */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Active Provider</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Active Provider</label>
                   <div className="grid grid-cols-4 gap-2">
                     {['openai', 'anthropic', 'google', 'hackclub'].map((key) => (
                       <button
@@ -261,7 +261,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
                 {/* API Key Input */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">API Key Credentials</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">API Key Credentials</label>
                   <input
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
@@ -279,13 +279,18 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 {/* Model Selection */}
                 <div className="flex flex-col gap-2 pt-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Model Selector</label>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Model Selector</label>
                     <button
                       onClick={() => setUseCustomModel(!useCustomModel)}
-                      className="text-xs text-purple-400 hover:text-purple-300 font-bold transition-colors flex items-center gap-1"
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        useCustomModel
+                          ? 'border-purple-500/50 bg-purple-600/10 text-purple-300 hover:bg-purple-600/20'
+                          : 'border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                      }`}
+                      aria-label="Toggle custom model input"
                     >
-                      <Sparkle size={13} weight="fill" />
-                      <span>{useCustomModel ? 'Use Preset Models' : 'Use Custom Model Name'}</span>
+                      <Sparkle size={11} weight="fill" />
+                      <span>{useCustomModel ? 'Preset models' : 'Custom model'}</span>
                     </button>
                   </div>
 
@@ -328,7 +333,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
               <div className="space-y-6 pt-4 border-t border-gray-900">
                 {/* Resolution Config */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Default Render Size</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Default Render Size</label>
                   <div className="flex gap-2">
                     {['4k', '1080p', '720p', '480p'].map((val) => (
                       <button
@@ -350,7 +355,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
                 {/* Aspect Ratio Config */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Video Layout Frame Sizing</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Video Layout Frame Sizing</label>
                   <div className="flex gap-2">
                     {['16:9', '9:16'].map((val) => (
                       <button
@@ -370,7 +375,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
                 {/* Frame Rate Configuration */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Default Target FPS</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Default Target FPS</label>
                   <div className="flex gap-2">
                     {[30, 60].map((val) => (
                       <button
@@ -403,7 +408,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
               <div className="space-y-5 pt-4 border-t border-gray-900">
                 {/* Default workspace directory picker */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Default Workspace Path</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Default Workspace Path</label>
                   <div className="flex gap-2">
                     <input
                       value={workspaceDir}
