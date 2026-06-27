@@ -114,6 +114,11 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
     }
   };
 
+  const handleRerunSetup = () => {
+    localStorage.removeItem('kinetic-setup-completed');
+    window.location.reload();
+  };
+
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden font-sans page-enter">
       {/* Sidebar Navigation */}
@@ -468,6 +473,24 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                     className="flex-shrink-0 rounded-lg bg-red-950/20 border border-red-900/50 hover:bg-red-900/30 px-4 py-2 text-xs font-semibold text-red-400 hover:text-red-300 transition-all"
                   >
                     Wipe Configuration
+                  </button>
+                </div>
+                {/* Dev Tools */}
+                <div className="flex items-center justify-between rounded-xl border border-amber-900/30 bg-amber-950/5 p-5">
+                  <div className="flex flex-col gap-1 pr-6">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h4 className="text-sm font-semibold text-amber-400">Re-run Setup Wizard</h4>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-900/30 text-amber-500 border border-amber-800/40">DEV</span>
+                    </div>
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                      Clears the setup completion flag and reloads the app. Your API keys, projects, and folders are preserved.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleRerunSetup}
+                    className="flex-shrink-0 rounded-lg bg-amber-950/20 border border-amber-900/40 hover:bg-amber-900/30 px-4 py-2 text-xs font-semibold text-amber-400 hover:text-amber-300 transition-all"
+                  >
+                    Re-run Wizard
                   </button>
                 </div>
               </div>
