@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { ProjectData } from './AppRouter';
-import { Gear, Plus, Folder, Trash, PencilSimple, FolderPlus, CaretDown, MagnifyingGlass } from '@phosphor-icons/react';
-import logoWithText from '../../../kinetic_brand/logo_transparent_with_text.png'; // Replaced .svg with high-res logo image
+import { Gear, Plus, Folder, Trash, PencilSimple, FolderPlus, CaretDown, MagnifyingGlass, X, FilmSlate, ArrowRight } from '@phosphor-icons/react';
+import logoWithText from '../../../kinetic_brand/logo_transparent_with_text.png';
 
 interface DashboardProps {
   onNewProject: () => void;
@@ -57,12 +57,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [renameFolderTarget, setRenameFolderTarget] = useState<{ path: string; name: string } | null>(null);
   const [renameFolderName, setRenameFolderName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const seen = localStorage.getItem('kinetic-api-key');
-    if (!seen) onOpenSettings();
-  }, [onOpenSettings]);
-
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
 
   return (
@@ -79,7 +86,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <input
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newFolderName.trim()) {
+                      onCreateFolder(newFolderName.trim(), newFolderColor);
+                      setNewFolderName('');
+                      setShowCreateFolder(false);
+                    }
+                  }}
                   placeholder="e.g. SaaS Walkthroughs, Demos"
+                  autoFocus
                   className="w-full premium-input px-4 py-2.5 text-sm rounded-lg"
                 />
               </div>
@@ -137,9 +152,16 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">New Name</label>
                 <input
-                  value={renameFolderName}
+                value={renameFolderName}
                   onChange={(e) => setRenameFolderName(e.target.value)}
-                  placeholder="e.g. My Custom Folder"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && renameFolderName.trim() && renameFolderTarget) {
+                      onRenameFolder(renameFolderTarget.path, renameFolderName.trim());
+                      setRenameFolderTarget(null);
+                    }
+                  }}
+                  placeholder={renameFolderTarget?.name || 'New folder name...'}
+                  autoFocus
                   className="w-full premium-input px-4 py-2.5 text-sm rounded-lg"
                 />
               </div>
@@ -179,78 +201,79 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Brand Logo Header */}
-      <div className="mb-12 flex flex-col items-center gap-3">
+      <div className="mb-10 flex flex-col items-center gap-3">
         <img
           src={logoWithText}
-          className="h-44 object-contain"
+          className="h-28 object-contain"
           alt="kinetic"
           style={{ filter: 'drop-shadow(0 0 25px rgba(139, 92, 246, 0.45)) brightness(1.15)' }}
         />
       </div>
 
       {/* Dashboard Main Content */}
-      <div className="w-full px-12 mt-6 flex flex-col items-center">
+      <div className="w-full mt-6 flex flex-col items-center">
 
-        {/* Row 1: Heading and Actions button */}
+        {/* Row 1: Heading and Actions */}
         <div className="w-full flex justify-between items-center mb-6 pb-2 border-b border-gray-800/60 max-w-3xl">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Recent Projects & Folders</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Recent Projects & Folders</h2>
 
-          <div className="relative">
+          <div className="flex items-center gap-2" ref={menuRef}>
+            {/* Secondary: Create Folder */}
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl premium-button-primary shadow-lg shadow-purple-600/10"
-              title="Actions Menu"
+              onClick={() => setShowCreateFolder(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-800 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105"
+              title="Create Folder"
+              aria-label="Create Folder"
             >
-              <Plus size={20} weight="bold" />
+              <FolderPlus size={17} />
             </button>
 
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 z-50 w-56 rounded-xl border border-gray-800 bg-gray-950 p-1.5 shadow-2xl">
-                <button
-                  onClick={() => {
-                    onNewProject();
-                    setMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-300 hover:bg-purple-600/10 hover:text-purple-400 transition-colors"
-                >
-                  <Plus size={16} /> New Project
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCreateFolder(true);
-                    setMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-300 hover:bg-purple-600/10 hover:text-purple-400 transition-colors"
-                >
-                  <FolderPlus size={16} /> Create Folder
-                </button>
-                <button
-                  onClick={() => {
-                    onImportProject();
-                    setMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-300 hover:bg-purple-600/10 hover:text-purple-400 transition-colors"
-                >
-                  <Folder size={16} /> Import JSON Project
-                </button>
-              </div>
-            )}
+            {/* Secondary: Import */}
+            <button
+              onClick={onImportProject}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-800 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105"
+              title="Import JSON Project"
+              aria-label="Import JSON Project"
+            >
+              <Folder size={17} />
+            </button>
+
+            {/* Primary: New Project */}
+            <button
+              onClick={onNewProject}
+              className="flex items-center gap-1.5 h-9 px-4 rounded-xl premium-button-primary shadow-lg shadow-purple-600/10 text-sm font-semibold"
+              aria-label="New Project"
+            >
+              <Plus size={16} weight="bold" />
+              <span>New Project</span>
+            </button>
           </div>
         </div>
 
         {/* Search Bar for Projects */}
         {projects.length > 0 && (
           <div className="w-full max-w-3xl mb-6 relative">
-            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-gray-500">
+            <div className={`absolute inset-y-0 left-3.5 flex items-center pointer-events-none transition-colors ${searchFocused || searchQuery ? 'text-purple-400' : 'text-gray-500'}`}>
               <MagnifyingGlass size={16} />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               placeholder="Search projects..."
-              className="w-full premium-input pl-10 pr-4 py-2.5 text-sm rounded-xl"
+              className="w-full premium-input pl-10 pr-10 py-2.5 text-sm rounded-xl"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         )}
 
@@ -316,11 +339,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                                   <button
                                     onClick={() => onToggleFolderCollapse(f.path)}
                                     className="flex flex-1 items-center gap-2.5 text-left font-medium text-gray-300 hover:text-white"
+                                    aria-label={`Toggle folder ${f.name}`}
                                   >
-                                    <CaretDown size={14} className={`transform transition-transform ${f.collapsed ? '-rotate-90' : ''}`} />
+                                    <CaretDown size={14} className={`transform transition-transform duration-200 ${f.collapsed ? '-rotate-90' : ''}`} />
                                     <Folder size={20} className={colorInfo.text} weight="fill" />
                                     <span className="text-sm font-semibold">{f.name}</span>
-                                    <span className="text-xs text-gray-500">({displayedFolderProjects.length})</span>
+                                    <span className="ml-1 px-1.5 py-0.5 rounded-md bg-gray-800 text-[10px] font-semibold text-gray-400">{displayedFolderProjects.length}</span>
                                   </button>
 
                                   <div className="flex items-center gap-2">
@@ -357,28 +381,30 @@ const Dashboard: React.FC<DashboardProps> = ({
                                           onDragStart={(e) => {
                                             e.dataTransfer.setData('projectPath', p.savePath);
                                           }}
-                                          className="flex items-center justify-between premium-card px-4 py-2.5 cursor-grab active:cursor-grabbing rounded-lg"
+                                          className="flex items-center justify-between premium-card px-4 py-2.5 cursor-pointer rounded-lg group"
                                         >
                                           <button
                                             onClick={() => onOpenProject(p)}
-                                            className="flex-1 text-left text-sm font-semibold text-gray-300 hover:text-purple-400 transition-colors"
+                                            className="flex-1 text-left text-sm font-semibold text-gray-300 hover:text-purple-400 transition-colors truncate max-w-xs"
                                           >
                                             {p.title}
                                           </button>
-                                          <div className="flex items-center gap-1.5">
+                                          <div className="flex items-center gap-1.5 flex-shrink-0">
                                             <button
                                               onClick={() => onShowFolder(p)}
-                                              className="p-1.5 text-gray-500 hover:text-purple-400 rounded transition-colors"
+                                              className="p-2 text-gray-500 hover:text-purple-400 rounded-lg transition-colors"
                                               title="Show in Folder"
+                                              aria-label="Show in Folder"
                                             >
-                                              <Folder size={16} />
+                                              <Folder size={15} />
                                             </button>
                                             <button
                                               onClick={() => onDeleteProject(p)}
-                                              className="p-1.5 text-gray-500 hover:text-red-400 rounded transition-colors"
-                                              title="Remove List Entry"
+                                              className="p-2 text-gray-500 hover:text-red-400 rounded-lg transition-colors"
+                                              title="Delete Project"
+                                              aria-label="Delete Project"
                                             >
-                                              <Trash size={16} />
+                                              <Trash size={15} />
                                             </button>
                                           </div>
                                         </div>
@@ -395,7 +421,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                       {/* Root Level Projects */}
                       {displayedRootProjects.length > 0 && (
                         <div className="space-y-2">
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 pl-1 mt-6">Uncategorized Projects</h3>
+                          <div className="flex items-center gap-3 mt-6 mb-3">
+                            <div className="flex-1 border-t border-gray-800/60" />
+                            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Uncategorized</h3>
+                            <div className="flex-1 border-t border-gray-800/60" />
+                          </div>
                           {displayedRootProjects.map((p, i) => (
                             <div
                               key={i}
@@ -403,28 +433,30 @@ const Dashboard: React.FC<DashboardProps> = ({
                               onDragStart={(e) => {
                                 e.dataTransfer.setData('projectPath', p.savePath);
                               }}
-                              className="flex items-center justify-between premium-card px-4 py-3 cursor-grab active:cursor-grabbing rounded-xl"
+                              className="flex items-center justify-between premium-card px-4 py-3 cursor-pointer rounded-xl group"
                             >
                               <button
                                 onClick={() => onOpenProject(p)}
-                                className="flex-1 text-left text-sm font-semibold text-gray-300 hover:text-purple-400 transition-colors"
+                                className="flex-1 text-left text-sm font-semibold text-gray-300 hover:text-purple-400 transition-colors truncate max-w-sm"
                               >
                                 {p.title}
                               </button>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <button
                                   onClick={() => onShowFolder(p)}
-                                  className="p-1.5 text-gray-400 hover:bg-gray-800 hover:text-purple-400 rounded-lg transition-colors"
+                                  className="p-2 text-gray-400 hover:text-purple-400 rounded-lg transition-colors"
                                   title="Show in Folder"
+                                  aria-label="Show in Folder"
                                 >
-                                  <Folder size={18} />
+                                  <Folder size={16} />
                                 </button>
                                 <button
                                   onClick={() => onDeleteProject(p)}
-                                  className="p-1.5 text-gray-400 hover:bg-gray-800 hover:text-red-400 rounded-lg transition-colors"
-                                  title="Remove List Entry"
+                                  className="p-2 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                                  title="Delete Project"
+                                  aria-label="Delete Project"
                                 >
-                                  <Trash size={18} />
+                                  <Trash size={16} />
                                 </button>
                               </div>
                             </div>
@@ -433,8 +465,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                       )}
 
                       {!hasAnyMatches && (
-                        <div className="flex flex-col items-center justify-center py-12 border border-dashed border-gray-800 rounded-2xl bg-gray-950/40 w-full">
-                          <span className="text-sm text-gray-500">No matching projects found.</span>
+                        <div className="flex flex-col items-center justify-center py-14 border border-dashed border-gray-800 rounded-2xl bg-gray-950/30 w-full">
+                          <MagnifyingGlass size={28} className="text-gray-700 mb-3" />
+                          <span className="text-sm font-semibold text-gray-400">No results for "{searchQuery}"</span>
+                          <button onClick={() => setSearchQuery('')} className="mt-3 text-xs text-purple-400 hover:text-purple-300 transition-colors">Clear search</button>
                         </div>
                       )}
                     </>
@@ -442,13 +476,19 @@ const Dashboard: React.FC<DashboardProps> = ({
                 })()}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 border border-dashed border-gray-800 rounded-2xl bg-gray-950/40 w-full">
-                <span className="text-sm text-gray-500">No recent projects generated yet.</span>
+              <div className="flex flex-col items-center justify-center py-16 border border-dashed border-gray-800/60 rounded-2xl bg-gray-950/20 w-full">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-600/10 border border-purple-500/20 mb-5">
+                  <FilmSlate size={28} className="text-purple-400" />
+                </div>
+                <h3 className="text-base font-bold text-white mb-1">No projects yet</h3>
+                <p className="text-xs text-gray-500 text-center max-w-xs leading-relaxed mb-6">Kinetic generates After Effects-style motion graphics videos from code. Create your first project to get started.</p>
                 <button
                   onClick={onNewProject}
-                  className="mt-4 rounded-lg bg-purple-600/10 border border-purple-500/30 px-4 py-2 text-xs font-semibold text-purple-400 hover:bg-purple-600/20 transition-all"
+                  className="flex items-center gap-2 rounded-xl premium-button-primary px-5 py-2.5 text-sm font-semibold shadow-lg shadow-purple-600/15"
                 >
-                  Create your first project
+                  <Plus size={15} weight="bold" />
+                  <span>Create your first project</span>
+                  <ArrowRight size={14} />
                 </button>
               </div>
             )}

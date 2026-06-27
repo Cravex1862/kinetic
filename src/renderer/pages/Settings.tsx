@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle, Flag, OpenAiLogo } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent.svg';
+import { MODEL_PRESETS } from '../constants';
 
 interface SettingsProps {
   onBack: () => void;
@@ -10,15 +11,10 @@ interface SettingsProps {
 
 type SettingsTab = 'ai' | 'video' | 'workspace' | 'danger';
 
-const MODEL_PRESETS: Record<string, string[]> = {
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
-  anthropic: ['claude-3-5-sonnet-latest', 'claude-3-haiku-20240307', 'claude-3-opus-20240229'],
-  google: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'],
-  hackclub: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash'],
-};
 
 const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ai');
+  const [savedToast, setSavedToast] = useState(false);
 
   // AI Configurations State
   const [provider, setProvider] = useState<string>(localStorage.getItem('kinetic-provider') || 'openai');
@@ -82,7 +78,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
     // Save Workspace config
     localStorage.setItem('kinetic-workspace-dir', workspaceDir);
 
-    await customAlert("Settings Saved", "Your settings configurations have been successfully saved.");
+    // Show inline toast instead of modal
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 2000);
   };
 
   const handleClearCache = async () => {
@@ -183,8 +181,17 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
             onClick={handleSave}
             className="flex w-full items-center justify-center gap-2 rounded-xl premium-button-primary py-2.5 text-sm font-bold shadow-lg shadow-purple-600/10 active:scale-[0.98] transition-all"
           >
-            <Check size={16} weight="bold" />
-            <span>Save Settings</span>
+            {savedToast ? (
+              <>
+                <Check size={16} weight="bold" className="text-emerald-300" />
+                <span className="text-emerald-300">Saved!</span>
+              </>
+            ) : (
+              <>
+                <Check size={16} weight="bold" />
+                <span>Save Settings</span>
+              </>
+            )}
           </button>
         </div>
       </aside>

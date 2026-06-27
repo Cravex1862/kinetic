@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, Folder, VideoCamera, Check, ArrowRight, ArrowLeft, Sparkle, UploadSimple, ArrowClockwise, Monitor, DeviceMobile } from '@phosphor-icons/react';
+import { Check, ArrowRight, ArrowLeft, Sparkle, UploadSimple, ArrowClockwise, Monitor, DeviceMobile } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent_with_text.png';
+import { MODEL_PRESETS } from '../constants';
 
 interface SetupWizardProps {
   onComplete: () => void;
   customAlert: (title: string, message: string) => Promise<void>;
 }
 
-const MODEL_PRESETS: Record<string, string[]> = {
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
-  anthropic: ['claude-3-5-sonnet-latest', 'claude-3-haiku-20240307'],
-  google: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash'],
-  hackclub: ['gemini-2.5-flash', 'gemini-2.5-pro'],
-};
 
 const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) => {
   const [step, setStep] = useState<number>(1);
@@ -528,31 +523,34 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
         </div>
 
         {/* Footer Navigation controls */}
-        <div className="mt-10 flex justify-between gap-3 pt-6 border-t border-gray-800/60">
-          {step > 1 && step < 4 ? (
-            <button
-              onClick={handlePrev}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-800 bg-gray-950 px-5 py-2.5 text-xs font-semibold hover:border-gray-700 hover:text-white transition-all active:scale-[0.98]"
-            >
-              <ArrowLeft size={14} />
-              <span>Back</span>
-            </button>
-          ) : step === 2 ? (
-            <button
-              onClick={handleSkipAI}
-              className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-purple-400 transition-colors uppercase tracking-wider font-semibold"
-              title="Run in Offline mode"
-            >
-              Skip AI Config
-            </button>
-          ) : (
-            <div />
-          )}
+        <div className="mt-10 flex justify-between items-center gap-3 pt-6 border-t border-gray-800/60">
+          {/* Left side: Back or placeholder */}
+          <div className="flex items-center gap-3">
+            {step > 1 && step < 4 && (
+              <button
+                onClick={handlePrev}
+                className="flex items-center gap-1.5 rounded-xl border border-gray-800 bg-gray-950 px-5 py-2.5 text-xs font-semibold hover:border-gray-700 hover:text-white transition-all active:scale-[0.98]"
+              >
+                <ArrowLeft size={14} />
+                <span>Back</span>
+              </button>
+            )}
+            {step === 2 && (
+              <button
+                onClick={handleSkipAI}
+                className="text-[10px] text-gray-500 hover:text-purple-400 transition-colors uppercase tracking-wider font-semibold"
+                title="Run in Offline mode"
+              >
+                Skip AI
+              </button>
+            )}
+          </div>
 
+          {/* Right side: Next or Finish */}
           {step < 4 ? (
             <button
               onClick={handleNext}
-              className="flex items-center gap-1.5 rounded-xl premium-button-primary px-6 py-2.5 text-xs font-semibold shadow-lg shadow-purple-600/10 active:scale-[0.98] transition-all ml-auto"
+              className="flex items-center gap-1.5 rounded-xl premium-button-primary px-6 py-2.5 text-xs font-semibold shadow-lg shadow-purple-600/10 active:scale-[0.98] transition-all"
             >
               <span>Next Step</span>
               <ArrowRight size={14} />
@@ -560,7 +558,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
           ) : (
             <button
               onClick={handleFinish}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 text-xs font-semibold shadow-lg shadow-emerald-600/10 active:scale-[0.98] transition-all ml-auto"
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 text-xs font-semibold shadow-lg shadow-emerald-600/10 active:scale-[0.98] transition-all"
             >
               <Check size={14} weight="bold" />
               <span>Finish Setup</span>
