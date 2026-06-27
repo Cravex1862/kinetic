@@ -32,21 +32,28 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
   // Simulated visual walk-through preview variables
   const [simulatedFrame, setSimulatedFrame] = useState<number>(0);
   const [simulatedText, setSimulatedText] = useState<string>('');
+  const [logTextVisible, setLogTextVisible] = useState<boolean>(true);
 
   // Auto-updating typing preview for final step
   useEffect(() => {
     if (step !== 4) return;
     const interval = setInterval(() => {
       setSimulatedFrame(f => (f + 1) % 100);
-    }, 50);
+    }, 80);
 
     const texts = ["Synthesizing audio narration...", "Constructing React timeline components...", "Morphing keyframe layouts...", "Rendering MP4 video tracks..."];
     let textIndex = 0;
     const textInterval = setInterval(() => {
-      textIndex = (textIndex + 1) % texts.length;
-      setSimulatedText(texts[textIndex]);
+      // Fade out, swap text, fade in
+      setLogTextVisible(false);
+      setTimeout(() => {
+        textIndex = (textIndex + 1) % texts.length;
+        setSimulatedText(texts[textIndex]);
+        setLogTextVisible(true);
+      }, 300);
     }, 2000);
     setSimulatedText(texts[0]);
+    setLogTextVisible(true);
 
     return () => {
       clearInterval(interval);
@@ -495,8 +502,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                 </div>
                 
                 <div className="space-y-1.5 min-h-[50px] flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5 text-gray-400">
-                    <Sparkle size={10} className="animate-spin text-purple-500" />
+                  <div
+                    className="flex items-center gap-1.5 text-gray-400 transition-opacity duration-300"
+                    style={{ opacity: logTextVisible ? 1 : 0 }}
+                  >
+                    <Sparkle size={10} className="animate-spin text-purple-500 flex-shrink-0" />
                     <span>{simulatedText}</span>
                   </div>
                   <div className="text-[9px] text-gray-600">

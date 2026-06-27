@@ -117,7 +117,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden font-sans page-enter">
       {/* Sidebar Navigation */}
-      <aside className="w-64 flex flex-col border-r border-gray-900 bg-gray-950">
+      <aside className="w-64 flex flex-col border-r border-gray-800/50 bg-[#0c0c0f]">
         {/* Header Title */}
         <div className="flex items-center gap-3 border-b border-gray-900 px-6 py-4">
           <button

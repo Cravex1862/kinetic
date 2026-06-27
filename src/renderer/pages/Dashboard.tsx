@@ -376,7 +376,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 {!f.collapsed && (
                                   <div className="mt-2 pl-4 space-y-2 border-l border-gray-800/80 ml-4">
                                     {displayedFolderProjects.length === 0 ? (
-                                      <div className="py-4 text-center text-xs text-gray-600 italic">Drag projects here to group them</div>
+                                      <div className="py-5 flex flex-col items-center gap-2">
+                                        <span className="text-xs text-gray-500">This folder is empty</span>
+                                        <button
+                                          onClick={onNewProject}
+                                          className="flex items-center gap-1 text-[11px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+                                        >
+                                          <Plus size={11} weight="bold" />
+                                          Add first project
+                                          <ArrowRight size={11} />
+                                        </button>
+                                      </div>
                                     ) : (
                                       displayedFolderProjects.map((p, pIndex) => (
                                         <div
