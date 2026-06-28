@@ -92,12 +92,12 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ steps, currentStep, onNext, o
       case 'right':
         return {
           top: Math.max(8, rect.top + rect.height / 2 - 70),
-          left: rect.left + rect.width + GAP,
+          left: Math.max(8, Math.min(rect.left + rect.width + GAP, window.innerWidth - tooltipW - 8)),
         };
       case 'left':
         return {
           top: Math.max(8, rect.top + rect.height / 2 - 70),
-          left: rect.left - tooltipW - GAP,
+          left: Math.max(8, Math.min(rect.left - tooltipW - GAP, window.innerWidth - tooltipW - 8)),
         };
     }
   };
