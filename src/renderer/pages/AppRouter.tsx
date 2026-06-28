@@ -6,6 +6,8 @@ import BasicStudio from '../templates/basicAnimation/BasicStudio';
 import TemplateSelector from './TemplateSelector';
 import Settings from './Settings';
 import SetupWizard from './SetupWizard';
+import TourOverlay from '../components/TourOverlay';
+import { TOUR_STEPS } from '../constants';
 
 export interface ProjectData {
   id?: string;
@@ -93,6 +95,44 @@ const AppRouter: React.FC = () => {
     const saved = localStorage.getItem('kinetic-folders');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Tour state
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+
+  const startTour = () => {
+    setTourStep(0);
+    setTourActive(true);
+    setPage('dashboard');
+  };
+
+  const handleTourNext = () => {
+    const nextStep = tourStep + 1;
+    if (nextStep >= TOUR_STEPS.length) {
+      // Tour complete
+      setTourActive(false);
+      setTourStep(0);
+      return;
+    }
+    // Navigate to correct page for next step
+    if (nextStep === 1) {
+      // Moving to template selector step — trigger New Project
+      handleNewProject();
+    } else if (nextStep === 2) {
+      // Moving to prompt step — select Basic Animation template automatically
+      // Already on template selector, user clicks the card naturally or we advance step
+    } else if (nextStep === 3) {
+      // Moving to generate step — already on generator page
+    } else if (nextStep === 4) {
+      // Moving to result step — wait for generate to navigate
+    }
+    setTourStep(nextStep);
+  };
+
+  const handleTourSkip = () => {
+    setTourActive(false);
+    setTourStep(0);
+  };
 
   React.useEffect(() => {
     localStorage.setItem('kinetic-folders', JSON.stringify(folders));
@@ -539,8 +579,20 @@ const AppRouter: React.FC = () => {
       )}
       {page === 'setup' && (
         <SetupWizard
-          onComplete={() => setPage('dashboard')}
+          onComplete={() => {
+            setPage('dashboard');
+            startTour();
+          }}
           customAlert={customAlert}
+        />
+      )}
+      {/* Product Tour Overlay */}
+      {tourActive && (
+        <TourOverlay
+          steps={TOUR_STEPS}
+          currentStep={tourStep}
+          onNext={handleTourNext}
+          onSkip={handleTourSkip}
         />
       )}
       {alertState && (

@@ -159,6 +159,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, i
                 }
               }}
               disabled={t.comingSoon}
+              data-tour={t.key === 'basic-animation' ? 'basic-animation-card' : undefined}
               className={`group flex flex-col text-left rounded-2xl border bg-gray-900/30 p-4 transition-all duration-300 ${t.comingSoon ? 'opacity-50 cursor-not-allowed border-gray-900' : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/5 ' + t.gradient}`}>
               <div className="relative aspect-video w-full rounded-xl bg-gray-950/80 border border-gray-900 flex items-center justify-center overflow-hidden mb-4">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:10px_10px] opacity-10" />

@@ -243,6 +243,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* Primary: New Project */}
             <button
               onClick={onNewProject}
+              data-tour="new-project-btn"
               className="flex items-center gap-1.5 h-9 px-4 rounded-xl premium-button-primary shadow-lg shadow-purple-600/10 text-sm font-semibold"
               aria-label="New Project"
             >

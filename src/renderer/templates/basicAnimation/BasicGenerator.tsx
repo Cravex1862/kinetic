@@ -380,7 +380,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                     {/* Instructions Section */}
                     <section className={`flex flex-col min-h-0 ${useNarration ? 'flex-1' : 'flex-[1_0_0%]'}`}>
                         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Instructions</h3>
-                        <div className="relative flex-1 min-h-0">
+                        <div className="relative flex-1 min-h-0" data-tour="prompt-input">
                             <textarea
                                 value={instructions}
                                 onChange={(e) => setInstructions(e.target.value)}
@@ -486,6 +486,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                             ) : (
                                 <button
                                     onClick={handleGenerate}
+                                    data-tour="generate-btn"
                                     className="premium-button-primary py-2.5 text-sm font-bold rounded-lg"
                                 >
                                     Generate

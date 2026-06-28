@@ -435,7 +435,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                     </div>
                 </div>
 
-                <div className="flex flex-1 items-center justify-center bg-gray-950 p-6 relative">
+                <div className="flex flex-1 items-center justify-center bg-gray-950 p-6 relative" data-tour="result-preview">
                     <div ref={containerRef} className="w-full h-full flex items-center justify-center overflow-hidden relative">
                         <div
                             style={{

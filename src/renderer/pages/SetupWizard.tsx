@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ArrowRight, ArrowLeft, Sparkle, UploadSimple, ArrowClockwise, Monitor, DeviceMobile } from '@phosphor-icons/react';
+import { Check, ArrowRight, ArrowLeft, UploadSimple, ArrowClockwise, Monitor, DeviceMobile } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent_with_text.png';
 import { MODEL_PRESETS } from '../constants';
 
@@ -29,37 +29,6 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
   const [testingKey, setTestingKey] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<{ success: boolean; msg: string } | null>(null);
 
-  // Simulated visual walk-through preview variables
-  const [simulatedFrame, setSimulatedFrame] = useState<number>(0);
-  const [simulatedText, setSimulatedText] = useState<string>('');
-  const [logTextVisible, setLogTextVisible] = useState<boolean>(true);
-
-  // Auto-updating typing preview for final step
-  useEffect(() => {
-    if (step !== 4) return;
-    const interval = setInterval(() => {
-      setSimulatedFrame(f => (f + 1) % 100);
-    }, 80);
-
-    const texts = ["Synthesizing audio narration...", "Constructing React timeline components...", "Morphing keyframe layouts...", "Rendering MP4 video tracks..."];
-    let textIndex = 0;
-    const textInterval = setInterval(() => {
-      // Fade out, swap text, fade in
-      setLogTextVisible(false);
-      setTimeout(() => {
-        textIndex = (textIndex + 1) % texts.length;
-        setSimulatedText(texts[textIndex]);
-        setLogTextVisible(true);
-      }, 300);
-    }, 2000);
-    setSimulatedText(texts[0]);
-    setLogTextVisible(true);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(textInterval);
-    };
-  }, [step]);
 
   // Automatically update model when provider changes
   useEffect(() => {
@@ -484,50 +453,35 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
             </div>
           )}
 
-          {/* Step 4: Verification / Animated Walkthrough screen */}
+          {/* Step 4: Complete */}
           {step === 4 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-1.5">4. Onboarding Complete!</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-1.5">4. You're all set!</h3>
                 <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                  Kinetic is now fully set up and ready to generate After-Effects-style motion graphic videos programmatically.
+                  Kinetic is fully configured and ready to generate motion graphics. Here's what happens next:
                 </p>
               </div>
 
-              {/* Animated Walkthrough Preview Block */}
-              <div className="rounded-xl border border-gray-800 bg-gray-950 p-4 font-mono text-[10px] text-purple-400 space-y-3 shadow-inner relative overflow-hidden select-none">
-                <div className="flex justify-between items-center border-b border-gray-900 pb-2">
-                  <span className="text-gray-500 font-bold uppercase tracking-wider">render_pipeline.log</span>
-                  <span className="h-2 w-2 rounded-full bg-purple-500 animate-ping" />
-                </div>
-                
-                <div className="space-y-1.5 min-h-[50px] flex flex-col justify-center">
-                  <div
-                    className="flex items-center gap-1.5 text-gray-400 transition-opacity duration-300"
-                    style={{ opacity: logTextVisible ? 1 : 0 }}
-                  >
-                    <Sparkle size={10} className="animate-spin text-purple-500 flex-shrink-0" />
-                    <span>{simulatedText}</span>
+              {/* Tour preview steps */}
+              <div className="space-y-2">
+                {[
+                  { icon: '01', label: 'Create a new project from the Dashboard' },
+                  { icon: '02', label: 'Pick the Basic Animation template' },
+                  { icon: '03', label: 'Describe your animation in the prompt' },
+                  { icon: '04', label: 'Hit Generate and watch it build' },
+                  { icon: '05', label: 'Preview the result in the Studio' },
+                ].map((s) => (
+                  <div key={s.icon} className="flex items-center gap-3 rounded-xl border border-gray-800/60 bg-gray-900/20 px-4 py-2.5">
+                    <span className="text-[10px] font-extrabold tabular-nums text-purple-500 w-5 flex-shrink-0">{s.icon}</span>
+                    <span className="text-xs text-gray-300 font-medium">{s.label}</span>
                   </div>
-                  <div className="text-[9px] text-gray-600">
-                    Frame index: <span className="text-purple-300">{simulatedFrame}</span> / 100 [FPS: {fps}]
-                  </div>
-                </div>
-
-                {/* Progress bar loader */}
-                <div className="space-y-1">
-                  <div className="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-purple-500 transition-all duration-100 rounded-full"
-                      style={{ width: `${simulatedFrame}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[8px] text-gray-600 font-semibold">
-                    <span>STATUS: GENERATING</span>
-                    <span>{simulatedFrame}%</span>
-                  </div>
-                </div>
+                ))}
               </div>
+
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                An interactive tour will guide you through each step automatically when you click Finish Setup.
+              </p>
             </div>
           )}
         </div>
