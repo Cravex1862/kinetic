@@ -6,6 +6,7 @@ export interface TourStep {
   title: string;
   description: string;
   placement: 'top' | 'bottom' | 'left' | 'right';
+  hideNext?: boolean;
 }
 
 interface SpotlightRect {
@@ -199,13 +200,15 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ steps, currentStep, onNext, o
             >
               Skip tour
             </button>
-            <button
-              onClick={onNext}
-              className="flex items-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 text-xs font-bold transition-all active:scale-[0.97] shadow-lg shadow-purple-600/20"
-            >
-              <span>{isLast ? 'Done' : 'Next'}</span>
-              <ArrowRight size={13} weight="bold" />
-            </button>
+            {(!step.hideNext || isLast) && (
+              <button
+                onClick={onNext}
+                className="flex items-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 text-xs font-bold transition-all active:scale-[0.97] shadow-lg shadow-purple-600/20"
+              >
+                <span>{isLast ? 'Done' : 'Next'}</span>
+                <ArrowRight size={13} weight="bold" />
+              </button>
+            )}
           </div>
         </div>
       </div>

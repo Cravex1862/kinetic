@@ -13,12 +13,14 @@ export const TOUR_STEPS: TourStep[] = [
     title: 'Create a Project',
     description: 'Click "New Project" to start building your first motion graphics video.',
     placement: 'bottom',
+    hideNext: true,
   },
   {
     target: 'basic-animation-card',
     title: 'Choose a Template',
     description: 'Select "Basic Animation" — the all-purpose canvas for any animated sequence.',
     placement: 'bottom',
+    hideNext: true,
   },
   {
     target: 'prompt-input',
@@ -31,6 +33,7 @@ export const TOUR_STEPS: TourStep[] = [
     title: 'Hit Generate',
     description: 'Kick off the AI pipeline. Kinetic will write all the scene code and animation logic automatically.',
     placement: 'top',
+    hideNext: true,
   },
   {
     target: 'result-preview',

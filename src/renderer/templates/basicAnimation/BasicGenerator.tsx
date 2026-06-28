@@ -6,6 +6,7 @@ import type { PipelineState } from '../../agents/types';
 import { callLLM, getStoredConfig } from '../../agents/llmClient';
 
 import type { ProjectData } from '../../pages/AppRouter';
+import { MOCK_TOUR_PROJECT } from '../../constants';
 
 interface AnimationGeneratorProps {
     project: ProjectData | null;
@@ -245,6 +246,10 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
 
 
     const handleGenerate = async () => {
+        if (tourActive) {
+            onGenerate(MOCK_TOUR_PROJECT as any);
+            return;
+        }
         const finalNarration = useNarration ? narration : '';
         if (!instructions.trim() && !finalNarration.trim()) return;
         setPipelineState({ status: 'storyboarding', progress: 0 });

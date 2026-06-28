@@ -220,40 +220,10 @@ const AppRouter: React.FC = () => {
   }, [projects]);
 
   const handleNewProject = async () => {
-
     setPage('template-selector');
-
-    {/* if (!window.electronAPI?.selectDirectory) {
-      alert("Selecting directories is only supported inside the desktop app.");
-      return;
+    if (tourActive && tourStep === 0) {
+      setTourStep(1);
     }
-    const dir = await window.electronAPI.selectDirectory();
-    if (!dir) return;
-
-    // Scan directory to find the next available untitled number
-    const files = await window.electronAPI.readDirectory(dir);
-    let n = 1;
-    while (files.includes(`untitled_${n}.json`)) {
-      n++;
-    }
-    const filename = `untitled_${n}.json`;
-    const separator = dir.includes('\\') ? '\\' : '/';
-    const savePath = `${dir}${separator}${filename}`;
-
-    const newProject: ProjectData = {
-      title: `untitled_${n}`,
-      prompt: '',
-      narration: '',
-      savePath,
-      scenes: []
-    };
-
-    // Save the template file on disk
-    await window.electronAPI.writeFile(savePath, JSON.stringify(newProject, null, 2));
-
-    setProject(newProject);
-    setProjects((prev) => [...prev, newProject]);
-    setPage('basic-generator');*/}
   };
 
   const handleGenerate = (data: ProjectData) => {
