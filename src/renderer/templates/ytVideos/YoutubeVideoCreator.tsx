@@ -1,11 +1,11 @@
 import React from 'react';
 import { ArrowLeft, UploadSimple } from '@phosphor-icons/react';
 
-interface YoutubeCreatorProps {
+interface YoutubeVideoCreatorProps {
   onBack: () => void;
 }
 
-const YoutubeCreator: React.FC<YoutubeCreatorProps> = ({ onBack }) => {
+const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => {
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#09090b] text-white p-6 font-mono overflow-y-auto">
       {/* Top Title Header */}
@@ -108,4 +108,4 @@ const YoutubeCreator: React.FC<YoutubeCreatorProps> = ({ onBack }) => {
   );
 };
 
-export default YoutubeCreator;
+export default YoutubeVideoCreator;

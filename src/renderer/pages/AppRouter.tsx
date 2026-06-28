@@ -6,7 +6,7 @@ import BasicStudio from '../templates/basicAnimation/BasicStudio';
 import TemplateSelector from './TemplateSelector';
 import Settings from './Settings';
 import SetupWizard from './SetupWizard';
-import YoutubeCreator from './YoutubeCreator';
+import YoutubeVideoCreator from '../templates/ytVideos/YoutubeVideoCreator';
 import TourOverlay from '../components/TourOverlay';
 import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
 
@@ -531,7 +531,7 @@ const AppRouter: React.FC = () => {
         />
       )}
       {page === 'youtube-creator' && (
-        <YoutubeCreator
+        <YoutubeVideoCreator
           onBack={() => setPage('template-selector')}
         />
       )}
