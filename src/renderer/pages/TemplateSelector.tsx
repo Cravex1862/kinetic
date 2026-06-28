@@ -145,12 +145,12 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, i
       </header>
 
       <main className="flex-1 overflow-y-auto px-12 py-10 flex flex-col items-center">
-        <div className="w-full max-w-5xl mb-8 flex flex-col items-start">
+        <div className="w-full max-w-7xl mb-8 flex flex-col items-start">
           <h2 className="text-lg font-bold text-white tracking-wide">Choose a Template Below</h2>
           <p className="text-xs text-gray-500 mt-1">Select the canvas layout that fits your animation style</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 w-full max-w-5xl pb-12">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 w-full max-w-7xl pb-12">
           {templates.map((t) => (
             <button key={t.key}
               onClick={() => {
