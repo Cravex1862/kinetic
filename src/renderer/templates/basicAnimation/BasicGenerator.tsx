@@ -485,7 +485,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGener
                                     className='h-4 w-4 rounded border-gray-800 bg-gray-900 text-purple-600 accent-purple-600 outline-none'
                                 />
                             </div>
-                            {project?.unfinished ? (
+                            {project?.unfinished && !tourActive ? (
                                 <div className="flex gap-2">
                                     <button
                                         onClick={handleGenerate}
