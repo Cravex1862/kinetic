@@ -99,9 +99,6 @@ function SequenceComposition({
 
         <div
           style={{
-            opacity: localFrame < 5 ? localFrame / 5 : localFrame > cur.duration - 5 ? (cur.duration - localFrame) / 5 : 1,
-            transform: localFrame > cur.duration - 5 ? `translateX(${(cur.duration - 5 - localFrame) * 20}px)` : 'none',
-            transition: 'none',
             width: '100%',
             height: '100%',
           }}
