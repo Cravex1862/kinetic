@@ -126,6 +126,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ steps, currentStep, onNext, o
                 height={rect.height}
                 rx="10"
                 fill="black"
+                style={{ transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
               />
             </mask>
           </defs>
@@ -135,7 +136,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ steps, currentStep, onNext, o
             fill="rgba(0,0,0,0.78)"
             mask="url(#tour-mask)"
           />
-          {/* Spotlight border ring */}
+          {/* Spotlight border glow rings */}
           <rect
             x={rect.left}
             y={rect.top}
@@ -143,8 +144,20 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ steps, currentStep, onNext, o
             height={rect.height}
             rx="10"
             fill="none"
-            stroke="rgba(139, 92, 246, 0.6)"
+            stroke="rgba(139, 92, 246, 0.25)"
+            strokeWidth="5"
+            style={{ transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          />
+          <rect
+            x={rect.left}
+            y={rect.top}
+            width={rect.width}
+            height={rect.height}
+            rx="10"
+            fill="none"
+            stroke="rgba(139, 92, 246, 0.85)"
             strokeWidth="1.5"
+            style={{ transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
           />
         </svg>
       ) : (
@@ -157,7 +170,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ steps, currentStep, onNext, o
         style={{ ...getTooltipStyle(), width: 300 }}
       >
         <div
-          className="rounded-2xl border border-gray-700 bg-gray-900 p-5 shadow-2xl shadow-black/60"
+          className="rounded-2xl border border-purple-500/30 bg-gray-900 p-5 shadow-[0_0_25px_rgba(139,92,246,0.18)] shadow-black/80"
           style={{
             transition: 'transform 0.25s ease, opacity 0.25s ease',
             transform: visible ? 'translateY(0)' : 'translateY(6px)',
