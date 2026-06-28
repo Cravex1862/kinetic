@@ -40,3 +40,66 @@ export const TOUR_STEPS: TourStep[] = [
   },
 ];
 
+export const MOCK_TOUR_PROJECT = {
+  title: 'SaaS Dashboard Demo',
+  prompt: 'Create a clean dashboard animation with a purple bar chart rising',
+  narration: 'Here is our new dashboard showing user growth over the last quarter.',
+  savePath: 'tour-mock-project.json',
+  scenes: [
+    {
+      sceneId: 'scene-1',
+      description: 'Dashboard Intro',
+      duration: 4,
+      narration: 'Here is our new dashboard showing user growth over the last quarter.',
+      captions: ['Here is our new dashboard showing user growth over the last quarter.'],
+      keyframes: [],
+      components: [
+        {
+          type: 'BrowserFrame',
+          props: {
+            id: 'root-browser',
+            title: 'kineticapp.dev/dashboard',
+            theme: 'dark'
+          },
+          children: [
+            {
+              type: 'SidebarLayout',
+              props: {
+                id: 'dashboard-layout',
+                activeTab: 'Overview'
+              },
+              children: [
+                {
+                  type: 'CustomCard',
+                  props: {
+                    id: 'bar-chart-card',
+                    title: 'Monthly Active Users',
+                    subtitle: 'Up 15% this month'
+                  },
+                  children: [
+                    {
+                      type: 'BarChart',
+                      props: {
+                        id: 'ma-chart',
+                        data: [
+                          { label: 'Jan', value: 30 },
+                          { label: 'Feb', value: 45 },
+                          { label: 'Mar', value: 60 },
+                          { label: 'Apr', value: 80 }
+                        ],
+                        color: '#8b5cf6'
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+
+

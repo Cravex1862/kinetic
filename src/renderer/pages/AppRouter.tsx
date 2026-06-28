@@ -7,7 +7,7 @@ import TemplateSelector from './TemplateSelector';
 import Settings from './Settings';
 import SetupWizard from './SetupWizard';
 import TourOverlay from '../components/TourOverlay';
-import { TOUR_STEPS } from '../constants';
+import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
 
 export interface ProjectData {
   id?: string;
@@ -120,11 +120,10 @@ const AppRouter: React.FC = () => {
       handleNewProject();
     } else if (nextStep === 2) {
       // Moving to prompt step — select Basic Animation template automatically
-      // Already on template selector, user clicks the card naturally or we advance step
-    } else if (nextStep === 3) {
-      // Moving to generate step — already on generator page
+      handleSelectTemplate('basic-animation', workspaceDir);
     } else if (nextStep === 4) {
-      // Moving to result step — wait for generate to navigate
+      // Moving to result step — load mockup project instantly for preview
+      handleGenerate(MOCK_TOUR_PROJECT as ProjectData);
     }
     setTourStep(nextStep);
   };
@@ -132,6 +131,52 @@ const AppRouter: React.FC = () => {
   const handleTourSkip = () => {
     setTourActive(false);
     setTourStep(0);
+  };
+
+  const handleSelectTemplate = async (templateKey: string, selectedDir: string) => {
+    if (templateKey !== 'basic-animation') {
+      await customAlert("Coming Soon", `${templateKey} template is coming soon!`);
+      return;
+    }
+    let finalDir: string | null = selectedDir || workspaceDir;
+    if (!finalDir) {
+      if (!window.electronAPI?.selectDirectory) {
+        await customAlert("Feature Unavailable", "Please select a directory inside the desktop app.");
+        return;
+      }
+      finalDir = await window.electronAPI.selectDirectory();
+      if (!finalDir) return;
+    }
+
+    const files = await window.electronAPI?.readDirectory(finalDir);
+    let n = 1;
+    while (files?.includes(`untitled_${n}.json`)) {
+      n++;
+    }
+
+    const filename = `untitled_${n}.json`;
+    const separator = finalDir.includes('\\') ? '\\' : '/';
+    const savePath = `${finalDir}${separator}${filename}`;
+
+    const newProject: ProjectData = {
+      title: `untitled_${n}`,
+      prompt: '',
+      narration: '',
+      savePath,
+      scenes: [],
+      unfinished: true
+    };
+
+    if (window.electronAPI?.writeFile) {
+      await window.electronAPI.writeFile(savePath, JSON.stringify(newProject, null, 2));
+    }
+    setProject(newProject);
+    setProjects((prev) => [...prev, newProject]);
+    setPage('basic-generator');
+
+    if (tourActive && tourStep === 1) {
+      setTourStep(2);
+    }
   };
 
   React.useEffect(() => {
@@ -217,6 +262,9 @@ const AppRouter: React.FC = () => {
       prev.map((p) => (p.savePath === data.savePath ? data : p))
     );
     setPage('basic-studio');
+    if (tourActive) {
+      setTourStep(4);
+    }
   };
 
   const handleImportProject = async () => {
@@ -475,46 +523,7 @@ const AppRouter: React.FC = () => {
             setWorkSpaceDir(dir);
             localStorage.setItem('kinetic-workspace-dir', dir);
           }}
-          onSelect={async (templateKey, selectedDir) => {
-            if (templateKey !== 'basic-animation') {
-              await customAlert("Coming Soon", `${templateKey} template is coming soon!`);
-              return;
-            }
-            let finalDir: string | null = selectedDir || workspaceDir;
-            if (!finalDir) {
-              if (!window.electronAPI?.selectDirectory) {
-                await customAlert("Feature Unavailable", "Please select a directory inside the desktop app.");
-                return;
-              }
-              finalDir = await window.electronAPI.selectDirectory();
-              if (!finalDir) return;
-            }
-
-            const files = await window.electronAPI?.readDirectory(finalDir);
-            let n = 1;
-            while (files?.includes(`untitled_${n}.json`)) {
-              n++;
-            }
-
-            const filename = `untitled_${n}.json`;
-            const separator = finalDir.includes('\\') ? '\\' : '/';
-            const savePath = `${finalDir}${separator}${filename}`;
-
-            const newProject: ProjectData = {
-              title: `untitled_${n}`,
-              prompt: '',
-              narration: '',
-              savePath,
-              scenes: []
-            };
-
-            if (window.electronAPI?.writeFile) {
-              await window.electronAPI.writeFile(savePath, JSON.stringify(newProject, null, 2));
-            }
-            setProject(newProject);
-            setProjects((prev) => [...prev, newProject]);
-            setPage('basic-generator');
-          }}
+          onSelect={handleSelectTemplate}
         />
       )}
       {page === 'basic-generator' && (
@@ -541,6 +550,8 @@ const AppRouter: React.FC = () => {
           }}
           customAlert={customAlert}
           customConfirm={customConfirm}
+          tourActive={tourActive}
+          tourStep={tourStep}
         />
       )}
       {page === 'basic-studio' && project && (

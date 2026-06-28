@@ -14,6 +14,8 @@ interface AnimationGeneratorProps {
     onUpdateProject?: (data: ProjectData) => void;
     customAlert: (title: string, message: string) => Promise<void>;
     customConfirm: (title: string, message: string, buttons?: any[]) => Promise<any>;
+    tourActive?: boolean;
+    tourStep?: number;
 }
 
 const SIZE_OPTIONS = Array.from({ length: 63 }, (_, i) => i + 10);
@@ -46,10 +48,20 @@ const colorSwatches = [
     { label: 'Success', defaultColor: '#22c55e' },
 ];
 
-const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, onUpdateProject, project, customAlert, customConfirm }) => {
-    const [instructions, setInstructions] = useState(project?.prompt || '');
+const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, onUpdateProject, project, customAlert, customConfirm, tourActive, tourStep }) => {
+    const [instructions, setInstructions] = useState(() => {
+        if (project?.prompt) return project.prompt;
+        if (tourActive) return 'Create a SaaS dashboard walkthrough showing user metrics rising.';
+        return '';
+    });
     const [narration, setNarration] = useState(project?.narration || '');
     const [useNarration, setUseNarration] = useState(!!project?.narration);
+
+    React.useEffect(() => {
+        if (tourActive && !instructions) {
+            setInstructions('Create a SaaS dashboard walkthrough showing user metrics rising.');
+        }
+    }, [tourActive]);
     const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
     const [fonts, setFonts] = useState<Record<FontRow, FontSettings>>(project?.fonts as any || defaultFonts);
     const [swatches, setSwatches] = useState<Record<string, string>>(project?.colors || Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])),
