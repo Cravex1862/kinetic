@@ -6,6 +6,7 @@ import BasicStudio from '../templates/basicAnimation/BasicStudio';
 import TemplateSelector from './TemplateSelector';
 import Settings from './Settings';
 import SetupWizard from './SetupWizard';
+import YoutubeCreator from './YoutubeCreator';
 import TourOverlay from '../components/TourOverlay';
 import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
 
@@ -84,7 +85,7 @@ const AppRouter: React.FC = () => {
     });
   };
 
-  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'basic-studio' | 'settings' | 'setup'>(() => {
+  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'youtube-creator' | 'basic-studio' | 'settings' | 'setup'>(() => {
     const completed = localStorage.getItem('kinetic-setup-completed') === 'true';
     return completed ? 'dashboard' : 'setup';
   });
@@ -134,7 +135,7 @@ const AppRouter: React.FC = () => {
   };
 
   const handleSelectTemplate = async (templateKey: string, selectedDir: string) => {
-    if (templateKey !== 'basic-animation') {
+    if (templateKey !== 'basic-animation' && templateKey !== 'youtube-videos') {
       await customAlert("Coming Soon", `${templateKey} template is coming soon!`);
       return;
     }
@@ -172,7 +173,12 @@ const AppRouter: React.FC = () => {
     }
     setProject(newProject);
     setProjects((prev) => [...prev, newProject]);
-    setPage('basic-generator');
+    
+    if (templateKey === 'youtube-videos') {
+      setPage('youtube-creator');
+    } else {
+      setPage('basic-generator');
+    }
 
     if (tourActive && tourStep === 1) {
       setTourStep(2);
@@ -522,6 +528,11 @@ const AppRouter: React.FC = () => {
           customConfirm={customConfirm}
           tourActive={tourActive}
           tourStep={tourStep}
+        />
+      )}
+      {page === 'youtube-creator' && (
+        <YoutubeCreator
+          onBack={() => setPage('template-selector')}
         />
       )}
       {page === 'basic-studio' && project && (

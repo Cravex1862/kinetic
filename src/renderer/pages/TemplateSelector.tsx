@@ -28,7 +28,7 @@ const templates = [
     key: 'youtube-videos',
     title: 'Youtube Videos',
     description: 'Use this for creating full length youtube videos.',
-    comingSoon: true,
+    comingSoon: false,
     gradient: 'from-red-600/5 to-pink-600/5 border-red-500/10 group-hover:border-red-500/35',
     thumbnail: (
       <svg className="w-full h-full text-red-500/60" fill="none" viewBox="0 0 100 60">
