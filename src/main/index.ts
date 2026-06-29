@@ -13,6 +13,8 @@ function createWindow(): void {
     minWidth: 1024,
     minHeight: 700,
     backgroundColor: '#030712',
+    autoHideMenuBar: true,
+    icon: path.join(__dirname, '../../kinetic_brand/logo.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -20,6 +22,8 @@ function createWindow(): void {
       sandbox: false,
     },
   });
+
+  mainWindow.setMenu(null);
 
   const isDev = !app.isPackaged;
 
@@ -210,6 +214,9 @@ function registerIpcHandlers(): void {
 
 }
 
+
+app.commandLine.appendSwitch('no-proxy-server');
+app.commandLine.appendSwitch('auto-detect', 'false');
 
 app.whenReady().then(() => {
   registerIpcHandlers();

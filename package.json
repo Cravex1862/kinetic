@@ -46,7 +46,8 @@
     },
     "files": [
       "dist/**/*",
-      "package.json"
+      "package.json",
+      "kinetic_brand/**/*"
     ],
     "win": {
       "target": [
