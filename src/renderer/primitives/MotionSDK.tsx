@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCurrentFrame, interpolate, Easing } from 'remotion';
+import { useCurrentFrame, interpolate, Easing, useVideoConfig, delayRender, continueRender } from 'remotion';
 import { StyleConfig, configToStyle } from './types';
 import { useFrame } from './useFrame';
 
@@ -37,54 +37,60 @@ export const Cursor: React.FC<CursorProps> = ({
 }) => {
   const frame = useFrame(propFrame);
   const cursorRef = React.useRef<HTMLDivElement>(null);
-  const [scale, setScale] = React.useState({ x: 1, y: 1 });
-  const [layoutSize, setLayoutSize] = React.useState({ w: 1024, h: 576 });
   const [resolvedEnd, setResolvedEnd] = React.useState<{ x: number; y: number } | null>(null);
 
+  // 1. Math-based resolution of canvas design size and scale factors (Synchronous & Headless-safe)
+  const { width: videoWidth, height: videoHeight } = useVideoConfig();
+  const ratio = videoWidth / videoHeight;
+
+  let designW = 1024;
+  let designH = 576;
+  if (Math.abs(ratio - 9 / 16) < 0.1) {
+    designW = 576;
+    designH = 1024;
+  } else if (Math.abs(ratio - 1.0) < 0.1) {
+    designW = 576;
+    designH = 576;
+  }
+
+  const scaleX = videoWidth / designW;
+  const scaleY = videoHeight / designH;
+
+  // 2. Headless-safe DOM measurements (using delayRender to block until coordinates resolve)
   React.useLayoutEffect(() => {
-    const canvasEl = cursorRef.current?.closest('.relative') || cursorRef.current?.parentElement;
-    if (!canvasEl) return;
+    if (!targetId) return;
 
-    const canvasRect = canvasEl.getBoundingClientRect();
-    const ratio = canvasRect.width / canvasRect.height;
+    const handle = delayRender(`resolving cursor target coordinates: ${targetId}`);
     
-    // Detect standard design size based on aspect ratio
-    let designW = 1920;
-    let designH = 1080;
-    let defaultW = 1024;
-    let defaultH = 576;
-    if (Math.abs(ratio - 9 / 16) < 0.1) {
-      designW = 1080;
-      designH = 1920;
-      defaultW = 576;
-      defaultH = 1024;
-    } else if (Math.abs(ratio - 1.0) < 0.1) {
-      designW = 1080;
-      designH = 1080;
-      defaultW = 576;
-      defaultH = 576;
-    }
+    // Give browser one frame to fully compute CSS flexbox / page layouts
+    requestAnimationFrame(() => {
+      try {
+        const canvasEl = cursorRef.current?.closest('.relative') || cursorRef.current?.parentElement;
+        if (!canvasEl) {
+          continueRender(handle);
+          return;
+        }
 
-    const scaleX = canvasRect.width / designW;
-    const scaleY = canvasRect.height / designH;
-    setScale({ x: scaleX, y: scaleY });
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          const actualEl = targetEl.firstElementChild || targetEl;
+          const targetRect = actualEl.getBoundingClientRect();
 
-    const clientW = canvasEl.clientWidth || defaultW;
-    const clientH = canvasEl.clientHeight || defaultH;
-    setLayoutSize({ w: clientW, h: clientH });
-
-    if (targetId) {
-      const targetEl = document.getElementById(targetId);
-      if (targetEl) {
-        const actualEl = targetEl.firstElementChild || targetEl;
-        const targetRect = actualEl.getBoundingClientRect();
-        setResolvedEnd({
-          x: (targetRect.left - canvasRect.left + targetRect.width / 2) / (scaleX || 1),
-          y: (targetRect.top - canvasRect.top + targetRect.height / 2) / (scaleY || 1),
-        });
+          if (targetRect.width > 0 && targetRect.height > 0) {
+            setResolvedEnd({
+              x: (targetRect.left - canvasRect.left + targetRect.width / 2) / (scaleX || 1),
+              y: (targetRect.top - canvasRect.top + targetRect.height / 2) / (scaleY || 1),
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to measure cursor target positioning:", err);
+      } finally {
+        continueRender(handle);
       }
-    }
-  }, [targetId, frame]);
+    });
+  }, [targetId]);
 
   const finalEndX = resolvedEnd ? resolvedEnd.x : (endX !== undefined ? endX : startX);
   const finalEndY = resolvedEnd ? resolvedEnd.y : (endY !== undefined ? endY : startY);
@@ -106,20 +112,8 @@ export const Cursor: React.FC<CursorProps> = ({
   const x = u * u * u * startX + 3 * u * u * t * cp1x + 3 * u * t * t * cp2x + t * t * t * finalEndX;
   const y = u * u * u * startY + 3 * u * u * t * cp1y + 3 * u * t * t * cp2y + t * t * t * finalEndY;
 
-  // Detect coordinate layout aspect ratio mapping
-  const ratio = layoutSize.w / layoutSize.h;
-  let designW = 1920;
-  let designH = 1080;
-  if (Math.abs(ratio - 9 / 16) < 0.1) {
-    designW = 1080;
-    designH = 1920;
-  } else if (Math.abs(ratio - 1.0) < 0.1) {
-    designW = 1080;
-    designH = 1080;
-  }
-
-  const layoutX = x * (layoutSize.w / designW);
-  const layoutY = y * (layoutSize.h / designH);
+  const layoutX = x * (videoWidth / designW);
+  const layoutY = y * (videoHeight / designH);
 
   let clickScale = 1;
   const isClickActive = clickFrame !== undefined && frame >= clickFrame;

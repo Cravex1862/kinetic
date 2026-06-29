@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useCurrentFrame, useVideoConfig, delayRender, continueRender } from 'remotion';
 import { AudioAnalyzer } from '../utils/audioAnalyzer';
 import { useFrame } from './useFrame';
 
 const globalAnalyzer = new AudioAnalyzer();
-let isLoaded = false;
+let loadedUrl = '';
 
 export interface AudioVisualizerProps {
     audioUrl: string;
@@ -29,14 +29,24 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
             fps = 30;
         }
     }
-    const [ready, setReady] = useState(isLoaded);
+    const [ready, setReady] = useState(loadedUrl === audioUrl && audioUrl !== '');
 
     useEffect(() => {
-        if (!isLoaded && audioUrl) {
-            globalAnalyzer.load(audioUrl).then(() => {
-                isLoaded = true;
-                setReady(true);
-            });
+        if (audioUrl && loadedUrl !== audioUrl) {
+            const handle = delayRender(`loading audio: ${audioUrl}`);
+            setReady(false);
+            globalAnalyzer.load(audioUrl)
+                .then(() => {
+                    loadedUrl = audioUrl;
+                    setReady(true);
+                    continueRender(handle);
+                })
+                .catch((err) => {
+                    console.error("Failed to load/decode audio visualizer data:", err);
+                    loadedUrl = audioUrl; // Prevent infinite retries
+                    setReady(true); // Fallback to ready (renders flatline instead of hanging)
+                    continueRender(handle);
+                });
         }
     }, [audioUrl]);
 

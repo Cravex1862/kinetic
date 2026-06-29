@@ -241,20 +241,13 @@ function AccordionExpandInner(props: AccordionExpandProps) {
   return <AccordionExpandStatic {...props} frame={frame} />;
 }
 
-function AccordionExpandStatic({ children, expanded, duration = 30, frame }: AccordionExpandProps & { frame: number }) {
-  const hasToggled = useRef(false);
-  const startRef = useRef(frame);
-  const startExpandedRef = useRef(expanded);
+import { useSignal } from './useSignal';
 
-  if (expanded !== startExpandedRef.current) {
-    startRef.current = frame;
-    startExpandedRef.current = expanded;
-    hasToggled.current = true;
-  }
+function AccordionExpandStatic({ children, expanded, duration = 30, frame, ...rest }: AccordionExpandProps & { frame: number }) {
+  const triggerFrame = useSignal((rest as any).signalIn);
+  const effectiveDur = Math.max(1, Math.floor(duration));
 
-  const effectiveDur = Math.floor(duration);
-
-  if (!hasToggled.current) {
+  if (triggerFrame === null) {
     return (
       <div style={{ maxHeight: expanded ? '500px' : '0px', overflow: 'hidden', willChange: 'max-height' }}>
         <div>{children}</div>
@@ -262,9 +255,9 @@ function AccordionExpandStatic({ children, expanded, duration = 30, frame }: Acc
     );
   }
 
-  const elapsed = Math.max(0, frame - startRef.current);
+  const elapsed = frame >= triggerFrame ? frame - triggerFrame : 0;
   const t = Math.min(elapsed / effectiveDur, 1);
-  const raw = expanded ? t : 1 - t;
+  const raw = expanded ? t : 0;
   const eased = interpolate(raw, [0, 1], [0, 1], {
     easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     extrapolateLeft: 'clamp',

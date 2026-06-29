@@ -5,6 +5,33 @@ import { ComponentRenderer } from './ComponentRenderer';
 import { AudioVisualizer } from '../primitives/AudioVisualizer';
 import { CaptionOverlay } from './CaptionOverlay';
 import { parseNarration } from './narration';
+import { SignalContext } from '../primitives/useSignal';
+
+function buildSignalMap(nodes: any[]): Record<string, any> {
+  const map: Record<string, any> = {};
+  function traverse(node: any) {
+    if (!node) return;
+    const props = node.props || {};
+    if (props.id) {
+      map[props.id] = {
+        clickFrame: props.clickFrame,
+        signalOutEvent: props.signalOut?.event,
+        signalOutFrame: props.signalOut?.frame,
+      };
+    }
+    if (node.children) {
+      if (Array.isArray(node.children)) {
+        node.children.forEach(traverse);
+      } else {
+        traverse(node.children);
+      }
+    }
+  }
+  if (Array.isArray(nodes)) {
+    nodes.forEach(traverse);
+  }
+  return map;
+}
 
 interface SequenceCompositionProps {
   scenes: any[];
@@ -43,12 +70,29 @@ function SequenceComposition({
   const cur = scenes[sceneIndex];
   const narrationChunks = parseNarration(scenes.map(s => s.narration), sceneDurations);
 
+  const signalMap = React.useMemo(() => {
+    if (!cur) return {};
+    return buildSignalMap(cur.components);
+  }, [cur]);
+
   if (!cur) {
     return (
       <div className="w-full h-full bg-gray-950 flex items-center justify-center text-white text-xs">
         Scene out of bounds
       </div>
     );
+  }
+
+  // Calculate layout dimensions based on aspect ratio to prevent vertical video stretching
+  const ratio = width / height;
+  let designW = 1024;
+  let designH = 576;
+  if (Math.abs(ratio - 9 / 16) < 0.1) {
+    designW = 576;
+    designH = 1024;
+  } else if (Math.abs(ratio - 1.0) < 0.1) {
+    designW = 576;
+    designH = 576;
   }
 
   return (
@@ -79,9 +123,9 @@ function SequenceComposition({
 
       <div
         style={{
-          width: '1024px',
-          height: '576px',
-          transform: `scale(${width / 1024})`,
+          width: `${designW}px`,
+          height: `${designH}px`,
+          transform: `scale(${width / designW})`,
           transformOrigin: 'top left',
           position: 'absolute',
           top: 0,
@@ -104,9 +148,11 @@ function SequenceComposition({
           }}
           className="relative"
         >
-          {cur.components.map((node: any, i: number) => (
-            <ComponentRenderer key={i} node={node} keyframes={cur.keyframes} localFrame={localFrame} />
-          ))}
+          <SignalContext.Provider value={signalMap}>
+            {cur.components.map((node: any, i: number) => (
+              <ComponentRenderer key={i} node={node} keyframes={cur.keyframes} localFrame={localFrame} />
+            ))}
+          </SignalContext.Provider>
         </div>
 
         <CaptionOverlay chunks={narrationChunks} fadeInFrames={8} fadeOutFrames={8} />
