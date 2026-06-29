@@ -54,11 +54,16 @@
     ],
     "win": {
       "target": [
-        "portable"
+        "nsis"
       ]
     },
-    "portable": {
-      "artifactName": "Kinetic-Alpha.exe"
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Kinetic Alpha",
+      "artifactName": "Kinetic-Alpha-Setup.exe"
     },
     "mac": {
       "target": [
