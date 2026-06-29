@@ -59,8 +59,13 @@ export function Map({
     frame,
 }: MapProps) {
     const currentFrame = useFrame(frame);
-    const activeZoom = Math.max(0, Math.min(19, Math.round(zoom)));
-    const centerCoords = getTileCoords(lat, lng, activeZoom);
+    
+    // Resolve integer baseZoom and scale multiplier for smooth fractional zooms
+    const baseZoom = Math.max(0, Math.min(19, Math.floor(zoom)));
+    const fraction = zoom - baseZoom;
+    const scale = Math.pow(2, fraction);
+
+    const centerCoords = getTileCoords(lat, lng, baseZoom);
 
     const mapW = width;
     const mapH = height;
@@ -69,9 +74,9 @@ export function Map({
         const tilesAroundX = Math.ceil(mapW / 512) + 1;
         const tilesAroundY = Math.ceil(mapH / 512) + 1;
         const minX = Math.max(0, Math.floor(centerCoords.x) - tilesAroundX);
-        const maxX = Math.min(Math.pow(2, activeZoom) - 1, Math.ceil(centerCoords.x) + tilesAroundX);
+        const maxX = Math.min(Math.pow(2, baseZoom) - 1, Math.ceil(centerCoords.x) + tilesAroundX);
         const minY = Math.max(0, Math.floor(centerCoords.y) - tilesAroundY);
-        const maxY = Math.min(Math.pow(2, activeZoom) - 1, Math.floor(centerCoords.y) + tilesAroundY);
+        const maxY = Math.min(Math.pow(2, baseZoom) - 1, Math.floor(centerCoords.y) + tilesAroundY);
 
         const list = [];
         for (let x = minX; x <= maxX; x++) {
@@ -84,12 +89,12 @@ export function Map({
                     y,
                     left,
                     top,
-                    url: `https://tile.openstreetmap.org/${activeZoom}/${x}/${y}.png`,
+                    url: `https://tile.openstreetmap.org/${baseZoom}/${x}/${y}.png`,
                 });
             }
         }
         return list;
-    }, [centerCoords.x, centerCoords.y, activeZoom, mapW, mapH]);
+    }, [centerCoords.x, centerCoords.y, baseZoom, mapW, mapH]);
 
     const filterStyles = {
         standard: `none`,
@@ -101,8 +106,8 @@ export function Map({
 
     const pinPos = useMemo(() => {
         if (pinLat === undefined || pinLng === undefined) return null;
-        return latLngtoPixels(pinLat, pinLng, activeZoom, lat, lng, mapW, mapH);
-    }, [pinLat, pinLng, activeZoom, lat, lng, mapW, mapH]);
+        return latLngtoPixels(pinLat, pinLng, baseZoom, lat, lng, mapW, mapH);
+    }, [pinLat, pinLng, baseZoom, lat, lng, mapW, mapH]);
 
     const routeLine = useMemo(() => {
         if (pinLat === undefined || pinLng === undefined) return null;
@@ -141,6 +146,7 @@ export function Map({
                 ...us,
               }}
         >
+            {/* Smooth Zoom Wrapper Container */}
             <div
                 style={{
                     position: 'absolute',
@@ -148,87 +154,101 @@ export function Map({
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    filter: selectedFilter,
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'center center',
                     pointerEvents: 'none',
                 }}
             >
-                {tilesInfo.map((tile) => (
-                    <img
-                        key={`${tile.x}-${tile.y}-${activeZoom}`}
-                        src={tile.url}
-                        alt=""
-                        style={{
-                            position: 'absolute',
-                            left: `${tile.left}px`,
-                            top: `${tile.top}px`,
-                            width: '256px',
-                            height: '256px',
-                        }}
-                    />
-                ))}
-            </div>
-            {routeLine && routeProgress > 0 && (
-                <svg
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        pointerEvents: "none",
-                        zIndex: 10,
-                    }}
-                >
-                    <line
-                        x1={routeLine.x1}
-                        y1={routeLine.y1}
-                        x2={routeLine.x2}
-                        y2={routeLine.y2}
-                        stroke="#06b6d4"
-                        strokeWidth={4}
-                        strokeLinecap="round"
-                        strokeDasharray={routeLine.length}
-                        strokeDashoffset={routeLine.length * (1 - routeProgress)}
-                        style={{ transition: 'none' }}
-                    />
-                </svg>
-            )}
-            {pinPos && (
+                {/* Tiles Container */}
                 <div
                     style={{
-                        position: "absolute",
-                        left: pinPos.x,
-                        top: pinPos.y,
-                        transform: `translate(-50%, -50%) scale(${pinScale})`,
-                        pointerEvents: 'none',
-                        zIndex: 20,
-                    }}>
-                    <div
-                        style={{
-                            position: 'absolute',
-                            left: `50%`,
-                            top: '50%',
-                            width: `${pulseSize * 2}px`,
-                            height: `${pulseSize * 2}px`,
-                            transform: 'translate(-50%, -50%)',
-                            border: '2px solid #6366f1',
-                            borderRadius: '50%',
-                            opacity: pulseOpacity,
-                        }}
-                    />
-                    <div
-                        style={{
-                            width: '16px',
-                            height: '16px',
-                            backgroundColor: '#6366f1',
-                            border: '3px solid #fff',
-                            borderRadius: '50%',
-                            boxShadow: '0 0 10px rgba(99,102,241, 0.8)',
-                        }}
-                    />
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        filter: selectedFilter,
+                    }}
+                >
+                    {tilesInfo.map((tile) => (
+                        <img
+                            key={`${tile.x}-${tile.y}-${baseZoom}`}
+                            src={tile.url}
+                            alt=""
+                            style={{
+                                position: 'absolute',
+                                left: `${tile.left}px`,
+                                top: `${tile.top}px`,
+                                width: '256px',
+                                height: '256px',
+                            }}
+                        />
+                    ))}
                 </div>
 
-            )}
+                {/* SVG Route Line */}
+                {routeLine && routeProgress > 0 && (
+                    <svg
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            zIndex: 10,
+                        }}
+                    >
+                        <line
+                            x1={routeLine.x1}
+                            y1={routeLine.y1}
+                            x2={routeLine.x2}
+                            y2={routeLine.y2}
+                            stroke="#06b6d4"
+                            strokeWidth={4 / scale} // Compensate stroke width so route line remains crisp and uniform
+                            strokeLinecap="round"
+                            strokeDasharray={routeLine.length}
+                            strokeDashoffset={routeLine.length * (1 - routeProgress)}
+                        />
+                    </svg>
+                )}
+
+                {/* Pin Drop Marker */}
+                {pinPos && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            left: pinPos.x,
+                            top: pinPos.y,
+                            transform: `translate(-50%, -50%) scale(${pinScale / scale})`, // Counter-scale to preserve pin visual size
+                            zIndex: 20,
+                        }}
+                    >
+                        <div
+                            style={{
+                                position: 'absolute',
+                                left: `50%`,
+                                top: '50%',
+                                width: `${pulseSize * 2}px`,
+                                height: `${pulseSize * 2}px`,
+                                transform: 'translate(-50%, -50%)',
+                                border: '2px solid #6366f1',
+                                borderRadius: '50%',
+                                opacity: pulseOpacity,
+                            }}
+                        />
+                        <div
+                            style={{
+                                width: '16px',
+                                height: '16px',
+                                backgroundColor: '#6366f1',
+                                border: '3px solid #fff',
+                                borderRadius: '50%',
+                                boxShadow: '0 0 10px rgba(99,102,241, 0.8)',
+                            }}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
-    )
+    );
 }
