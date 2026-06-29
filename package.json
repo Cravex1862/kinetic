@@ -41,6 +41,9 @@
   "build": {
     "appId": "com.kinetic.app",
     "productName": "Kinetic Alpha",
+    "publish": {
+      "provider": "github"
+    },
     "directories": {
       "output": "releases"
     },
