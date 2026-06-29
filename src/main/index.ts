@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { error } from 'console';
@@ -7,6 +7,16 @@ import { stdout } from 'process';
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
+  let appIcon = undefined;
+  try {
+    const iconPath = path.join(__dirname, '../../kinetic_brand/logo.png');
+    if (fs.existsSync(iconPath)) {
+      appIcon = nativeImage.createFromPath(iconPath);
+    }
+  } catch (e) {
+    console.error("Failed to load window icon:", e);
+  }
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -14,7 +24,7 @@ function createWindow(): void {
     minHeight: 700,
     backgroundColor: '#030712',
     autoHideMenuBar: true,
-    icon: path.join(__dirname, '../../kinetic_brand/logo.png'),
+    icon: appIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
