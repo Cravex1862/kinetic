@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { delayRender, continueRender } from "remotion";
 import { useFrame } from "./useFrame";
 import { configToStyle, type StyleConfig } from "./types";
 
@@ -95,6 +96,25 @@ export function Map({
         }
         return list;
     }, [centerCoords.x, centerCoords.y, baseZoom, mapW, mapH]);
+
+    // Preload map tile images before capturing/displaying the frame to prevent flickering
+    React.useEffect(() => {
+        const activeUrls = tilesInfo.map(t => t.url);
+        const handle = delayRender("Loading map tiles");
+
+        Promise.all(
+            activeUrls.map(url => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.src = url;
+                    img.onload = () => resolve(true);
+                    img.onerror = () => resolve(false);
+                });
+            })
+        ).then(() => {
+            continueRender(handle);
+        });
+    }, [tilesInfo]);
 
     const filterStyles = {
         standard: `none`,

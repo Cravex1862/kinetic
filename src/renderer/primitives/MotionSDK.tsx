@@ -40,7 +40,18 @@ export const Cursor: React.FC<CursorProps> = ({
   const [resolvedEnd, setResolvedEnd] = React.useState<{ x: number; y: number } | null>(null);
 
   // 1. Math-based resolution of canvas design size and scale factors (Synchronous & Headless-safe)
-  const { width: videoWidth, height: videoHeight } = useVideoConfig();
+  let videoWidth = 1024;
+  let videoHeight = 576;
+  try {
+    const config = useVideoConfig();
+    videoWidth = config.width;
+    videoHeight = config.height;
+  } catch (e) {
+    // Fallback when rendered outside Remotion player (e.g. Studio UI)
+    videoWidth = 1024;
+    videoHeight = 576;
+  }
+
   const ratio = videoWidth / videoHeight;
 
   let designW = 1024;
