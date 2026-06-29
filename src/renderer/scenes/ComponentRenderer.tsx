@@ -107,7 +107,13 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({ node, keyf
           easing={(keyframe.easing as any) || 'ease-in-out'}
         >
           {(resolvedProps) => (
-            <Comp frame={activeFrame} {...overriddenProps} {...resolvedProps}>
+            <Comp 
+              frame={activeFrame} 
+              {...overriddenProps} 
+              {...resolvedProps}
+              animationFrom={keyframe.from}
+              animationTo={keyframe.to}
+            >
               {renderChildren()}
             </Comp>
           )}

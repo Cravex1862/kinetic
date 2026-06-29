@@ -16,6 +16,8 @@ interface MapProps {
     height?: number;
     style?: StyleConfig;
     frame?: number;
+    animationFrom?: any;
+    animationTo?: any;
 }
 
 function getTileCoords(lat: number, lng: number, zoom: number) {
@@ -58,6 +60,8 @@ export function Map({
     height = 450,
     style,
     frame,
+    animationFrom,
+    animationTo,
 }: MapProps) {
     const currentFrame = useFrame(frame);
     
@@ -97,13 +101,54 @@ export function Map({
         return list;
     }, [centerCoords.x, centerCoords.y, baseZoom, mapW, mapH]);
 
-    // Preload map tile images before capturing/displaying the frame to prevent flickering
+    // Precalculate all tiles ever visited during the sequence zoom and pan path
+    const allUrlsToPreload = useMemo(() => {
+        const startZ = animationFrom?.zoom !== undefined ? animationFrom.zoom : zoom;
+        const endZ = animationTo?.zoom !== undefined ? animationTo.zoom : zoom;
+
+        const startLatitude = animationFrom?.lat !== undefined ? animationFrom.lat : lat;
+        const endLatitude = animationTo?.lat !== undefined ? animationTo.lat : lat;
+
+        const startLongitude = animationFrom?.lng !== undefined ? animationFrom.lng : lng;
+        const endLongitude = animationTo?.lng !== undefined ? animationTo.lng : lng;
+
+        const minZ = Math.max(0, Math.min(19, Math.floor(Math.min(startZ, endZ))));
+        const maxZ = Math.max(0, Math.min(19, Math.floor(Math.max(startZ, endZ))));
+
+        const urlSet = new Set<string>();
+        const tilesAroundX = Math.ceil(mapW / 512) + 1;
+        const tilesAroundY = Math.ceil(mapH / 512) + 1;
+
+        // Sample 12 steps along the linear path to pre-resolve every tile needed
+        const steps = 12;
+        for (let step = 0; step <= steps; step++) {
+            const t = step / steps;
+            const currentLat = startLatitude + (endLatitude - startLatitude) * t;
+            const currentLng = startLongitude + (endLongitude - startLongitude) * t;
+
+            for (let z = minZ; z <= maxZ; z++) {
+                const center = getTileCoords(currentLat, currentLng, z);
+                const minX = Math.max(0, Math.floor(center.x) - tilesAroundX);
+                const maxX = Math.min(Math.pow(2, z) - 1, Math.ceil(center.x) + tilesAroundX);
+                const minY = Math.max(0, Math.floor(center.y) - tilesAroundY);
+                const maxY = Math.min(Math.pow(2, z) - 1, Math.floor(center.y) + tilesAroundY);
+
+                for (let x = minX; x <= maxX; x++) {
+                    for (let y = minY; y <= maxY; y++) {
+                        urlSet.add(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`);
+                    }
+                }
+            }
+        }
+        return Array.from(urlSet);
+    }, [lat, lng, zoom, mapW, mapH, animationFrom, animationTo]);
+
+    // Preload all sequence tiles on component mount to completely eliminate playback blinking
     React.useEffect(() => {
-        const activeUrls = tilesInfo.map(t => t.url);
-        const handle = delayRender("Loading map tiles");
+        const handle = delayRender("Preloading map sequence tiles");
 
         Promise.all(
-            activeUrls.map(url => {
+            allUrlsToPreload.map(url => {
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.src = url;
@@ -114,7 +159,7 @@ export function Map({
         ).then(() => {
             continueRender(handle);
         });
-    }, [tilesInfo]);
+    }, [allUrlsToPreload]);
 
     const filterStyles = {
         standard: `none`,
