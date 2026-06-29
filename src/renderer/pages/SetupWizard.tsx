@@ -56,7 +56,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
       customAlert("Mock Import", "Setting fields loaded with mock presets!");
       setWorkspaceDir('C:\\Users\\kinetic-user\\projects\\SaaS-walkthroughs');
       setProvider('google');
-      setApiKey('AIzaSyMockKeyForGeminiValidationPurpose');
+      setApiKey('GEMINI_MOCK_VALIDATION_KEY_ONLY');
       setModel('gemini-2.5-flash');
       setResolution('1080p');
       setFps(60);
