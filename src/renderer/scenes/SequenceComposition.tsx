@@ -95,6 +95,22 @@ function SequenceComposition({
     designH = 576;
   }
 
+  // Calculate Cinematic Zoom-Fade Transition (10 frames)
+  const transDur = 10;
+  let op = 1;
+  let sc = 1;
+  if (localFrame < transDur) {
+    const t = localFrame / transDur;
+    const eased = t * t * (3 - 2 * t); // Smoothstep easing
+    op = eased;
+    sc = 0.97 + 0.03 * eased;
+  } else if (localFrame > cur.duration - transDur) {
+    const t = Math.max(0, (cur.duration - localFrame) / transDur);
+    const eased = t * t * (3 - 2 * t); // Smoothstep easing
+    op = eased;
+    sc = 1.03 - 0.03 * eased;
+  }
+
   return (
     <div
       className="relative overflow-hidden flex items-center justify-center animate-bg"
@@ -145,6 +161,9 @@ function SequenceComposition({
           style={{
             width: '100%',
             height: '100%',
+            opacity: op,
+            transform: `scale(${sc})`,
+            transformOrigin: 'center center',
           }}
           className="relative"
         >

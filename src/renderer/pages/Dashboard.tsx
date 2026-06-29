@@ -58,6 +58,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [renameFolderName, setRenameFolderName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -71,9 +72,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gray-950 text-white py-12 overflow-y-auto w-full page-enter">
+    <div 
+      onScroll={handleScroll}
+      className="flex min-h-screen flex-col items-center bg-gray-950 text-white py-12 overflow-y-auto w-full page-enter"
+    >
 
       {/* Create Folder Modal */}
       {showCreateFolder && (
@@ -203,12 +210,24 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Brand Logo Header */}
-      <div className="mb-10 flex flex-col items-center gap-3">
+      <div 
+        style={{ 
+          transform: `translateY(${-Math.min(scrollTop * 0.4, 40)}px)`,
+          opacity: Math.max(1 - (scrollTop / 120), 0.7),
+          marginBottom: `${Math.max(40 - scrollTop * 0.5, 0)}px`,
+          transition: 'transform 0.1s ease-out, opacity 0.1s ease-out, margin-bottom 0.1s ease-out'
+        }}
+        className="flex flex-col items-center gap-3 flex-shrink-0"
+      >
         <img
           src={logoWithText}
-          className="h-28 object-contain"
           alt="kinetic"
-          style={{ filter: 'drop-shadow(0 0 25px rgba(139, 92, 246, 0.45)) brightness(1.15)' }}
+          style={{ 
+            height: `${Math.max(112 - scrollTop * 0.5, 56)}px`,
+            filter: 'drop-shadow(0 0 25px rgba(139, 92, 246, 0.45)) brightness(1.15)',
+            transition: 'height 0.1s ease-out'
+          }}
+          className="object-contain"
         />
       </div>
 

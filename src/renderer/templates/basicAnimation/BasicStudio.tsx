@@ -49,7 +49,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
     const [rightSidebarWidth, setRightSidebarWidth] = useState(280);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
-    const handleLeftMouseDown = (e: React.MouseEvent) => {
+    const handleLeftMouseDown = React.useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         const startX = e.clientX;
         const startWidth = leftSidebarWidth;
@@ -66,9 +66,9 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
 
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
-    };
+    }, [leftSidebarWidth]);
 
-    const handleRightMouseDown = (e: React.MouseEvent) => {
+    const handleRightMouseDown = React.useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         const startX = e.clientX;
         const startWidth = rightSidebarWidth;
@@ -85,7 +85,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
 
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
-    };
+    }, [rightSidebarWidth]);
 
     interface FlatComponentInfo {
         node: any;
@@ -290,7 +290,26 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
     };
 
     const cur = scenes[activeScene];
-    const updateComponentProp = (path: number[], propKey: string, propValue: any) => {
+
+    // Calculate Cinematic Zoom-Fade Transition (10 frames)
+    const transDur = 10;
+    let op = 1;
+    let sc = 1;
+    if (cur) {
+        if (localFrame < transDur) {
+            const t = localFrame / transDur;
+            const eased = t * t * (3 - 2 * t);
+            op = eased;
+            sc = 0.97 + 0.03 * eased;
+        } else if (localFrame > cur.duration - transDur) {
+            const t = Math.max(0, (cur.duration - localFrame) / transDur);
+            const eased = t * t * (3 - 2 * t);
+            op = eased;
+            sc = 1.03 - 0.03 * eased;
+        }
+    }
+
+    const updateComponentProp = React.useCallback((path: number[], propKey: string, propValue: any) => {
         setLocalScenes(prev => {
             const copy = JSON.parse(JSON.stringify(prev));
             let current = copy[activeScene].components;
@@ -304,10 +323,10 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
             }
             return copy;
         });
-    };
-    return (
+    }, [activeScene]);
 
-        <div className="flex h-screen bg-gray-950 text-white">
+    const leftSidebar = React.useMemo(() => {
+        return (
             <aside
                 style={{ width: `${leftSidebarWidth}px` }}
                 className="flex flex-shrink-0 flex-col border-r border-gray-800 bg-gray-900/40"
@@ -418,6 +437,156 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                     </div>
                 </div>
             </aside>
+        );
+    }, [
+        leftSidebarWidth,
+        isEditingName,
+        tempName,
+        project,
+        globalAudioUrl,
+        showVisualizer,
+        visualizerVariant,
+        typoOpen,
+        colorOpen,
+        fonts,
+        colors,
+        availableFonts,
+        onBack,
+        onUpdateProject
+    ]);
+
+    const rightSidebar = React.useMemo(() => {
+        if (!cur) return null;
+        return (
+            <>
+                {/* Draggable Divider for Right Sidebar */}
+                <div
+                    className="w-1 cursor-col-resize bg-gray-900 hover:bg-purple-500/50 transition-colors self-stretch z-10 flex-shrink-0"
+                    onMouseDown={handleRightMouseDown}
+                />
+                <aside
+                    style={{ width: `${rightSidebarWidth}px` }}
+                    className="flex flex-shrink-0 flex-col border-l border-gray-800 bg-gray-900/40 p-4 overflow-y-auto"
+                >
+                    <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Component Inspector</h3>
+                    <div className="space-y-4">
+                        {getFlatComponents(cur.components).map(({ node, path }, index) => {
+                            const indent = path.length - 1;
+                            return (
+                                <div key={index} className="rounded-lg border border-gray-800 bg-gray-950/40 p-3 space-y-3">
+                                    <div className="border-b border-gray-800 pb-1.5 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-purple-400">
+                                            {indent > 0 ? '— '.repeat(indent) : ''}{node.type}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500 font-mono">
+                                            {node.props.id ? `#${node.props.id}` : ''}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {Object.entries(node.props).map(([key, val]) => {
+                                            if (typeof val === 'number') {
+
+                                                let min = 0;
+                                                let max = 100;
+                                                let step = 1;
+                                                if (key === "lat" || key === "pinLat") {
+                                                    min = -90;
+                                                    max = 90;
+                                                    step = 0.0001;
+                                                }
+                                                else if (key === 'lng' || key === "pinLng") {
+                                                    min = -180;
+                                                    max = 180;
+                                                    step = 0.0001;
+                                                }
+                                                else if (key === 'zoom') {
+                                                    min = 0;
+                                                    max = 20;
+                                                    step = 0.1;
+                                                }
+                                                else if (key === "routeProgress") {
+                                                    min = 0;
+                                                    max = 1;
+                                                    step = 0.01;
+                                                }
+                                                else if (key === "pinScale") {
+                                                    min = 0.1;
+                                                    max = 5;
+                                                    step = 0.1;
+                                                }
+                                                return (
+                                                    <div key={key} className="space-y-1">
+                                                        <div className="flex justify-between text-[10px] text-gray-400">
+                                                            <span>{key}</span>
+                                                            <span>{typeof val === 'number' && (key.includes('lat') || key.includes('lng')) ? Number(val).toFixed(4) : val}</span>
+                                                        </div>
+                                                        <input
+                                                            type="range"
+                                                            min={min}
+                                                            max={max}
+                                                            step={step}
+                                                            value={val}
+                                                            onChange={(e) => updateComponentProp(path, key, Number(e.target.value))}
+                                                            className="w-full h-1 bg-gray-800 rounded accent-purple-500"
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+                                            if (typeof val === 'boolean') {
+                                                return (
+                                                    <div key={key} className="flex justify-between items-center text-[10px] text-gray-400">
+                                                        <span>{key}</span>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={val}
+                                                            onChange={(e) => {
+                                                                updateComponentProp(path, key, e.target.checked);
+                                                            }}
+                                                            className="h-3.5 w-3.5 rounded border border-gray-750 bg-gray-950 text-purple-600 focus:ring-0 outline-none accent-purple-600"
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+                                            if (typeof val === "string") {
+                                                if (key === "styleVariant") {
+                                                    return (
+                                                        <div key={key}
+                                                            className="flex justify-between items-center text-[10px] text-gray-400">
+                                                            <span>{key}</span>
+                                                            <select
+                                                                value={val}
+                                                                onChange={(e) => updateComponentProp(path, key, e.target.value)}
+                                                                className='rounded border border-gray-700 bg-gray-950 px-2 py-0.5 text-[10px] text-white outline-none'>
+                                                                <option value="standard">
+                                                                    Standard
+                                                                </option>
+                                                                <option value="dark">
+                                                                    Dark
+                                                                </option>
+                                                                <option value="neon">
+                                                                    Neon
+                                                                </option>
+                                                            </select>
+                                                        </div>
+                                                    )
+                                                }
+                                            }
+                                            return null;
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </aside>
+            </>
+        );
+    }, [cur, rightSidebarWidth, handleRightMouseDown, updateComponentProp]);
+
+    return (
+
+        <div className="flex h-screen bg-gray-950 text-white">
+            {leftSidebar}
             {/* Draggable Divider for Left Sidebar */}
             <div
                 className="w-1 cursor-col-resize bg-gray-900 hover:bg-purple-500/50 transition-colors self-stretch z-10 flex-shrink-0"
@@ -475,9 +644,9 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                             {cur ? (
                                 <div
                                     style={{
-                                        opacity: localFrame < 5 ? localFrame / 5 : localFrame > cur.duration - 5 ? (cur.duration - localFrame) / 5 : 1,
-                                        transform: localFrame > cur.duration - 5 ? `translateX(${(cur.duration - 5 - localFrame) * 20}px)` : 'none',
-                                        transition: 'none',
+                                        opacity: op,
+                                        transform: `scale(${sc})`,
+                                        transformOrigin: 'center center',
                                         width: '100%',
                                         height: '100%',
                                     }}
@@ -540,130 +709,7 @@ const Studio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdateProj
                     </div>
                 </div>
             </main>
-            {cur && (
-                <>
-                    {/* Draggable Divider for Right Sidebar */}
-                    <div
-                        className="w-1 cursor-col-resize bg-gray-900 hover:bg-purple-500/50 transition-colors self-stretch z-10 flex-shrink-0"
-                        onMouseDown={handleRightMouseDown}
-                    />
-                    <aside
-                        style={{ width: `${rightSidebarWidth}px` }}
-                        className="flex flex-shrink-0 flex-col border-l border-gray-800 bg-gray-900/40 p-4 overflow-y-auto"
-                    >
-                        <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Component Inspector</h3>
-                        <div className="space-y-4">
-                            {getFlatComponents(cur.components).map(({ node, path }, index) => {
-                                const indent = path.length - 1;
-                                return (
-                                    <div key={index} className="rounded-lg border border-gray-800 bg-gray-950/40 p-3 space-y-3">
-                                        <div className="border-b border-gray-800 pb-1.5 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-purple-400">
-                                                {indent > 0 ? '— '.repeat(indent) : ''}{node.type}
-                                            </span>
-                                            <span className="text-[10px] text-gray-500 font-mono">
-                                                {node.props.id ? `#${node.props.id}` : ''}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {Object.entries(node.props).map(([key, val]) => {
-                                                if (typeof val === 'number') {
-
-                                                    let min = 0;
-                                                    let max = 100;
-                                                    let step = 1;
-                                                    if (key === "lat" || key === "pinLat") {
-                                                        min = -90;
-                                                        max = 90;
-                                                        step = 0.0001;
-                                                    }
-                                                    else if (key === 'lng' || key === "pinLng") {
-                                                        min = -180;
-                                                        max = 180;
-                                                        step = 0.0001;
-                                                    }
-                                                    else if (key === 'zoom') {
-                                                        min = 0;
-                                                        max = 20;
-                                                        step = 0.1;
-                                                    }
-                                                    else if (key === "routeProgress") {
-                                                        min = 0;
-                                                        max = 1;
-                                                        step = 0.01;
-                                                    }
-                                                    else if (key === "pinScale") {
-                                                        min = 0.1;
-                                                        max = 5;
-                                                        step = 0.1;
-                                                    }
-                                                    return (
-                                                        <div key={key} className="space-y-1">
-                                                            <div className="flex justify-between text-[10px] text-gray-400">
-                                                                <span>{key}</span>
-                                                                <span>{typeof val === 'number' && (key.includes('lat') || key.includes('lng')) ? Number(val).toFixed(4) : val}</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min={min}
-                                                                max={max}
-                                                                step={step}
-                                                                value={val}
-                                                                onChange={(e) => updateComponentProp(path, key, Number(e.target.value))}
-                                                                className="w-full h-1 bg-gray-800 rounded accent-purple-500"
-                                                            />
-                                                        </div>
-                                                    );
-                                                }
-                                                if (typeof val === 'boolean') {
-                                                    return (
-                                                        <div key={key} className="flex justify-between items-center text-[10px] text-gray-400">
-                                                            <span>{key}</span>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={val}
-                                                                onChange={(e) => {
-                                                                    updateComponentProp(path, key, e.target.checked);
-                                                                }}
-                                                                className="h-3.5 w-3.5 rounded border border-gray-750 bg-gray-950 text-purple-600 focus:ring-0 outline-none accent-purple-600"
-                                                            />
-                                                        </div>
-                                                    );
-                                                }
-                                                if (typeof val === "string") {
-                                                    if (key === "styleVariant") {
-                                                        return (
-                                                            <div key={key}
-                                                                className="flex justify-between items-center text-[10px] text-gray-400">
-                                                                <span>{key}</span>
-                                                                <select
-                                                                    value={val}
-                                                                    onChange={(e) => updateComponentProp(path, key, e.target.value)}
-                                                                    className='rounded border border-gray-700 bg-gray-950 px-2 py-0.5 text-[10px] text-white outline-none'>
-                                                                    <option value="standard">
-                                                                        Standard
-                                                                    </option>
-                                                                    <option value="dark">
-                                                                        Dark
-                                                                    </option>
-                                                                    <option value="neon">
-                                                                        Neon
-                                                                    </option>
-                                                                </select>
-                                                            </div>
-                                                        )
-                                                    }
-                                                }
-                                                return null;
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </aside>
-                </>
-            )}
+            {rightSidebar}
             <RenderProgressScreen progress={renderProgress} onClose={() => setRenderProgress(null)} />
         </div>
     );
