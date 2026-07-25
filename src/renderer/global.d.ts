@@ -31,6 +31,7 @@ interface ElectronAPI {
   cloneScan: (gitPath: string) => Promise<ScrapedFindings | null>;
   getSystemFonts: () => Promise<string[]>;
   exportVideo: (options: ExportVideoOptions) => Promise<{ success: boolean; error?: string }>;
+  renderVideo: (options: any) => Promise<{ success: boolean; error?: string }>;
   onRenderProgress: (
     callback: (event: any, progress: RenderProgress) => void
   ) => () => void;

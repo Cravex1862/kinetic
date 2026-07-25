@@ -63,6 +63,9 @@ const electronAPI = {
   exportVideo: (options: ExportVideoOptions): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('export-video', options),
 
+  renderVideo: (options: any): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('export-video', { compositionId: 'VideoComposition', fps: 30, width: 1920, height: 1080, framesPerScene: [300], ...options }),
+
   onRenderProgress: (
     callback: (event: IpcRendererEvent, progress: RenderProgress) => void
   ): (() => void) => {
