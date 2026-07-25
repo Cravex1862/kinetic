@@ -93,7 +93,7 @@ export function applyMorphProps<T extends Record<string, unknown>>(
   const allKeys = new Set([...Object.keys(from), ...Object.keys(to)]);
 
   for (const key of allKeys) {
-    const field = schema[key];
+    const field = schema[key] || (['rotateX', 'rotateY', 'rotateZ', 'perspective', 'translateZ', 'x', 'y', 'z', 'scale', 'opacity'].includes(key) ? { type: 'number' as const } : undefined);
     if (field) {
       result[key] = morphValue(from[key], to[key], field, easedProgress);
     } else {

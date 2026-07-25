@@ -1,4 +1,4 @@
-import { callLLM } from './llmClient';
+import { callLLM, safeParseJson } from './llmClient';
 import type { AgentConfig, StoryboardScene } from './types';
 
 const SYSTEM_PROMPT = `You are a copywriter for video motion graphics. Given a scene, generate polished on-screen text.
@@ -17,22 +17,28 @@ Output format:
   "voiceover": "Welcome to our platform. Here you can see all your key metrics."
 }`;
 
+interface CopywritingOutput {
+  captions: string[];
+  labels: string[];
+  voiceover: string;
+}
+
 export async function runCopywritingAgent(
   config: AgentConfig,
   scene: StoryboardScene,
-): Promise<{ copy?: { captions: string[]; labels: string[]; voiceover: string }; error?: string }> {
+): Promise<{ copy?: CopywritingOutput; error?: string }> {
   const userPrompt = `Scene: "${scene.description}"\nDuration: ${scene.duration} frames\nNarration: "${scene.narration}"\n\nGenerate on-screen copy for this scene.`;
 
   const result = await callLLM(config, SYSTEM_PROMPT, userPrompt);
   console.log("Raw AI Copywriting Output:", result.content);
   if (result.error) return { error: result.error };
 
-  try {
-    const cleaned = result.content.replace(/```json/gi, '').replace(/```/g,'').trim();
-    const parsed = JSON.parse(cleaned) as { captions: string[]; labels: string[]; voiceover: string };
-    return { copy: parsed };
-  } catch (e) {
-    console.error("Failed to parse copywriting JSON. Error details:", e);
-    return { error: 'Failed to parse copy from LLM response' };
-  }
+  const parsed = safeParseJson<CopywritingOutput>(result.content, {
+    captions: [],
+    labels: [],
+    voiceover: scene.narration,
+  });
+
+  return { copy: parsed };
 }
+

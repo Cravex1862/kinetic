@@ -1,4 +1,21 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+
+export interface RenderProgress {
+  frame: number;
+  total: number;
+  status: string;
+  error?: string;
+}
+
+export interface ExportVideoOptions {
+  compositionId: string;
+  outputPath: string;
+  framesPerScene: number[];
+  fps: number;
+  width: number;
+  height: number;
+  props?: Record<string, unknown>;
+}
 
 const electronAPI = {
   readDirectory: (dirPath: string): Promise<string[]> =>
@@ -34,27 +51,27 @@ const electronAPI = {
   deleteDirectory: (dirPath: string): Promise<boolean> =>
     ipcRenderer.invoke('delete-directory', dirPath),
 
-  exportVideo: (options: {
-    compositionId: string;
-    outputPath: string;
-    framesPerScene: number[];
-    fps: number;
-    width: number;
-    height: number;
-    props?: any;
-  }): Promise<{ success: boolean; error?: string }> =>
+  scanRepo: (dirPath: string): Promise<any> =>
+    ipcRenderer.invoke('scan-repo', dirPath),
+
+  cloneScan: (gitPath: string): Promise<any> =>
+    ipcRenderer.invoke('clone-scan', gitPath),
+
+  getSystemFonts: (): Promise<string[]> =>
+    ipcRenderer.invoke('get-system-fonts'),
+
+  exportVideo: (options: ExportVideoOptions): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('export-video', options),
 
-  onRenderProgress: (callback: (event: any, progress: {
-    frame: number;
-    total: number;
-    status: string
-  }) => void) => {
-    const subscription = (event: any, progress: any) => callback(event, progress);
+  onRenderProgress: (
+    callback: (event: IpcRendererEvent, progress: RenderProgress) => void
+  ): (() => void) => {
+    const subscription = (event: IpcRendererEvent, progress: RenderProgress): void =>
+      callback(event, progress);
     ipcRenderer.on('render-progress', subscription);
-    return () => {
+    return (): void => {
       ipcRenderer.removeListener('render-progress', subscription);
-    }
+    };
   }
 };
 

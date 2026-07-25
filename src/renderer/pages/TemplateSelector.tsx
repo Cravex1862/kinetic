@@ -42,7 +42,7 @@ const templates = [
     key: 'saas-demo-videos',
     title: 'SaaS Demo Videos',
     description: 'Use this for creating product demos for your SaaS',
-    comingSoon: true,
+    comingSoon: false,
     gradient: 'from-emerald-600/5 to-teal-600/5 border-emerald-500/10 group-hover:border-emerald-500/35',
     thumbnail: (
       <svg className="w-full h-full text-emerald-500/60" fill="none" viewBox="0 0 100 60">
@@ -87,7 +87,7 @@ const templates = [
     key: 'ui-ux-walkthrough',
     title: 'UI/UX Walkthrough',
     description: 'Use this for creating a UI to demo to people before coding it',
-    comingSoon: true,
+    comingSoon: false,
     gradient: 'from-cyan-600/5 to-sky-600/5 border-cyan-500/10 group-hover:border-cyan-500/35',
     thumbnail: (
       <svg className="w-full h-full text-cyan-400/60" fill="none" viewBox="0 0 100 60">
@@ -101,7 +101,7 @@ const templates = [
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, initialDirectory, onSelectDirectory }) => {
   const [selectedDir, setSelectedDir] = useState(initialDirectory);
-  
+
   const handleBrowse = async () => {
     if (window.electronAPI?.selectDirectory) {
       const dir = await window.electronAPI.selectDirectory();

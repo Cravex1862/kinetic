@@ -16,8 +16,8 @@ interface MapProps {
     height?: number;
     style?: StyleConfig;
     frame?: number;
-    animationFrom?: any;
-    animationTo?: any;
+    animationFrom?: Partial<MapProps>;
+    animationTo?: Partial<MapProps>;
 }
 
 function getTileCoords(lat: number, lng: number, zoom: number) {

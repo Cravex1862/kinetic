@@ -6,17 +6,26 @@ import { AudioVisualizer } from '../primitives/AudioVisualizer';
 import { CaptionOverlay } from './CaptionOverlay';
 import { parseNarration } from './narration';
 import { SignalContext } from '../primitives/useSignal';
+import type { SceneOutput, ComponentNode } from '../agents/types';
 
-function buildSignalMap(nodes: any[]): Record<string, any> {
-  const map: Record<string, any> = {};
-  function traverse(node: any) {
+interface SignalInfo {
+  clickFrame?: number;
+  signalOutEvent?: string;
+  signalOutFrame?: number;
+}
+
+function buildSignalMap(nodes: ComponentNode[]): Record<string, SignalInfo> {
+  const map: Record<string, SignalInfo> = {};
+  
+  function traverse(node: ComponentNode | undefined): void {
     if (!node) return;
     const props = node.props || {};
     if (props.id) {
-      map[props.id] = {
-        clickFrame: props.clickFrame,
-        signalOutEvent: props.signalOut?.event,
-        signalOutFrame: props.signalOut?.frame,
+      const signalOut = props.signalOut as { event?: string; frame?: number } | undefined;
+      map[props.id as string] = {
+        clickFrame: props.clickFrame as number | undefined,
+        signalOutEvent: signalOut?.event,
+        signalOutFrame: signalOut?.frame,
       };
     }
     if (node.children) {
@@ -27,16 +36,35 @@ function buildSignalMap(nodes: any[]): Record<string, any> {
       }
     }
   }
+
   if (Array.isArray(nodes)) {
     nodes.forEach(traverse);
   }
   return map;
 }
 
+interface FontConfig {
+  fontFamily: string;
+}
+
+interface FontSettings {
+  Title: FontConfig;
+  Heading: FontConfig;
+  Paragraph: FontConfig;
+}
+
+interface ColorSettings {
+  Primary: string;
+  Secondary: string;
+  Accent: string;
+  Background: string;
+  backgroundImage?: string;
+}
+
 interface SequenceCompositionProps {
-  scenes: any[];
-  fonts?: any;
-  colors?: any;
+  scenes: SceneOutput[];
+  fonts?: FontSettings;
+  colors?: ColorSettings;
   showVisualizer?: boolean;
   globalAudioUrl?: string;
 }
@@ -83,7 +111,6 @@ function SequenceComposition({
     );
   }
 
-  // Calculate layout dimensions based on aspect ratio to prevent vertical video stretching
   const ratio = width / height;
   let designW = 1024;
   let designH = 576;
@@ -95,18 +122,17 @@ function SequenceComposition({
     designH = 576;
   }
 
-  // Calculate Cinematic Zoom-Fade Transition (10 frames)
   const transDur = 10;
   let op = 1;
   let sc = 1;
   if (localFrame < transDur) {
     const t = localFrame / transDur;
-    const eased = t * t * (3 - 2 * t); // Smoothstep easing
+    const eased = t * t * (3 - 2 * t);
     op = eased;
     sc = 0.97 + 0.03 * eased;
   } else if (localFrame > cur.duration - transDur) {
     const t = Math.max(0, (cur.duration - localFrame) / transDur);
-    const eased = t * t * (3 - 2 * t); // Smoothstep easing
+    const eased = t * t * (3 - 2 * t);
     op = eased;
     sc = 1.03 - 0.03 * eased;
   }
@@ -168,7 +194,7 @@ function SequenceComposition({
           className="relative"
         >
           <SignalContext.Provider value={signalMap}>
-            {cur.components.map((node: any, i: number) => (
+            {cur.components.map((node: ComponentNode, i: number) => (
               <ComponentRenderer key={i} node={node} keyframes={cur.keyframes} localFrame={localFrame} />
             ))}
           </SignalContext.Provider>
@@ -181,3 +207,4 @@ function SequenceComposition({
 }
 
 export default SequenceComposition;
+

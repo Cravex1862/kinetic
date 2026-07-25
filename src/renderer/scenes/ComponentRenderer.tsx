@@ -6,12 +6,26 @@ import * as Charts from '../primitives/ChartsSDK';
 import * as Cards from '../primitives/CardSDK';
 import * as Interaction from '../primitives/InteractionSDK';
 import * as Maps from '../primitives/MapSDK';
-import { Morph } from '../primitives/MorphSDK';
+import { Morph, EasingPreset } from '../primitives/MorphSDK';
 import { morphSchemas } from '../primitives/MorphRegistry';
 import type { ComponentNode, AnimationKeyframe } from '../agents/types';
 import { useSignal } from '../primitives/useSignal';
 
-const COMPONENT_REGISTRY: Record<string, React.FC<any>> = {
+interface BaseComponentProps {
+  id?: string;
+  frame?: number;
+  expanded?: boolean;
+  toggled?: boolean;
+  visible?: boolean;
+  signalIn?: { sourceId: string; event: string; action: string };
+  signalOut?: { event: string; frame: number };
+  clickFrame?: number;
+  children?: React.ReactNode;
+  animationFrom?: Record<string, unknown>;
+  animationTo?: Record<string, unknown>;
+}
+
+const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   ...Structural,
   ...Transition,
   ...Motion,
@@ -27,21 +41,31 @@ interface ComponentRendererProps {
   localFrame: number;
 }
 
-class ComponentErrorBoundary extends React.Component<{ children: React.ReactNode; componentName: string }, { hasError: boolean; error: Error | null }> {
-  constructor(props: any) {
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  componentName: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ComponentErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error(`Error in component ${this.props.componentName}:`, error, errorInfo);
   }
 
-  render() {
+  render(): React.ReactNode {
     if (this.state.hasError) {
       return (
         <div className="border border-red-500 bg-red-950/20 p-2 text-red-500 text-xs rounded">
@@ -52,8 +76,9 @@ class ComponentErrorBoundary extends React.Component<{ children: React.ReactNode
     return this.props.children;
   }
 }
+
 export const ComponentRenderer: React.FC<ComponentRendererProps> = ({ node, keyframes, localFrame }) => {
-  const Comp = COMPONENT_REGISTRY[node.type];
+  const Comp = COMPONENT_REGISTRY[node.type] as React.ComponentType<BaseComponentProps> | undefined;
   if (!Comp) {
     return (
       <div className="border border-red-500 p-2 text-red-500 text-xs">
@@ -62,13 +87,13 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({ node, keyf
     );
   }
 
-  const nodeProps = node.props as any;
+  const nodeProps = node.props as BaseComponentProps;
 
   const keyframe = keyframes.find(
     (kf) => kf.component === node.type || (nodeProps.id && kf.component === nodeProps.id)
   );
 
-  const renderChildren = () => {
+  const renderChildren = (): React.ReactNode => {
     if (!node.children || node.children.length === 0) return null;
     return node.children.map((child, i) => (
       <ComponentRenderer key={i} node={child} keyframes={keyframes} localFrame={localFrame} />
@@ -77,7 +102,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({ node, keyf
 
   const triggerFrame = useSignal(nodeProps.signalIn);
   let activeFrame = localFrame;
-  let overriddenProps = { ...nodeProps };
+  const overriddenProps: BaseComponentProps = { ...nodeProps };
 
   if (triggerFrame !== null) {
     const triggered = localFrame >= triggerFrame;
@@ -85,16 +110,14 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({ node, keyf
 
     if (nodeProps.signalIn?.action === 'expand') {
       overriddenProps.expanded = triggered;
-    }
-    else if (nodeProps.signalIn?.action === 'toggle') {
+    } else if (nodeProps.signalIn?.action === 'toggle') {
       overriddenProps.toggled = triggered;
-    }
-    else if (nodeProps.signalIn?.action === 'show') {
+    } else if (nodeProps.signalIn?.action === 'show') {
       overriddenProps.visible = triggered;
     }
   }
 
-  const renderContent = () => {
+  const renderContent = (): React.ReactNode => {
     if (keyframe) {
       const schema = morphSchemas[node.type] || {};
       return (
@@ -104,12 +127,12 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({ node, keyf
           schema={schema}
           frame={localFrame}
           duration={keyframe.duration}
-          easing={(keyframe.easing as any) || 'ease-in-out'}
+          easing={(keyframe.easing as EasingPreset) || 'ease-in-out'}
         >
           {(resolvedProps) => (
-            <Comp 
-              frame={activeFrame} 
-              {...overriddenProps} 
+            <Comp
+              frame={activeFrame}
+              {...overriddenProps}
               {...resolvedProps}
               animationFrom={keyframe.from}
               animationTo={keyframe.to}
@@ -142,3 +165,4 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({ node, keyf
     </ComponentErrorBoundary>
   );
 };
+

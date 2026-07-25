@@ -77,7 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div 
+    <div
       onScroll={handleScroll}
       className="flex min-h-screen flex-col items-center bg-gray-950 text-white py-12 overflow-y-auto w-full page-enter"
     >
@@ -160,7 +160,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">New Name</label>
                 <input
-                value={renameFolderName}
+                  value={renameFolderName}
                   onChange={(e) => setRenameFolderName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && renameFolderName.trim() && renameFolderTarget) {
@@ -210,8 +210,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Brand Logo Header */}
-      <div 
-        style={{ 
+      <div
+        style={{
           transform: `translateY(${-Math.min(scrollTop * 0.4, 40)}px)`,
           opacity: Math.max(1 - (scrollTop / 120), 0.7),
           marginBottom: `${Math.max(40 - scrollTop * 0.5, 0)}px`,
@@ -222,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <img
           src={logoWithText}
           alt="kinetic"
-          style={{ 
+          style={{
             height: `${Math.max(112 - scrollTop * 0.5, 56)}px`,
             filter: 'drop-shadow(0 0 25px rgba(139, 92, 246, 0.45)) brightness(1.15)',
             transition: 'height 0.1s ease-out'

@@ -9,10 +9,28 @@ const HEIGHT = 1080;
 
 // ─── Root Composition Map ────────────────────────────────────
 import SequenceComposition from './scenes/SequenceComposition';
+import SwitchPremiumAd from './templates/saasVideoDemo/SwitchPremiumAd';
+import VideoComposition from './scenes/VideoComposition';
 
 const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition
+        id="VideoComposition"
+        component={VideoComposition}
+        fps={30}
+        width={1920}
+        height={1080}
+        durationInFrames={300}
+      />
+      <Composition
+        id="SwitchPremiumAd"
+        component={SwitchPremiumAd}
+        fps={30}
+        width={1920}
+        height={1080}
+        durationInFrames={750}
+      />
       <Composition
         id="SceneSequence"
         component={SequenceComposition as React.FC<any>}

@@ -9,6 +9,8 @@ import SetupWizard from './SetupWizard';
 import YoutubeVideoCreator from '../templates/ytVideos/YoutubeVideoCreator';
 import TourOverlay from '../components/TourOverlay';
 import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
+import { PrimitivesDemoOverlay } from '../components/PrimitivesDemoOverlay';
+
 
 export interface ProjectData {
   id?: string;
@@ -16,19 +18,15 @@ export interface ProjectData {
   narration: string;
   prompt: string;
   savePath: string;
-  scenes?: SceneOutput[];
+  scenes?: any;
+  code?: string;
   showVisualizer?: boolean;
   visualizerVariant?: 'wave' | 'bars' | 'circle';
   fonts?: any;
   colors?: any;
   bgDescription?: string;
   unfinished?: boolean;
-  generationState?: {
-    scenes: any[];
-    componentTrees: any[];
-    animationPlans: any[];
-    copies: any[];
-  };
+  generationState?: any;
 }
 
 export interface AlertButton {
@@ -47,6 +45,26 @@ export interface CustomAlertState {
 
 const AppRouter: React.FC = () => {
   const [alertState, setAlertState] = useState<CustomAlertState | null>(null);
+  const [previousPage, setPreviousPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'youtube-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>('dashboard');
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setPage(prev => {
+          if (prev === 'primitives-demo') {
+            return previousPage;
+          } else {
+            setPreviousPage(prev);
+            return 'primitives-demo';
+          }
+        });
+      }
+
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previousPage]);
 
 
 
@@ -85,7 +103,7 @@ const AppRouter: React.FC = () => {
     });
   };
 
-  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'youtube-creator' | 'basic-studio' | 'settings' | 'setup'>(() => {
+  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'youtube-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>(() => {
     const completed = localStorage.getItem('kinetic-setup-completed') === 'true';
     return completed ? 'dashboard' : 'setup';
   });
@@ -173,7 +191,7 @@ const AppRouter: React.FC = () => {
     }
     setProject(newProject);
     setProjects((prev) => [...prev, newProject]);
-    
+
     if (templateKey === 'youtube-videos') {
       setPage('youtube-creator');
     } else {
@@ -469,7 +487,7 @@ const AppRouter: React.FC = () => {
           onNewProject={handleNewProject}
           onOpenProject={(p) => {
             setProject(p);
-            if (p.unfinished || !p.scenes || p.scenes.length === 0) {
+            if (p.unfinished) {
               setPage('basic-generator');
             }
             else {
@@ -618,6 +636,10 @@ const AppRouter: React.FC = () => {
           </div>
         </div>
       )}
+      {page === 'primitives-demo' && (
+        <PrimitivesDemoOverlay onClose={() => setPage(previousPage)} />
+      )}
+
     </div>
   );
 };

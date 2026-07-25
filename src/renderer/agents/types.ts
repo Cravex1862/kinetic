@@ -50,7 +50,7 @@ export interface SceneOutput {
 }
 
 export interface PipelineState {
-  status: 'idle' | 'storyboarding' | 'laying-out' | 'animating' | 'copywriting' | 'compiling' | 'done' | 'error';
+  status: 'idle' | 'storyboarding' | 'laying-out' | 'designing' | 'animating' | 'copywriting' | 'compiling' | 'done' | 'error';
   progress: number;
   error?: string;
   output?: SceneOutput[];

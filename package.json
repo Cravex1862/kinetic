@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.node.json --watch\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "tsc -p tsconfig.node.json && vite build",
-    "preview": "npx remotion preview src/renderer/Root.tsx",
+    "preview": "npx remotion studio src/renderer/Root.tsx",
+    "preview:test": "npx remotion studio testing/TestRoot.tsx",
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
     "package:linux": "npm run build && electron-builder --linux",
