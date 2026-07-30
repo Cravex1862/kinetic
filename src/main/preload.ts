@@ -67,10 +67,10 @@ const electronAPI = {
     ipcRenderer.invoke('export-video', { compositionId: 'VideoComposition', fps: 30, width: 1920, height: 1080, framesPerScene: [300], ...options }),
 
   onRenderProgress: (
-    callback: (event: IpcRendererEvent, progress: RenderProgress) => void
+    callback: (progress: { frame: number; total: number; status?: string }) => void
   ): (() => void) => {
-    const subscription = (event: IpcRendererEvent, progress: RenderProgress): void =>
-      callback(event, progress);
+    const subscription = (_event: IpcRendererEvent, progress: any): void =>
+      callback(progress);
     ipcRenderer.on('render-progress', subscription);
     return (): void => {
       ipcRenderer.removeListener('render-progress', subscription);

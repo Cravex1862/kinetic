@@ -36,6 +36,8 @@ export interface AreaChartCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+    translateX?: number;
+    translateY?: number;
 }
 
 const defaultColor = [
@@ -46,131 +48,135 @@ const defaultColor = [
 ];
 
 export const AreaChartCard: React.FC<AreaChartCardProps> = ({
-    width,
-    height = 400,
-    titleText,
+    width = 600,
+    height = 360,
+    titleText = "Revenue Growth",
     titleConfig,
-    labels = [],
-    datasets = [],
+    labels = ["Q1", "Q2", "Q3", "Q4", "Q5"],
+    datasets = [
+        { label: "Product A", values: [20, 45, 60, 80, 110] },
+        { label: "Product B", values: [15, 30, 40, 55, 75] }
+    ],
     stacked = false,
     showGridLines = true,
-    gridLinesColor = 'rgba(255, 255, 255, 0.08)',
+    gridLinesColor = "rgba(255, 255, 255, 0.1)",
     yAxisTicks,
-    yAxisTitle,
     xAxisTitle,
+    yAxisTitle,
     axisTitleConfig,
     labelConfig,
-    backgroundColor = '#121214',
-    borderRadius = 24,
+    backgroundColor = "#18181b",
+    borderRadius = 16,
     padding = 24,
-    animDuration = 40,
-    frame: propFrame,
+    animDuration = 30,
+    frame: frameProp,
     rotateX,
     rotateY,
     rotateZ,
     perspective,
     translateZ,
+    translateX,
+    translateY,
 }) => {
-    const frame = useFrame(propFrame);
-
-    let maxVal = 1;
-    const numPoints = labels?.length || 0;
-
-    if (stacked) {
-        for (let i = 0; i < numPoints; i++) {
-            let sumAtIndex = 0;
-            for (let j = 0; j < datasets.length; j++) {
-                sumAtIndex += datasets[j].values?.[i] || 0;
-            }
-            if (sumAtIndex > maxVal) {
-                maxVal = sumAtIndex;
-            }
-        }
-    }
-
-    else {
-        const allValues = datasets.flatMap(d => d.values || []);
-        maxVal = Math.max(...allValues, 1);
-    }
-
-    const progress = Math.min(frame / animDuration, 1);
-    const easedProgress = Easing.out(Easing.bezier(0.25, 1, 0.5, 1))(progress);
+    const currentFrame = useFrame(frameProp);
+    const progress = Math.min(Math.max(currentFrame / animDuration, 0), 1);
+    const easedProgress = Easing.cubic(progress);
 
     const cardStyle: React.CSSProperties = {
-        width: width !== undefined ? `${width}px` : '100%',
+        width: `${width}px`,
         height: `${height}px`,
         backgroundColor,
         borderRadius: `${borderRadius}px`,
         padding: `${padding}px`,
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        userSelect: "none",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const titleStyle: React.CSSProperties = {
-        fontFamily: 'sans-serif',
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: '28px',
+        fontFamily: "sans-serif",
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: "20px",
         margin: 0,
         ...textFormatToStyle(titleConfig),
     };
 
     const labelStyle: React.CSSProperties = {
-        fontFamily: 'sans-serif',
-        color: '#a1a1aa',
-        fontSize: '14px',
-        textAlign: 'center',
+        fontFamily: "sans-serif",
+        color: "#a1a1aa",
+        fontSize: "12px",
+        textAlign: "center",
         ...textFormatToStyle(labelConfig),
     };
 
     const axisTitleStyle: React.CSSProperties = {
-        fontFamily: 'sans-serif',
-        color: '#71717a',
-        fontSize: '12px',
-        fontWeight: '600',
+        fontFamily: "sans-serif",
+        color: "#71717a",
+        fontSize: "11px",
+        fontWeight: "600",
         ...textFormatToStyle(axisTitleConfig),
     };
 
-    const yAxisWidth = 45;
-    const chartHeight = height - (padding * 2) - (titleText ? 60 : 20) - (xAxisTitle ? 50 : 30);
-    const chartWidth = (width !== undefined ? width : 600) - (padding * 2) - yAxisWidth - 20;
+    const numPoints = labels.length;
+
+    let maxVal = 1;
+    if (stacked) {
+        for (let i = 0; i < numPoints; i++) {
+            let sum = 0;
+            datasets.forEach(ds => {
+                sum += (ds.values && ds.values[i]) ? ds.values[i] : 0;
+            });
+            if (sum > maxVal) maxVal = sum;
+        }
+    } else {
+        datasets.forEach(ds => {
+            if (ds.values) {
+                ds.values.forEach(v => {
+                    if (v > maxVal) maxVal = v;
+                });
+            }
+        });
+    }
 
     const ticks = yAxisTicks || [0, Math.round(maxVal / 2), maxVal];
-    const stepX = chartWidth / Math.max(numPoints - 1, 1);
+    const chartHeight = height - (padding * 2) - (titleText ? 40 : 10) - (xAxisTitle ? 40 : 20);
+    const chartWidth = width - (padding * 2) - 40;
 
-    const pathDatasets = datasets.map((dataset, datasetIdx) => {
-        const fill = dataset.color || defaultColor[datasetIdx % defaultColor.length].fill;
-        const stroke = dataset.lineColor || defaultColor[datasetIdx % defaultColor.length].stroke;
-        const opacity = dataset.fillOpacity !== undefined ? dataset.fillOpacity : 1;
+    let accumulatedValues = new Array(numPoints).fill(0);
 
-        const topPoints = (dataset.values || []).map((v, i) => {
-            const x = i * stepX;
-            let currentVal = v;
+    const pathDatasets = datasets.map((dataset, dsIdx) => {
+        const fill = dataset.color || defaultColor[dsIdx % defaultColor.length].fill;
+        const stroke = dataset.lineColor || defaultColor[dsIdx % defaultColor.length].stroke;
+        const opacity = dataset.fillOpacity ?? 0.4;
+
+        const topPoints: { x: number; y: number }[] = [];
+        const bottomPoints: { x: number; y: number }[] = [];
+
+        for (let i = 0; i < numPoints; i++) {
+            const val = (dataset.values && dataset.values[i]) ? dataset.values[i] : 0;
+            const x = (i / (numPoints - 1)) * chartWidth;
+
             if (stacked) {
-                for (let prevIdx = 0; prevIdx < datasetIdx; prevIdx++) {
-                    currentVal += datasets[prevIdx].values?.[i] || 0;
-                }
-            }
+                const prevBase = accumulatedValues[i];
+                const newBase = prevBase + val;
+                accumulatedValues[i] = newBase;
 
-            const y = chartHeight - (currentVal / maxVal) * chartHeight;
-            return { x, y };
-        });
+                const yTop = chartHeight - (newBase / maxVal) * chartHeight;
+                const yBottom = chartHeight - (prevBase / maxVal) * chartHeight;
 
-        const bottomPoints = Array.from({ length: numPoints }).map((_, i) => {
-            const x = i * stepX;
-            let baseVal = 0;
-            if (stacked && datasetIdx > 0) {
-                for (let prevIdx = 0; prevIdx < datasetIdx; prevIdx++) {
-                    baseVal += datasets[prevIdx].values?.[i] || 0;
-                }
+                topPoints.push({ x, y: yTop });
+                bottomPoints.push({ x, y: yBottom });
+            } else {
+                const yTop = chartHeight - (val / maxVal) * chartHeight;
+                topPoints.push({ x, y: yTop });
+                bottomPoints.push({ x, y: chartHeight });
             }
-            const y = chartHeight - (baseVal / maxVal) * chartHeight;
-            return { x, y };
-        });
+        }
 
         let AreaPathString = '';
         if (topPoints.length > 0) {
@@ -193,12 +199,11 @@ export const AreaChartCard: React.FC<AreaChartCardProps> = ({
     });
 
     return (
-        <div style={cardStyle} className="transition-all duration-300">
+        <div style={cardStyle}>
             {titleText && <h3 style={titleStyle}>{titleText}</h3>}
 
             <div style={{ display: 'flex', flex: 1, gap: '12px', height: `${chartHeight}px`, position: 'relative' }}>
                 <div style={{ flex: 1, height: '100%', position: 'relative', borderLeft: `1px solid ${gridLinesColor}`, borderBottom: `1px solid ${gridLinesColor}` }}>
-
                     {showGridLines && ticks.map((tick, idx) => {
                         const bottomPercent = (tick / maxVal) * 100;
                         return (
@@ -236,64 +241,21 @@ export const AreaChartCard: React.FC<AreaChartCardProps> = ({
                                         fill="none"
                                         stroke={dataset.stroke}
                                         strokeWidth={3}
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
                                     />
                                 </React.Fragment>
                             ))}
                         </g>
                     </svg>
                 </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', width: `${yAxisWidth}px`, alignItems: 'flex-start', paddingBottom: '10px' }}>
-                    {ticks.slice().reverse().map((tick, idx) => (
-                        <span key={idx} style={{ ...labelStyle, fontSize: '12px' }}>
-                            {tick}
-                        </span>
-                    ))}
-                </div>
-
-                {yAxisTitle && (
-                    <div style={{
-                        position: 'absolute',
-                        left: '-55px',
-                        top: '50%',
-                        transform: 'translateY(-50%) rotate(-90deg)',
-                        transformOrigin: 'center center',
-                        whiteSpace: 'nowrap',
-                    }}>
-                        <span style={axisTitleStyle}>{yAxisTitle}</span>
-                    </div>
-                )}
             </div>
 
-            <div style={{ display: 'flex', marginRight: `${yAxisWidth + 12}px`, justifyContent: 'space-between', position: 'relative' }}>
-                {labels.map((label, idx) => {
-                    const leftOffset = idx * stepX;
-                    return (
-                        <div
-                            key={idx}
-                            style={{
-                                position: 'absolute',
-                                left: `${leftOffset}px`,
-                                transform: 'translateX(-50%)',
-                                width: '60px',
-                                textAlign: 'center'
-                            }}
-                        >
-                            <span style={labelStyle}>{label}</span>
-                        </div>
-                    );
-                })}
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px' }}>
+                {labels.map((label, idx) => (
+                    <span key={idx} style={labelStyle}>{label}</span>
+                ))}
             </div>
-
-            <div style={{ height: '12px' }} />
-
-            {xAxisTitle && (
-                <div style={{ textAlign: 'center', marginTop: '0px' }}>
-                    <span style={axisTitleStyle}>{xAxisTitle}</span>
-                </div>
-            )}
         </div>
     );
-}
+};
+
+export default AreaChartCard;

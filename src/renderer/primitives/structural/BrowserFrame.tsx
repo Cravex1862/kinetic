@@ -23,6 +23,8 @@ export interface BrowserFrameProps {
   rotateZ?: number;
   perspective?: number;
   translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const BrowserFrame: React.FC<BrowserFrameProps> = ({
@@ -46,6 +48,8 @@ export const BrowserFrame: React.FC<BrowserFrameProps> = ({
   rotateZ,
   perspective,
   translateZ,
+  translateX,
+  translateY,
 }) => {
   const [backActive, setBackActive] = useState(false);
   const [forwardActive, setForwardActive] = useState(false);
@@ -66,7 +70,7 @@ export const BrowserFrame: React.FC<BrowserFrameProps> = ({
     flexDirection: 'column',
     ...glow,
     ...customStyle,
-    ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+    ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
   };
 
   const headerStyle: React.CSSProperties = {
@@ -115,7 +119,8 @@ export const BrowserFrame: React.FC<BrowserFrameProps> = ({
   };
 
   return (
-    <div style={outerStyle} className="transition-all duration-300">
+    <div style={outerStyle}>
+
       <div style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           {osType === 'mac' && (

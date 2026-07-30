@@ -7,6 +7,8 @@ export interface TransformState {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+    translateX?: number;
+    translateY?: number;
 }
 
 export const TransformContext = createContext<TransformState | null>(null);
@@ -28,6 +30,8 @@ export const combineTransforms = (
         rotateY: (parentTransform.rotateY || 0) + (childTransform?.rotateY || 0),
         rotateZ: (parentTransform.rotateZ || 0) + (childTransform?.rotateZ || 0),
         translateZ: (parentTransform.translateZ || 0) + (childTransform?.translateZ || 0),
+        translateX: (parentTransform.translateX || 0) + (childTransform?.translateX || 0),
+        translateY: (parentTransform.translateY || 0) + (childTransform?.translateY || 0),
         perspective: childTransform?.perspective || parentTransform.perspective || 1000,
     };
 };

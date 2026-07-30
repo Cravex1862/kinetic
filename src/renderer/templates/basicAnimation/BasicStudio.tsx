@@ -3,13 +3,14 @@ import type { ProjectData } from '../../pages/AppRouter';
 import {
     TextB, TextItalic, TextUnderline, Play, Pause,
     SkipBack, SkipForward, CaretDoubleLeft, CaretDoubleRight, Gear, CaretDown,
-    ArrowLeft, Palette, TextAa
+    ArrowLeft, Palette, TextAa, Image as ImageIcon
 } from '@phosphor-icons/react';
 import VideoComposition from '../../scenes/VideoComposition';
 import { Player, PlayerRef } from '@remotion/player';
 import { sanitizeCompositionCode } from '../../agents/pipeline';
 import { AudioVisualizer } from '../../primitives/AudioVisualizer';
 import { RenderProgressScreen } from '../../scenes/RenderProgressScreen';
+import { BackgroundSelectorPanel, BackgroundSelection } from '@/renderer/components/BackgroundSelectorPanel';
 
 interface StudioProps {
     project: ProjectData;
@@ -104,10 +105,33 @@ const BasicStudio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdat
         return () => resizeObserver.disconnect();
     }, []);
 
+    const codeSyncedRef = React.useRef(false);
+    // Sync project.code to VideoComposition.tsx when studio opens (runs ONCE per project load)
+    useEffect(() => {
+        const syncCode = async () => {
+            if (codeSyncedRef.current || !project?.code || !window.electronAPI?.writeFile) return;
+            codeSyncedRef.current = true;
+            const cleanCode = sanitizeCompositionCode(project.code);
+            if (!cleanCode || !cleanCode.includes('export const VideoComposition')) {
+                return;
+            }
+            if (window.electronAPI.readFile) {
+                const currentContent = await window.electronAPI.readFile('src/renderer/scenes/VideoComposition.tsx');
+                if (currentContent && currentContent.trim() === cleanCode.trim()) {
+                    return;
+                }
+            }
+            await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
+        };
+        syncCode();
+    }, [project?.savePath]);
+
     const [fonts, setFonts] = useState<Record<FontRow, FS>>(project.fonts as Record<FontRow, FS> || DEF_FONTS);
     const [colors, setColors] = useState<Record<string, string>>(project.colors || { Primary: '#6366f1', Secondary: '#8b5cf6', Accent: '#f59e0b', Background: '#0f172a' });
     const [globalAudioUrl, setGlobalAudioUrl] = useState<string>('');
     const [showVisualizer, setShowVisualizer] = useState(project.showVisualizer ?? false);
+    const [bgSelection, setBgSelection] = useState<BackgroundSelection>(project.bgSelection || { type: 'color', color: '#09090b', blurPx: 0 });
+    const [activeRightTab, setActiveRightTab] = useState<'styling' | 'backgrounds'>('styling');
     const [availableFonts, setAvailableFonts] = useState<string[]>(['Inter', 'Roboto', 'Poppins', 'DM Sans', 'Montserrat', 'Outfit']);
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempName, setTempName] = useState(project.title);
@@ -121,8 +145,9 @@ const BasicStudio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdat
             showVisualizer,
             fonts,
             colors,
+            bgSelection,
         } as any);
-        await customAlert("Save Project", "Project styling saved successfully");
+        await customAlert("Save Project", "Project styling and background saved successfully");
     };
 
     const maxFrames = 300;
@@ -174,8 +199,8 @@ const BasicStudio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdat
 
         const removeListener = window.electronAPI.onRenderProgress((progress) => {
             setRenderProgress({
-                frame: progress.frame,
-                total: progress.totalFrames,
+                frame: progress.frame || 0,
+                total: progress.total || 300,
                 status: 'rendering'
             });
         });
@@ -183,6 +208,7 @@ const BasicStudio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdat
         window.electronAPI.renderVideo({
             compositionId: 'VideoComposition',
             outputPath: `${project.title.replace(/\s+/g, '_')}.mp4`,
+            props: { bgSelection },
         }).then((res) => {
             removeListener();
             if (res.success) {
@@ -319,23 +345,38 @@ const BasicStudio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdat
                                 left: '50%',
                                 transform: `translate(-50%, -50%) scale(${scale})`,
                                 transformOrigin: 'center center',
-                                backgroundColor: colors.Background || '#0f172a',
                                 flexShrink: 0,
                             }}
-                            className="rounded-xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex items-center justify-center"
+                            className="rounded-xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex items-center justify-center relative"
                         >
-                            {showVisualizer && globalAudioUrl && (
-                                <AudioVisualizer
-                                    audioUrl={globalAudioUrl}
-                                    glowColor={colors.Primary || '#6366f1'}
-                                    frame={frame}
-                                    fps={FPS}
-                                />
-                            )}
-                            <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
+                            {/* DEDICATED CANVAS BACKGROUND LAYER */}
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    backgroundColor: bgSelection.color || colors.Background || '#09090b',
+                                    backgroundImage: bgSelection.imageUrl ? `url("${bgSelection.imageUrl}")` : bgSelection.gradient,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    filter: bgSelection.blurPx ? `blur(${bgSelection.blurPx}px)` : undefined,
+                                    transform: bgSelection.blurPx ? 'scale(1.08)' : undefined,
+                                    zIndex: 0,
+                                }}
+                            />
+
+                            <div className="w-full h-full relative z-10 overflow-hidden flex items-center justify-center">
+                                {showVisualizer && globalAudioUrl && (
+                                    <AudioVisualizer
+                                        audioUrl={globalAudioUrl}
+                                        glowColor={colors.Primary || '#6366f1'}
+                                        frame={frame}
+                                        fps={FPS}
+                                    />
+                                )}
                                 <Player
                                     ref={playerRef}
                                     component={VideoComposition}
+                                    inputProps={{ bgSelection }}
                                     durationInFrames={300}
                                     compositionWidth={1920}
                                     compositionHeight={1080}
@@ -391,51 +432,80 @@ const BasicStudio: React.FC<StudioProps> = ({ project, onBack, onRename, onUpdat
             {/* RESIZE HANDLE RIGHT */}
             <div className="w-1 cursor-col-resize bg-gray-900 hover:bg-purple-500/50 transition-colors self-stretch z-10 flex-shrink-0" onMouseDown={handleRightMouseDown} />
 
-            {/* RIGHT SIDEBAR: BRAND & STYLING PANEL */}
+            {/* RIGHT SIDEBAR: BRAND & STYLING / BACKGROUNDS PANEL */}
             <aside style={{ width: `${rightSidebarWidth}px` }} className="flex flex-shrink-0 flex-col border-l border-gray-800 bg-gray-900/40 p-4 overflow-y-auto">
-                <div className="flex items-center gap-2 border-b border-gray-800 pb-3 mb-4">
-                    <Palette size={16} className="text-purple-400" />
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Styling & Brand Guidelines</h3>
+                <div className="flex border-b border-gray-800 pb-2 mb-4 gap-2">
+                    <button
+                        onClick={() => setActiveRightTab('styling')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
+                            activeRightTab === 'styling'
+                                ? 'border-purple-500 text-purple-400'
+                                : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        <Palette size={14} />
+                        Styling & Brand
+                    </button>
+                    <button
+                        onClick={() => setActiveRightTab('backgrounds')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
+                            activeRightTab === 'backgrounds'
+                                ? 'border-purple-500 text-purple-400'
+                                : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        <ImageIcon size={14} />
+                        Backgrounds
+                    </button>
                 </div>
 
-                <div className="space-y-6 flex-1 overflow-y-auto">
-                    {/* TYPOGRAPHY SECTION */}
-                    <div className="space-y-3">
-                        <h4 className="text-xs font-bold text-gray-400 flex items-center gap-1.5">
-                            <TextAa size={14} className="text-purple-400" />
-                            Typography
-                        </h4>
-                        <div className="space-y-3 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
-                            {renderFontRow('Title')}
-                            {renderFontRow('Heading')}
-                            {renderFontRow('Paragraph')}
+                {activeRightTab === 'styling' ? (
+                    <div className="space-y-6 flex-1 overflow-y-auto">
+                        {/* TYPOGRAPHY SECTION */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                                <TextAa size={14} className="text-purple-400" />
+                                Typography
+                            </h4>
+                            <div className="space-y-3 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
+                                {renderFontRow('Title')}
+                                {renderFontRow('Heading')}
+                                {renderFontRow('Paragraph')}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* PALETTE COLORS SECTION */}
-                    <div className="space-y-3">
-                        <h4 className="text-xs font-bold text-gray-400">Palette Colors</h4>
-                        <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
-                            {Object.entries(colors).map(([key, val]) => {
-                                if (key === 'backgroundImage') return null;
-                                return (
-                                    <div key={key} className="flex items-center gap-2 rounded bg-gray-900/80 p-2 border border-gray-800/80">
-                                        <input
-                                            type="color"
-                                            value={val}
-                                            onChange={(e) => setColors((p) => ({ ...p, [key]: e.target.value }))}
-                                            className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
-                                        />
-                                        <div className="flex flex-col overflow-hidden">
-                                            <span className="text-[10px] font-semibold text-gray-300 truncate">{key}</span>
-                                            <span className="text-[9px] text-gray-500 font-mono">{val}</span>
+                        {/* PALETTE COLORS SECTION */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-gray-400">Palette Colors</h4>
+                            <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
+                                {Object.entries(colors).map(([key, val]) => {
+                                    if (key === 'backgroundImage') return null;
+                                    return (
+                                        <div key={key} className="flex items-center gap-2 rounded bg-gray-900/80 p-2 border border-gray-800/80">
+                                            <input
+                                                type="color"
+                                                value={val}
+                                                onChange={(e) => setColors((p) => ({ ...p, [key]: e.target.value }))}
+                                                className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+                                            />
+                                            <div className="flex flex-col overflow-hidden">
+                                                <span className="text-[10px] font-semibold text-gray-300 truncate">{key}</span>
+                                                <span className="text-[9px] text-gray-500 font-mono">{val}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="flex-1 overflow-y-auto">
+                        <BackgroundSelectorPanel
+                            currentSelection={bgSelection}
+                            onSelectBackground={(selectedBg) => setBgSelection(selectedBg)}
+                        />
+                    </div>
+                )}
 
                 <div className="pt-4 border-t border-gray-800 mt-auto">
                     <button

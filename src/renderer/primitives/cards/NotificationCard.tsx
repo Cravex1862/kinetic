@@ -21,6 +21,8 @@ export interface NotificationCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const NotificationCard: React.FC<NotificationCardProps> = ({
@@ -42,6 +44,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const cardStyle: React.CSSProperties = {
         width: width !== undefined ? `${width}px` : '100%',
@@ -55,7 +59,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         display: 'flex',
         alignItems: 'center',
         gap: '16px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const logoContainerStyle: React.CSSProperties = {

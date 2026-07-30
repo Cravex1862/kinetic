@@ -25,6 +25,8 @@ export interface KanbanTaskCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
@@ -42,6 +44,8 @@ export const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const activeSubCards = subCards.slice(0, 4);
 
@@ -58,7 +62,7 @@ export const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
         flexDirection: 'column',
         justifyContent: 'center',
         gap: '16px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const titleStyle: React.CSSProperties = {

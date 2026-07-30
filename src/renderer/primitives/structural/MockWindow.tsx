@@ -17,6 +17,8 @@ interface MockWindowProps {
   rotateZ?: number;
   perspective?: number;
   translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const MockWindow: React.FC<MockWindowProps> = ({
@@ -34,6 +36,8 @@ export const MockWindow: React.FC<MockWindowProps> = ({
   rotateZ,
   perspective,
   translateZ,
+  translateX,
+  translateY,
 }) => {
   const glow = buildGlowFilter(glowConfig);
   const us = configToStyle(style);

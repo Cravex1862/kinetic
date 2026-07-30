@@ -37,6 +37,8 @@ export interface SidebarLayoutProps {
   rotateZ?: number;
   perspective?: number;
   translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
@@ -71,7 +73,9 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
   rotateY,
   rotateZ,
   perspective,
-  translateZ
+  translateZ,
+  translateX,
+  translateY,
 }) => {
 
   const [selectedId, setSelectedId] = useState<string | undefined>(activeMenuItemId);
@@ -93,12 +97,13 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     justifyContent: 'space-between',
     userSelect: 'none',
     ...customStyle,
-    ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+    ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
   };
 
   return (
 
-    <div style={outerStyle} className='transition-all duration-300'>
+    <div style={outerStyle}>
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {appLogo ? (

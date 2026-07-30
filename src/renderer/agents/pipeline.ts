@@ -15,18 +15,46 @@ export interface ResumeState {
     sceneCodeBlocks?: string[];
 }
 
+export function stripAllImports(code: string): string {
+    if (!code) return '';
+    let cleaned = code
+        .replace(/```[a-z]*\n?/gi, '')
+        .replace(/```/g, '')
+        .replace(/import\s+type\s+[\s\S]*?from\s+['"][^'"]+['"];?/gi, '')
+        .replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/gi, '')
+        .replace(/import\s+['"][^'"]+['"];?/gi, '')
+        .replace(/^[^{}\n]*\}\s*from\s*['"][^'"]+['"];?[^\n]*/gm, '')
+        .replace(/.*from\s*['"]remotion['"];?[^\n]*/gi, '')
+        .replace(/.*from\s*['"]\.\.\/primitives[^'"]*['"];?[^\n]*/gi, '');
+
+    const lines = cleaned.split('\n');
+    const filteredLines: string[] = [];
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('import ') || trimmed.startsWith('import{')) continue;
+        if (trimmed.includes('from "remotion"') || trimmed.includes("from 'remotion'")) continue;
+        if (trimmed.includes('from "../primitives') || trimmed.includes("from '../primitives")) continue;
+        if (/^\}?\s*from\s*['"][^'"]+['"];?/.test(trimmed)) continue;
+        if (/^(?:useCurrentFrame|useVideoConfig|spring|interpolate|Sequence|Series)\s*,?\s*(\/\/.*)?$/.test(trimmed)) continue;
+        if (/^(?:Series|Sequence)\s*,?\s*(\/\/.*)?$/.test(trimmed)) continue;
+        filteredLines.push(line);
+    }
+
+    return filteredLines.join('\n').trim();
+}
+
 export function sanitizeCompositionCode(code: string): string {
     if (!code) return '';
-    let bodyWithoutImports = code
-        .replace(/^import\s+.*?;?\s*$/gm, '')
-        .replace(/^import\s+type\s+.*?;?\s*$/gm, '')
-        .trim();
+    let bodyWithoutImports = stripAllImports(code);
+    if (!bodyWithoutImports || bodyWithoutImports.trim().length === 0) return '';
 
     // Convert comment JSX {/* Scene X */} to <SceneX />
     bodyWithoutImports = bodyWithoutImports.replace(/\{\/\*\s*Scene\s+(\d+)\s*\*\/\}/gi, '<Scene$1 />');
 
     return `import React from 'react';
-import { Series, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';
+import { Series, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate, Easing, AbsoluteFill, Img, staticFile } from 'remotion';
+
 import type { GlowConfig, StyleConfig } from '../primitives/types';
 import { 
     ActionButton, AppCanvas, BreadcrumbHeader, BrowserFrame, DataGridContainer, 
@@ -56,12 +84,7 @@ ${bodyWithoutImports}
 }
 
 export function sanitizeAndAssembleComposition(sceneCodeBlocks: string[], scenes: any[]): string {
-    const cleanedBlocks = sceneCodeBlocks.map(block => {
-        return block
-            .replace(/^import\s+.*?;?\s*$/gm, '')
-            .replace(/^import\s+type\s+.*?;?\s*$/gm, '')
-            .trim();
-    });
+    const cleanedBlocks = sceneCodeBlocks.map(block => stripAllImports(block));
 
     return `import React from 'react';
 import { Series, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';

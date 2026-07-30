@@ -126,27 +126,28 @@ function registerIpcHandlers(): void {
           }
         });
 
-        renderProcess.stdout.on('data', (data: string) => {
-          const text = data.trim();
-          console.log(text);
+        const handleChunk = (chunk: string) => {
+          const text = chunk.trim();
+          if (!text) return;
+          console.log('[Remotion Output]:', text);
 
-          const match = text.match(/Rendered\s+(?:frame\s+)?(\d+)\s*\/(\d+)/i) ||
-            text.match(/Rendered\s+(?:frame\s+)?(\d+)\s+\((\d+)\s+frames/i) ||
-            text.match(/Rendered\s+(?:frame\s+)?(\d+)/i);
+          const match = text.match(/(?:Rendered|Rendering|frame)\s*(\d+)\s*(?:\/|of)\s*(\d+)/i) ||
+            text.match(/(\d+)\s*\/\s*(\d+)/) ||
+            text.match(/Rendered\s+(\d+)/i);
+
           if (match) {
             const currentFrame = parseInt(match[1], 10);
-            const totalFrames = match[2] ? parseInt(match[2], 10) : 100;
+            const totalFrames = match[2] ? parseInt(match[2], 10) : 300;
             _event.sender.send('render-progress', {
               frame: currentFrame,
               total: totalFrames,
               status: 'rendering'
             });
           }
-        });
+        };
 
-        renderProcess.stderr.on('data', (data: string) => {
-          console.warn(data.trim());
-        });
+        renderProcess.stdout.on('data', (data: string) => handleChunk(data));
+        renderProcess.stderr.on('data', (data: string) => handleChunk(data));
       });
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : String(err) };

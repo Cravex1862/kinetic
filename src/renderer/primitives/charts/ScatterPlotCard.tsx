@@ -36,6 +36,8 @@ export interface ScatterPlotCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const ScatterPlotCard: React.FC<ScatterPlotCardProps> = ({
@@ -63,6 +65,8 @@ export const ScatterPlotCard: React.FC<ScatterPlotCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
 
     const frame = useFrame(propFrame);
@@ -92,7 +96,7 @@ export const ScatterPlotCard: React.FC<ScatterPlotCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     }
 
     const titleStyle: React.CSSProperties = {

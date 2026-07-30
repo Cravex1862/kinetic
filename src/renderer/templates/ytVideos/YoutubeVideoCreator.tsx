@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Sparkle, UploadSimple, Palette, FilmStrip, Play, SpeakerHigh, Gear, CornersOut, Repeat, ClosedCaptioning, PictureInPicture } from '@phosphor-icons/react';
 import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
+import { BrandStylingPanel } from '@/renderer/components/BrandStylingPanel';
+import { BackgroundSelection } from '@/renderer/components/BackgroundSelectorPanel';
 
 interface YoutubeVideoCreatorProps {
   onBack: () => void;
@@ -41,6 +43,7 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
   const [swatches, setSwatches] = useState<Record<string, string>>(Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])));
   const [availableFonts, setAvailableFonts] = useState<string[]>(['Roboto', 'Inter', 'Poppins', 'DM Sans']);
   const [uploadedAssets, setUploadedAssets] = useState<string[]>([]);
+  const [bgSelection, setBgSelection] = useState<BackgroundSelection>({ type: 'color', color: '#09090b', blurPx: 0 });
   const [scanning, setScanning] = useState(false);
 
   // Load device system fonts on view mount
@@ -215,38 +218,16 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
           />
         </section>
 
-        {/* Section 2: Styling */}
-        <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-900 pb-2">
-            <Palette size={16} className="text-purple-400" />
-            <h4 className="text-xs font-bold text-gray-400">Styling</h4>
-          </div>
-
-          <div className="space-y-3">
-            {renderFontRow('Title Font')}
-            {renderFontRow('Heading')}
-            {renderFontRow('Paragraph')}
-          </div>
-
-          <div className="pt-2 border-t border-gray-900">
-            <span className="text-[10px] font-semibold text-gray-500 block mb-2">Palette Colors</span>
-            <div className="grid grid-cols-2 gap-2">
-              {colorSwatches.map((s) => (
-                <div key={s.label} className="flex items-center gap-2 bg-gray-950/40 p-1.5 rounded border border-gray-900">
-                  <input
-                    type="color"
-                    value={swatches[s.label]}
-                    onChange={(e) =>
-                      setSwatches((prev) => ({ ...prev, [s.label]: e.target.value }))
-                    }
-                    className="h-5 w-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
-                  />
-                  <span className="text-[10px] text-gray-400">{s.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Section 2: Styling & Brand Guidelines + Backgrounds */}
+        <BrandStylingPanel
+          fonts={fonts as any}
+          setFonts={setFonts}
+          swatches={swatches}
+          setSwatches={setSwatches}
+          availableFonts={availableFonts}
+          bgSelection={bgSelection}
+          onSelectBackground={setBgSelection}
+        />
 
         {/* Section 3: Custom Instructions */}
         <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4">
@@ -508,37 +489,7 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
           </div>
         </div>
 
-        {/* 2. Upload / Describe Background Box (Stretches full width) */}
-        <div className="w-full flex-grow flex flex-col justify-between rounded-xl border border-gray-900 bg-gray-900/20 p-5 gap-3 min-h-[140px]">
-          <div className="flex-grow w-full flex flex-col">
-            <label className="text-[10px] font-bold text-gray-500 block mb-1">Upload/Describe Background</label>
-            <textarea
-              value={bgDescription}
-              onChange={(e) => setBgDescription(e.target.value)}
-              placeholder="Describe background scene aesthetics..."
-              className="w-full flex-grow resize-none premium-input px-3.5 py-2.5 text-xs rounded-lg bg-gray-950/60 min-h-[60px]"
-            />
-          </div>
-          <div className="flex items-center gap-3 self-end">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2 px-4 text-xs font-semibold rounded-lg transition-all duration-300 whitespace-nowrap"
-            >
-              <UploadSimple size={14} className="text-white" />
-              Upload Background
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handleBackgroundUpload}
-              className="hidden"
-            />
-            {backgroundImage && (
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 whitespace-nowrap">Loaded</span>
-            )}
-          </div>
-        </div>
+
 
         {/* 3. Bottom Row: Upload Assets & Generate (Stretches full width) */}
         <div className="w-full flex items-center justify-between gap-4 mt-1">

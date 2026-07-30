@@ -58,17 +58,23 @@ export function getTransform3DStyle(
     rotateY?: number,
     rotateZ?: number,
     perspective?: number,
-    translateZ?: number
+    translateZ?: number,
+    translateX?: number,
+    translateY?: number
 ): React.CSSProperties {
     const transformParts: string[] = [];
+    if (perspective !== undefined && perspective > 0) {
+        transformParts.push(`perspective(${perspective}px)`);
+    }
+    if (translateX !== undefined && translateX !== 0) transformParts.push(`translateX(${translateX}px)`);
+    if (translateY !== undefined && translateY !== 0) transformParts.push(`translateY(${translateY}px)`);
+    if (translateZ !== undefined && translateZ !== 0) transformParts.push(`translateZ(${translateZ}px)`);
     if (rotateX !== undefined) transformParts.push(`rotateX(${rotateX}deg)`);
     if (rotateY !== undefined) transformParts.push(`rotateY(${rotateY}deg)`);
     if (rotateZ !== undefined) transformParts.push(`rotateZ(${rotateZ}deg)`);
-    if (translateZ !== undefined) transformParts.push(`translateZ(${translateZ}px)`);
 
     return {
         transform: transformParts.length > 0 ? transformParts.join(' ') : undefined,
         transformStyle: transformParts.length > 0 ? 'preserve-3d' : undefined,
-        perspective: perspective !== undefined ? `${perspective}px` : undefined,
     };
 }

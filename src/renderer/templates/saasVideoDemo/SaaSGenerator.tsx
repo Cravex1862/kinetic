@@ -6,6 +6,8 @@ import { runPipeline } from '../../agents/pipeline';
 import type { PipelineState } from '../../agents/types';
 import { callLLM, getStoredConfig } from '../../agents/llmClient';
 import type { ProjectData, AlertButton } from '../../pages/AppRouter';
+import { BrandStylingPanel } from '@/renderer/components/BrandStylingPanel';
+import { BackgroundSelection } from '@/renderer/components/BackgroundSelectorPanel';
 
 interface AnimationGeneratorProps {
     project: ProjectData | null;
@@ -55,6 +57,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
     const [swatches, setSwatches] = useState<Record<string, string>>(project?.colors || Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])));
     const [showVisualizer, setShowVisualizer] = useState(false);
     const [availableFonts, setAvailableFonts] = useState<string[]>(['Inter', 'Roboto', 'Poppins', 'DM Sans']);
+    const [bgSelection, setBgSelection] = useState<BackgroundSelection>({ type: 'color', color: '#09090b', blurPx: 0 });
 
     const [isRefining, setIsRefining] = useState(false);
     const [bgDescription, setBgDescription] = useState(project?.bgDescription || '');
@@ -398,6 +401,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
                 showVisualizer,
                 fonts,
                 colors: { ...swatches, backgroundImage },
+                bgSelection,
                 bgDescription,
                 unfinished: false,
                 generationState: undefined,
@@ -574,65 +578,16 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
                     )}
                 </section>
 
-                {/* Section 3: Styling */}
-                <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4 space-y-4">
-                    <div className="flex flex-col border-b border-gray-900 pb-2">
-                        <div className="flex items-center gap-2">
-                            <Palette size={16} className="text-purple-400" />
-                            <h4 className="text-xs font-bold text-gray-400">Styling & Brand Guidelines</h4>
-                        </div>
-                        {scannedExports && (
-                            <span className="text-[9px] font-semibold text-emerald-400 mt-0.5">
-                                Auto-detected from repo scanner
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Typography block */}
-                    <div className="space-y-3">
-                        {renderFontRow('Title Font')}
-                        {renderFontRow('Heading')}
-                        {renderFontRow('Paragraph')}
-                    </div>
-
-                    {/* Color Swatches */}
-                    <div className="pt-2 border-t border-gray-900">
-                        <span className="text-[10px] font-semibold text-gray-500 block mb-2">Palette Colors</span>
-                        <div className="grid grid-cols-2 gap-2">
-                            {colorSwatches.slice(0, 6).map((s) => (
-                                <div key={s.label} className="flex flex-col gap-1 bg-gray-950/40 p-2 rounded border border-gray-900">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="color"
-                                            value={swatches[s.label] || s.defaultColor}
-                                            onChange={(e) =>
-                                                setSwatches((prev) => ({ ...prev, [s.label]: e.target.value }))
-                                            }
-                                            className="h-5 w-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
-                                        />
-                                        <span className="text-[10px] text-gray-400 font-semibold">{s.label}</span>
-                                    </div>
-                                    {scannedExports && scannedExports.colors.length > 0 && (
-                                        <select
-                                            value={swatches[s.label] || ''}
-                                            onChange={(e) =>
-                                                setSwatches((prev) => ({ ...prev, [s.label]: e.target.value }))
-                                            }
-                                            className="w-full rounded border border-gray-800 bg-gray-900/60 px-1 py-0.5 text-[9px] text-gray-300 outline-none"
-                                        >
-                                            <option value="" disabled className="bg-gray-950 text-gray-500">Pick color...</option>
-                                            {scannedExports.colors.map((c) => (
-                                                <option key={c} value={c} className="bg-gray-950 text-white font-mono">
-                                                    {c}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
+                {/* Reusable Styling Accordion Block */}
+                <BrandStylingPanel
+                    fonts={fonts as any}
+                    setFonts={setFonts}
+                    swatches={swatches}
+                    setSwatches={setSwatches}
+                    availableFonts={availableFonts}
+                    bgSelection={bgSelection}
+                    onSelectBackground={setBgSelection}
+                />
 
                 {/* Section 4: Custom Instructions */}
                 <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4">
@@ -823,47 +778,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
                     </div>
                 </div>
 
-                {/* 2. Upload / Describe Background Box */}
-                <div className="flex-1 flex flex-col justify-between rounded-xl border border-gray-900 bg-gray-900/20 p-5 gap-3 min-h-[140px]">
-                    <div className="flex-1 w-full flex flex-col">
-                        <label className="text-[10px] font-bold text-gray-500 block mb-1">Upload/Describe Background</label>
-                        <textarea
-                            value={bgDescription}
-                            onChange={(e) => setBgDescription(e.target.value)}
-                            placeholder="e.g. Glowing purple mesh grid layout with floating particle system..."
-                            className="w-full flex-1 resize-none premium-input px-3.5 py-2.5 text-xs rounded-lg bg-gray-950/60 min-h-[60px]"
-                        />
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2 px-4 text-xs font-semibold rounded-lg transition-all duration-300 whitespace-nowrap"
-                        >
-                            <UploadSimple size={14} className="text-white" />
-                            Upload Background
-                        </button>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            accept="image/*"
-                            onChange={handleBackgroundUpload}
-                            className="hidden"
-                        />
-                        {backgroundImage && (
-                            <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 text-[10px] text-emerald-400 font-semibold whitespace-nowrap">
-                                <span>Loaded</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setBackgroundImage('')}
-                                    className="text-emerald-400/60 hover:text-red-400 transition-colors ml-1"
-                                    title="Remove background"
-                                >
-                                    <X size={10} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
+
 
                 {/* 3. Bottom Row: Upload Assets & Generate */}
                 <div className="flex items-center justify-between gap-4 mt-1">

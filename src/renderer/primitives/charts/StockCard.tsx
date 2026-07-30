@@ -29,6 +29,8 @@ export interface StockCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const StockCard: React.FC<StockCardProps> = ({
@@ -55,6 +57,8 @@ export const StockCard: React.FC<StockCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const frame = useFrame(propFrame);
 
@@ -108,7 +112,7 @@ export const StockCard: React.FC<StockCardProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const tickerStyle: React.CSSProperties = {
@@ -157,7 +161,8 @@ export const StockCard: React.FC<StockCardProps> = ({
     };
 
     return (
-        <div style={cardStyle} className="transition-all duration-300">
+        <div style={cardStyle}>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <h4 style={tickerStyle}>{tickerSymbol}</h4>
                 <p style={companyStyle}>{companyName}</p>

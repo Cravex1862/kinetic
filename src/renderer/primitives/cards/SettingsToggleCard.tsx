@@ -22,6 +22,8 @@ export interface SettingsToggleCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const SettingsToggleCard: React.FC<SettingsToggleCardProps> = ({
@@ -43,6 +45,8 @@ export const SettingsToggleCard: React.FC<SettingsToggleCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const currentFrame = useFrame(propFrame);
 
@@ -75,7 +79,7 @@ export const SettingsToggleCard: React.FC<SettingsToggleCardProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const titleStyle: React.CSSProperties = {

@@ -21,6 +21,8 @@ export interface FeatureCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const FeatureCard: React.FC<FeatureCardProps> = ({
@@ -42,6 +44,8 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const cardStyle: React.CSSProperties = {
         width: width !== undefined ? `${width}px` : '100%',
@@ -55,7 +59,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const logoContainerStyle: React.CSSProperties = {

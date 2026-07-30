@@ -15,17 +15,20 @@ export const TransformNode: React.FC<TransformNodeProps> = ({
     rotateZ,
     perspective,
     translateZ,
+    translateX,
+    translateY,
     style,
     className = '',
 }) => {
-
     const parentTransform = useParentTransform();
     const accumulatedTransform = combineTransforms(parentTransform, {
         rotateX,
         rotateY,
         rotateZ,
         perspective,
-        translateZ
+        translateZ,
+        translateX,
+        translateY,
     });
 
     const transformStyle = getTransform3DStyle(
@@ -34,7 +37,9 @@ export const TransformNode: React.FC<TransformNodeProps> = ({
         accumulatedTransform.rotateZ,
         accumulatedTransform.perspective,
         accumulatedTransform.translateZ,
-    )
+        accumulatedTransform.translateX,
+        accumulatedTransform.translateY,
+    );
 
     return (
         <TransformContext.Provider value={accumulatedTransform}>
@@ -42,6 +47,5 @@ export const TransformNode: React.FC<TransformNodeProps> = ({
                 {children}
             </div>
         </TransformContext.Provider>
-    )
-
-}
+    );
+};

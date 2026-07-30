@@ -10,6 +10,8 @@ import YoutubeVideoCreator from '../templates/ytVideos/YoutubeVideoCreator';
 import TourOverlay from '../components/TourOverlay';
 import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
 import { PrimitivesDemoOverlay } from '../components/PrimitivesDemoOverlay';
+import { TiltConfigurer } from '../components/TiltConfigurer';
+import Studio from './studio/Studio';
 
 
 export interface ProjectData {
@@ -24,6 +26,7 @@ export interface ProjectData {
   visualizerVariant?: 'wave' | 'bars' | 'circle';
   fonts?: any;
   colors?: any;
+  bgSelection?: any;
   bgDescription?: string;
   unfinished?: boolean;
   generationState?: any;
@@ -47,6 +50,8 @@ const AppRouter: React.FC = () => {
   const [alertState, setAlertState] = useState<CustomAlertState | null>(null);
   const [previousPage, setPreviousPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'youtube-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>('dashboard');
 
+  const [showTiltConfigurer, setShowTiltConfigurer] = useState(false);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
@@ -61,6 +66,10 @@ const AppRouter: React.FC = () => {
         });
       }
 
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setShowTiltConfigurer(prev => !prev);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -554,7 +563,7 @@ const AppRouter: React.FC = () => {
         />
       )}
       {page === 'basic-studio' && project && (
-        <BasicStudio
+        <Studio
           project={project}
           onBack={() => setPage('dashboard')}
           onUpdateProject={async (updated) => {
@@ -577,7 +586,6 @@ const AppRouter: React.FC = () => {
             }
           }}
           customAlert={customAlert}
-          customConfirm={customConfirm}
         />
       )}
       {page === 'settings' && (
@@ -638,6 +646,12 @@ const AppRouter: React.FC = () => {
       )}
       {page === 'primitives-demo' && (
         <PrimitivesDemoOverlay onClose={() => setPage(previousPage)} />
+      )}
+      {showTiltConfigurer && (
+        <TiltConfigurer
+          onClose={() => setShowTiltConfigurer(false)}
+          customAlert={customAlert}
+        />
       )}
 
     </div>

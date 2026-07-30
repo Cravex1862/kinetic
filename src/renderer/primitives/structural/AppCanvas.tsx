@@ -28,6 +28,8 @@ export interface AppCanvasProps {
   rotateZ?: number;
   perspective?: number;
   translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const AppCanvas: React.FC<AppCanvasProps> = ({
@@ -47,6 +49,8 @@ export const AppCanvas: React.FC<AppCanvasProps> = ({
   rotateZ,
   perspective,
   translateZ,
+  translateX,
+  translateY,
 }) => {
   const glow = buildGlowFilter(glowConfig);
   const customStyle = configToStyle(style);
@@ -64,7 +68,7 @@ export const AppCanvas: React.FC<AppCanvasProps> = ({
     flexDirection: 'column',
     ...glow,
     ...customStyle,
-    ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+    ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
   };
 
   const headerStyle: React.CSSProperties = {
@@ -87,7 +91,8 @@ export const AppCanvas: React.FC<AppCanvasProps> = ({
   };
 
   return (
-    <div style={outerStyle} className="transition-all duration-300">
+    <div style={outerStyle}>
+
       <div style={headerStyle}>
         {osType === 'mac' ? (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

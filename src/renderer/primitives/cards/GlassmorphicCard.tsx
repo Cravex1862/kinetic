@@ -1,30 +1,47 @@
 import React from 'react';
 import { GlowConfig, StyleConfig, configToStyle } from '../types';
-import { buildGlowFilter } from '../utils/styleHelpers';
+import { buildGlowFilter, getTransform3DStyle } from '../utils/styleHelpers';
 
-interface GlassmorphicCardProps {
+export interface GlassmorphicCardProps {
   children: React.ReactNode;
-  glowConfig: GlowConfig;
+  glowConfig?: GlowConfig;
   blur?: number;
   saturate?: number;
   borderOpacity?: number;
   width?: number | string;
   height?: number | string;
   style?: StyleConfig;
+  rotateX?: number;
+  rotateY?: number;
+  rotateZ?: number;
+  perspective?: number;
+  translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const GlassmorphicCard: React.FC<GlassmorphicCardProps> = ({
   children,
-  glowConfig,
+  glowConfig = { enabled: false, color: 'rgba(168, 85, 247, 0.4)', spread: 20, intensity: 3 },
   blur = 12,
   saturate = 1.4,
   borderOpacity = 0.2,
   width,
   height,
   style,
+  rotateX,
+  rotateY,
+  rotateZ,
+  perspective,
+  translateZ,
+  translateX,
+  translateY,
 }) => {
   const glow = buildGlowFilter(glowConfig);
   const us = configToStyle(style);
+  const t3d = getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY);
+
+
   return (
     <div
       style={{
@@ -38,6 +55,7 @@ export const GlassmorphicCard: React.FC<GlassmorphicCardProps> = ({
         width: width ?? '100%',
         height: height ?? undefined,
         ...glow,
+        ...t3d,
         ...us,
       }}
     >
@@ -45,3 +63,4 @@ export const GlassmorphicCard: React.FC<GlassmorphicCardProps> = ({
     </div>
   );
 };
+

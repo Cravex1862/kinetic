@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { Palette, TextB, TextItalic, TextUnderline } from '@phosphor-icons/react';
+import React, { useState, useEffect } from 'react';
+import { Palette, TextB, TextItalic, TextUnderline, Image as ImageIcon } from '@phosphor-icons/react';
+import { BackgroundSelectorPanel, BackgroundSelection } from './BackgroundSelectorPanel';
 
 export interface FontSettings {
     fontFamily: string;
@@ -17,6 +18,8 @@ interface StylingProps {
     setSwatches: React.Dispatch<React.SetStateAction<any>>;
     availableFonts: string[];
     scannedFonts?: string[];
+    bgSelection?: BackgroundSelection;
+    onSelectBackground?: (bg: BackgroundSelection) => void;
 }
 
 const SIZE_OPTIONS = Array.from({ length: 63 }, (_, i) => i + 10);
@@ -27,8 +30,12 @@ export const BrandStylingPanel: React.FC<StylingProps> = ({
     swatches,
     setSwatches,
     availableFonts,
-    scannedFonts = []
+    scannedFonts = [],
+    bgSelection,
+    onSelectBackground,
 }) => {
+    const [activeTab, setActiveTab] = useState<'styling' | 'backgrounds'>('styling');
+
     const toggleFontProp = (row: string, prop: 'bold' | 'italic' | 'underline') => {
         setFonts((prev: any) => ({
             ...prev,
@@ -138,40 +145,72 @@ export const BrandStylingPanel: React.FC<StylingProps> = ({
 
     return (
         <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4 space-y-4">
-            <div className="flex flex-col border-b border-gray-900 pb-2">
-                <div className="flex items-center gap-2">
-                    <Palette size={16} className="text-purple-400" />
-                    <h4 className="text-xs font-bold text-gray-400">Styling & Brand Guidelines</h4>
-                </div>
+            {/* TOP TAB SWITCHER */}
+            <div className="flex border-b border-gray-800 pb-2 gap-2">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('styling')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
+                        activeTab === 'styling'
+                            ? 'border-purple-500 text-purple-400'
+                            : 'border-transparent text-gray-400 hover:text-white'
+                    }`}
+                >
+                    <Palette size={14} />
+                    Styling & Brand
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('backgrounds')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
+                        activeTab === 'backgrounds'
+                            ? 'border-purple-500 text-purple-400'
+                            : 'border-transparent text-gray-400 hover:text-white'
+                    }`}
+                >
+                    <ImageIcon size={14} />
+                    Backgrounds
+                </button>
             </div>
 
-            <div className="space-y-3">
-                {renderRow('Title Font')}
-                {renderRow('Heading')}
-                {renderRow('Paragraph')}
-            </div>
+            {activeTab === 'styling' ? (
+                <>
+                    <div className="space-y-3">
+                        {renderRow('Title Font')}
+                        {renderRow('Heading')}
+                        {renderRow('Paragraph')}
+                    </div>
 
-            <div className="pt-1 border-t border-gray-900">
-                <span className="text-[10px] font-semibold text-gray-500 block mb-2">Palette Colors</span>
-                <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(swatches).map(([label, color]) => (
-                        <div key={label} className="flex items-center gap-2 bg-gray-950/40 border border-gray-900/50 rounded-lg px-2 py-1.5 hover:border-gray-800 transition-colors">
-                            <div className="relative">
-                                <input
-                                    type="color"
-                                    value={color}
-                                    onChange={(e) => setSwatches((prev: any) => ({ ...prev, [label]: e.target.value }))}
-                                    className="h-5 w-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
-                                />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-[8px] font-semibold truncate capitalize">{label}</span>
-                                <span className="text-[8px] text-gray-400 font-mono leading-none truncate">{color}</span>
-                            </div>
+                    <div className="pt-1 border-t border-gray-900">
+                        <span className="text-[10px] font-semibold text-gray-500 block mb-2">Palette Colors</span>
+                        <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(swatches).map(([label, color]) => (
+                                <div key={label} className="flex items-center gap-2 bg-gray-950/40 border border-gray-900/50 rounded-lg px-2 py-1.5 hover:border-gray-800 transition-colors">
+                                    <div className="relative">
+                                        <input
+                                            type="color"
+                                            value={color}
+                                            onChange={(e) => setSwatches((prev: any) => ({ ...prev, [label]: e.target.value }))}
+                                            className="h-5 w-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-[8px] font-semibold truncate capitalize">{label}</span>
+                                        <span className="text-[8px] text-gray-400 font-mono leading-none truncate">{color}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    </div>
+                </>
+            ) : (
+                <div className="pt-1">
+                    <BackgroundSelectorPanel
+                        currentSelection={bgSelection}
+                        onSelectBackground={(bg) => onSelectBackground && onSelectBackground(bg)}
+                    />
                 </div>
-            </div>
+            )}
         </section>
     );
 };

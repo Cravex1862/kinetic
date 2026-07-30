@@ -1,0 +1,21 @@
+[
+  {
+    "id": "preset_1785062221467",
+    "name": "Bottom_Unveil",
+    "rotateX": 37,
+    "rotateY": 0,
+    "rotateZ": 0,
+    "perspective": 1200,
+    "translateZ": 88,
+    "translateX": -17,
+    "translateY": 0,
+    "scale": 1,
+    "frameWidth": 1150,
+    "frameHeight": 650,
+    "glowColor": "rgba(6, 182, 212, 0.4)",
+    "glowSpread": 35,
+    "glowIntensity": 5,
+    "url": "https://app.hyper-scale.io/live",
+    "createdAt": "2026-07-26T10:37:01.467Z"
+  }
+]

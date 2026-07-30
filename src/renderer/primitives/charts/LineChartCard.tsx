@@ -36,6 +36,8 @@ export interface LineChartCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const LineChartCard: React.FC<LineChartCardProps> = ({
@@ -66,6 +68,8 @@ export const LineChartCard: React.FC<LineChartCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const frame = useFrame(propFrame);
     const maxVal = Math.max(...data.map(d => d.value), 1);
@@ -83,7 +87,7 @@ export const LineChartCard: React.FC<LineChartCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const titleStyle: React.CSSProperties = {

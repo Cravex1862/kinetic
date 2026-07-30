@@ -6,9 +6,11 @@ import { callLLM, getStoredConfig } from '@/renderer/agents/llmClient';
 import { ProjectData } from '../../pages/AppRouter';
 import { PreviewWindow } from '@/renderer/components/PreviewWindow';
 import { BrandStylingPanel, FontSettings } from '@/renderer/components/BrandStylingPanel';
-import { BackgroundUploadPanel } from '@/renderer/components/BackgroundUploadPanel';
 import { CustomInstructionsPanel } from '@/renderer/components/CustomInstructionsPanel';
 import { PipelineState } from '@/renderer/agents/types';
+import { BackgroundSelection } from '@/renderer/components/BackgroundSelectorPanel';
+import { BrowserFrame, HeroMetricCard } from '@/renderer/primitives/StructuralSDK';
+import { BarChart } from '@/renderer/primitives/ChartsSDK';
 
 interface AnimationGeneratorProps {
     project: ProjectData | null;
@@ -60,6 +62,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     const [backgroundImage, setBackgroundImage] = useState(project?.colors?.backgroundImage || '');
     const [uploadedAssets, setUploadedAssets] = useState<string[]>([]);
     const [showVisualizer, setShowVisualizer] = useState(false);
+    const [bgSelection, setBgSelection] = useState<BackgroundSelection>({ type: 'color', color: '#09090b', blurPx: 0 });
     const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
     const assetInputRef = useRef<HTMLInputElement>(null);
 
@@ -214,6 +217,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                 showVisualizer,
                 fonts,
                 colors: { ...swatches, backgroundImage },
+                bgSelection,
                 bgDescription,
                 unfinished: false,
                 generationState: undefined,
@@ -268,6 +272,8 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                     swatches={swatches}
                     setSwatches={setSwatches}
                     availableFonts={availableFonts}
+                    bgSelection={bgSelection}
+                    onSelectBackground={setBgSelection}
                 />
 
                 {/* Reusable Instructions Panel Block */}
@@ -282,22 +288,126 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
 
             {/* RIGHT COLUMN: Walkthrough Canvas area and trigger button elements */}
             <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950/40 justify-between h-full">
-                
+
                 {/* Walkthrough Preview Browser Component */}
                 <PreviewWindow title="Walkthrough Preview Canvas">
-                    <div className="flex flex-col gap-2 items-center text-center">
-                        <img src={logoIcon} className="h-16 w-16 object-contain opacity-40 animate-pulse" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 15px rgba(139, 92, 246, 0.3))' }} />
-                        <span className="text-xs text-gray-500 font-medium">Walkthrough Preview Screen</span>
+                    {/* Isolated Background Layer */}
+                    <div
+                        className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden"
+                        style={{
+                            ...(bgSelection?.color === 'transparent'
+                                ? {
+                                    backgroundImage:
+                                        'linear-gradient(45deg, #18181b 25%, transparent 25%), linear-gradient(-45deg, #18181b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #18181b 75%), linear-gradient(-45deg, transparent 75%, #18181b 75%)',
+                                    backgroundSize: '16px 16px',
+                                    backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                                    backgroundColor: '#09090b',
+                                }
+                                : bgSelection?.type === 'image' && bgSelection.imageUrl
+                                ? {
+                                    backgroundImage: `url(${bgSelection.imageUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    filter: `blur(${bgSelection.blurPx || 0}px)`,
+                                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                                }
+                                : bgSelection?.type === 'gradient' && bgSelection.gradient
+                                ? {
+                                    background: bgSelection.gradient,
+                                    filter: `blur(${bgSelection.blurPx || 0}px)`,
+                                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                                }
+                                : {
+                                    backgroundColor: bgSelection?.color || '#09090b',
+                                }),
+                        }}
+                    />
+
+                    {/* Foreground Content inside Expanded BrowserFrame */}
+                    <div className="relative z-10 w-full h-full p-6 flex items-center justify-center">
+                        <div className="w-full h-full max-w-5xl flex flex-col justify-center">
+                            <BrowserFrame url="app.kinetic.dev" osType="mac" width="100%" height="100%">
+                                <div className="p-6 space-y-5 text-white bg-gray-950/85 backdrop-blur-md rounded-b-xl border-t border-gray-800 h-[calc(100%-36px)] flex flex-col justify-between overflow-y-auto">
+                                    <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: swatches['Primary'] || '#8b5cf6' }} />
+                                            <span
+                                                style={{
+                                                    fontFamily: fonts['Title Font']?.fontFamily,
+                                                    color: fonts['Title Font']?.color || swatches['Primary'] || '#8b5cf6',
+                                                    fontWeight: fonts['Title Font']?.bold ? 'bold' : 'normal',
+                                                    fontStyle: fonts['Title Font']?.italic ? 'italic' : 'normal',
+                                                    textDecoration: fonts['Title Font']?.underline ? 'underline' : 'none',
+                                                }}
+                                                className="text-lg tracking-wide font-bold"
+                                            >
+                                                Kinetic Studio Demo
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-2.5">
+                                            <button
+                                                style={{ backgroundColor: swatches['Primary'] || '#8b5cf6' }}
+                                                className="px-4 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:opacity-90 transition-opacity"
+                                            >
+                                                Get Started
+                                            </button>
+                                            <button
+                                                style={{ borderColor: swatches['Accent'] || '#f59e0b', color: swatches['Accent'] || '#f59e0b' }}
+                                                className="px-4 py-1.5 rounded-lg text-xs font-bold border bg-transparent hover:bg-white/5 transition-colors"
+                                            >
+                                                Documentation
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <h3
+                                            style={{
+                                                fontFamily: fonts['Heading']?.fontFamily,
+                                                color: fonts['Heading']?.color || '#f8fafc',
+                                                fontWeight: fonts['Heading']?.bold ? 'bold' : 'normal',
+                                                fontStyle: fonts['Heading']?.italic ? 'italic' : 'normal',
+                                                textDecoration: fonts['Heading']?.underline ? 'underline' : 'none',
+                                            }}
+                                            className="text-base font-bold"
+                                        >
+                                            Real-Time Design Token Preview
+                                        </h3>
+                                        <p
+                                            style={{
+                                                fontFamily: fonts['Paragraph']?.fontFamily,
+                                                color: fonts['Paragraph']?.color || '#94a3b8',
+                                            }}
+                                            className="text-xs leading-relaxed max-w-xl"
+                                        >
+                                            Selected fonts, color swatches, and background wallpapers cascade live across all video scenes and components.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 pt-2 flex-1 items-center">
+                                        <HeroMetricCard
+                                            primaryText="12,480 Active Users"
+                                            captionText="+18.4% growth this month"
+                                            trend="up"
+                                            glowConfig={{ enabled: false, color: swatches['Primary'] || '#8b5cf6', intensity: 10, spread: 5 }}
+                                        />
+                                        <div className="h-44 w-full">
+                                            <BarChart
+                                                data={[
+                                                    { label: 'Jan', value: 40, color: swatches['Primary'] || '#8b5cf6' },
+                                                    { label: 'Feb', value: 65, color: swatches['Secondary'] || '#3b82f6' },
+                                                    { label: 'Mar', value: 85, color: swatches['Accent'] || '#f59e0b' },
+                                                ]}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </BrowserFrame>
+                        </div>
                     </div>
                 </PreviewWindow>
 
-                {/* Background image describe & asset loader component */}
-                <BackgroundUploadPanel
-                    bgDescription={bgDescription}
-                    setBgDescription={setBgDescription}
-                    backgroundImage={backgroundImage}
-                    setBackgroundImage={setBackgroundImage}
-                />
+
 
                 {/* Bottom row asset managers and generate states triggers */}
                 <div className="flex flex-col gap-4 mt-auto pt-4 border-t border-gray-900">

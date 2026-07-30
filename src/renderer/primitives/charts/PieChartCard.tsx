@@ -29,6 +29,8 @@ export interface PieChartCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 const defaultSliceColors = [
@@ -59,6 +61,8 @@ export const PieChartCard: React.FC<PieChartCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const frame = useFrame(propFrame);
 
@@ -78,7 +82,7 @@ export const PieChartCard: React.FC<PieChartCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const titleStyle: React.CSSProperties = {

@@ -31,6 +31,8 @@ export interface MetricFunnelCardProps {
     rotateZ?: number;
     perspective?: number;
     translateZ?: number;
+  translateX?: number;
+  translateY?: number;
 }
 
 export const MetricFunnelCard: React.FC<MetricFunnelCardProps> = ({
@@ -55,6 +57,8 @@ export const MetricFunnelCard: React.FC<MetricFunnelCardProps> = ({
     rotateZ,
     perspective,
     translateZ,
+  translateX,
+  translateY,
 }) => {
     const frame = useFrame(propFrame);
 
@@ -74,7 +78,7 @@ export const MetricFunnelCard: React.FC<MetricFunnelCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
-        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ),
+        ...getTransform3DStyle(rotateX, rotateY, rotateZ, perspective, translateZ, translateX, translateY),
     };
 
     const titleStyle: React.CSSProperties = {

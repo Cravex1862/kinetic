@@ -3,17 +3,41 @@ import type { AgentConfig } from "./types";
 import type { StoryboardSceneDef } from "./storyboardAgent";
 
 export async function runCodeGeneratorAgent(
-    config: AgentConfig,
-    scene: StoryboardSceneDef,
-    ingestCodeMap: Record<string, string>,
-    sceneIndex: number = 1
+   config: AgentConfig,
+   scene: StoryboardSceneDef,
+   ingestCodeMap: Record<string, string>,
+   sceneIndex: number = 1
 ): Promise<{ tsxCode?: string; error?: string }> {
 
-    const systemPrompt = `
+   let presetPromptSection = '';
+   if (typeof window !== 'undefined' && window.electronAPI) {
+      try {
+         let presetsJson = await window.electronAPI.readFile('C:/Users/kalic/Ashwin/SaaS testing/tilt_presets.json');
+         if (!presetsJson) {
+            presetsJson = await window.electronAPI.readFile('tilt_presets.json');
+         }
+         if (presetsJson) {
+            const parsed = JSON.parse(presetsJson);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+               const list = parsed.map((p: any) =>
+                  `- Preset "${p.name}": rotateX: ${p.rotateX}deg, rotateY: ${p.rotateY}deg, rotateZ: ${p.rotateZ || 0}deg, perspective: ${p.perspective}px, translateX: ${p.translateX || 0}px, translateY: ${p.translateY || 0}px, translateZ: ${p.translateZ || 0}px, glowColor: "${p.glowColor || 'rgba(6, 182, 212, 0.4)'}"`
+               ).join('\n');
+               presetPromptSection = `\n\nCOMMONLY USED & USER-SAVED 3D CAMERA ANGLE PRESETS:\n${list}\n\nWhen applying 3D transforms to main BrowserFrames, SidebarLayouts, or Hero Cards, prioritize using these user-saved 3D camera presets!`;
+            }
+         }
+      } catch (e) {
+         // Silently ignore if file is missing or invalid JSON
+      }
+   }
+
+   const systemPrompt = `
 You are an expert Visual Code Generator Agent building Shots.so / DaVinci / After-Effects level React UI layouts for Remotion.
 
 YOU HAVE FULL FREEDOM to rewrite and customize primitive component code!
 Build a premium, visually breathtaking layout code for a scene.
+
+-ALWAYS use 'backgroundColor: 'transparent' ' for the main outer scene container div.
+-NEVER write dark solid background colors like '#090090B' or '#000' on the outer scene wrapper, because the user picks custom wallpapers and gradients in the editor studio.
 
 IMPORTANT COMPONENT EXPORT RULE:
 You MUST export the main component for this scene as Scene${sceneIndex} like this:
@@ -38,7 +62,7 @@ SHOTS.SO ULTRA-HIGH QUALITY DESIGN RULES:
 
 5. 3D PERSPECTIVE TILTS & ROTATIONS:
    - Wrap focused elements in 3D perspective containers (\`perspective: '1200px'\`).
-   - Apply 3D tilts: \`transform: 'perspective(1200px) rotateX(16deg) rotateY(-6deg) translateZ(40px)'\`, \`transformStyle: 'preserve-3d'\`.
+   - Apply 3D tilts: \`transform: 'perspective(1200px) rotateX(16deg) rotateY(-6deg) translateZ(40px)'\`, \`transformStyle: 'preserve-3d'\`.${presetPromptSection}
 
 6. STRICT VISUAL HIERARCHY & GRADIENT TEXT:
    - Primary Titles: High-contrast white (\`#FFFFFF\`), font weight 700-800, text gradients (\`bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400\`).
@@ -56,7 +80,7 @@ Return pure TSX Component code wrapped in \`\`\`tsx code block or plain code.
 Do not include markdown chat explanations outside the code block.
 `;
 
-    const userPrompt = `
+   const userPrompt = `
 Scene Number: ${sceneIndex}
 Scene ID: ${scene.id}
 Description: ${scene.description}
@@ -66,9 +90,9 @@ Requested Primitives: ${scene.requestedPrimitives ? scene.requestedPrimitives.jo
 Generate the complete static TSX JSX CODE for this scene exporting "export const Scene${sceneIndex}: React.FC = () => { ... }".
 `;
 
-    const response = await callLLM(config, systemPrompt, userPrompt);
-    if (response.error) return { error: response.error };
+   const response = await callLLM(config, systemPrompt, userPrompt);
+   if (response.error) return { error: response.error };
 
-    const cleanedCode = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
-    return { tsxCode: cleanedCode };
+   const cleanedCode = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
+   return { tsxCode: cleanedCode };
 }
