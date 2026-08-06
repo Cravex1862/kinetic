@@ -7,7 +7,7 @@ interface HeroMetricCardProps {
   primaryText: string;
   captionText: string;
   trend?: 'up' | 'down' | 'neutral';
-  style?: StyleConfig;
+  style?: StyleConfig | React.CSSProperties;
 }
 
 const trendColors: Record<string, string> = {
@@ -17,9 +17,9 @@ const trendColors: Record<string, string> = {
 };
 
 const trendArrows: Record<string, string> = {
-  up: '\u2191',
-  down: '\u2193',
-  neutral: '\u2192',
+  up: '↑',
+  down: '↓',
+  neutral: '→',
 };
 
 export const HeroMetricCard: React.FC<HeroMetricCardProps> = ({
@@ -30,7 +30,7 @@ export const HeroMetricCard: React.FC<HeroMetricCardProps> = ({
   style,
 }) => {
   const glow = buildGlowFilter(glowConfig);
-  const us = configToStyle(style);
+  const us: React.CSSProperties = style ? ('transform' in style || 'backgroundColor' in style ? (style as React.CSSProperties) : configToStyle(style as StyleConfig)) : {};
   return (
     <div
       className="flex flex-col items-center justify-center rounded-xl border border-gray-700 bg-gray-900 p-8 text-center shadow-lg"

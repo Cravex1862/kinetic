@@ -12,6 +12,11 @@ import { BackgroundSelection } from '@/renderer/components/BackgroundSelectorPan
 import { BrowserFrame, HeroMetricCard } from '@/renderer/primitives/StructuralSDK';
 import { BarChart } from '@/renderer/primitives/ChartsSDK';
 
+import { AudioUploadField } from '@/renderer/components/AudioUploadField';
+import { VoiceoverAudioField } from '@/renderer/components/VoiceoverAudioField';
+import { runBeatNetAI } from '@/renderer/utils/beatDetector';
+import { ResizableSidebar } from '@/renderer/components/ResizableSidebar';
+
 interface AnimationGeneratorProps {
     project: ProjectData | null;
     onBack: (updated?: ProjectData) => void;
@@ -54,6 +59,8 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     const [instructions, setInstructions] = useState(project?.prompt || '');
     const [narration, setNarration] = useState(project?.narration || '');
     const [useNarration, setUseNarration] = useState(!!project?.narration);
+    const [voiceoverMode, setVoiceoverMode] = useState<'text' | 'audio'>('text');
+    const [voiceoverAudioFile, setVoiceoverAudioFile] = useState<File | null>(null);
     const [fonts, setFonts] = useState<Record<string, any>>(project?.fonts as any || defaultFonts);
     const [swatches, setSwatches] = useState<Record<string, string>>(project?.colors || Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])));
     const [availableFonts, setAvailableFonts] = useState<string[]>(['Inter', 'Roboto', 'Poppins', 'DM Sans']);
@@ -64,7 +71,24 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     const [showVisualizer, setShowVisualizer] = useState(false);
     const [bgSelection, setBgSelection] = useState<BackgroundSelection>({ type: 'color', color: '#09090b', blurPx: 0 });
     const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
+    const [audioFile, setAudioFile] = useState<File | null>(null);
+    const [beatFrames, setBeatFrames] = useState<number[]>([]);
+    const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
     const assetInputRef = useRef<HTMLInputElement>(null);
+
+    const handleSelectAudio = async (file: File | null) => {
+        setAudioFile(file);
+        if (!file) {
+            setBeatFrames([]);
+            return;
+        }
+
+        setIsAnalyzingAudio(true);
+        const predictions = await runBeatNetAI(file);
+        const frames = predictions.map((p) => p.frame);
+        setBeatFrames(frames);
+        setIsAnalyzingAudio(false);
+    };
 
     useEffect(() => {
         const fetchSystemFonts = async () => {
@@ -228,8 +252,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
 
     return (
         <div className="flex h-screen bg-gray-950 text-white page-enter">
-            {/* LEFT COLUMN: Sidebar Card Panel */}
-            <aside className="w-[320px] min-w-[280px] max-w-[360px] flex-shrink-0 border-r border-gray-900 bg-gray-950 p-5 flex flex-col gap-4 overflow-y-auto">
+            <ResizableSidebar initialWidth={380} minWidth={320} maxWidth={650} className="border-r border-gray-900 bg-gray-950 p-5 gap-4 overflow-y-auto">
                 <header className="flex items-center gap-2 border-b border-gray-900 pb-3">
                     <button
                         onClick={handleBack}
@@ -256,11 +279,13 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                         <input type="checkbox" checked={useNarration} onChange={(e) => setUseNarration(e.target.checked)} className="h-3.5 w-3.5 rounded border-gray-800 bg-gray-900 text-purple-600 accent-purple-600 outline-none" />
                     </div>
                     {useNarration && (
-                        <textarea
-                            value={narration}
-                            onChange={(e) => setNarration(e.target.value)}
-                            placeholder="Enter voiceover script... Each paragraph becomes a scene in the animation."
-                            className="w-full h-24 resize-none premium-input p-2.5 text-xs rounded-lg bg-gray-950/60 font-sans"
+                        <VoiceoverAudioField
+                            mode={voiceoverMode}
+                            onModeChange={setVoiceoverMode}
+                            scriptText={narration}
+                            onScriptTextChange={setNarration}
+                            audioFile={voiceoverAudioFile}
+                            onAudioFileChange={setVoiceoverAudioFile}
                         />
                     )}
                 </section>
@@ -284,7 +309,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                     handleRefinePrompt={handleRefinePrompt}
                     placeholder="Describe custom layout or animation instructions..."
                 />
-            </aside>
+            </ResizableSidebar>
 
             {/* RIGHT COLUMN: Walkthrough Canvas area and trigger button elements */}
             <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950/40 justify-between h-full">
@@ -409,8 +434,15 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
 
 
 
-                {/* Bottom row asset managers and generate states triggers */}
+                {/* Bottom row asset managers, beat-sync audio, and generate states triggers */}
                 <div className="flex flex-col gap-4 mt-auto pt-4 border-t border-gray-900">
+                    <AudioUploadField
+                        audioFile={audioFile}
+                        beatCount={beatFrames.length}
+                        isAnalyzing={isAnalyzingAudio}
+                        onSelectAudio={handleSelectAudio}
+                    />
+
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-gray-400">Project Assets</span>
@@ -449,12 +481,12 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
 
                     {/* Progress tracking bars */}
                     {pipelineState ? (
-                        <div className="flex flex-col gap-2 rounded-xl bg-gray-900/30 p-4 border border-gray-800">
+                        <div className="flex flex-col gap-2 rounded-xl bg-gray-900 p-4 border border-gray-800">
                             <div className="flex justify-between text-xs font-semibold text-gray-500">
                                 <span className="capitalize">{pipelineState.status.replace('-', ' ')}</span>
                                 <span>{Math.round(pipelineState.progress * 100)}%</span>
                             </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-900">
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-950">
                                 <div
                                     className={`h-full rounded-full transition-all duration-300 ${pipelineState.status === 'error' ? 'bg-red-500' : 'bg-violet-600'}`}
                                     style={{ width: `${Math.round(pipelineState.progress * 100)}%` }}
@@ -473,21 +505,21 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                             )}
                         </div>
                     ) : (
-                        <div className="flex items-center gap-4 justify-between bg-gray-900/10 border border-gray-900 rounded-xl px-4 py-3">
+                        <div className="flex items-center gap-4 justify-between bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-semibold text-gray-400">Enable Audio Visualizer</span>
                                 <input
                                     type="checkbox"
                                     checked={showVisualizer}
                                     onChange={(e) => setShowVisualizer(e.target.checked)}
-                                    className="h-3.5 w-3.5 rounded border-gray-800 bg-gray-900 text-purple-600 accent-purple-600 outline-none"
+                                    className="h-3.5 w-3.5 rounded border-gray-800 bg-gray-950 text-purple-600 accent-purple-600 outline-none"
                                 />
                             </div>
                             {project?.unfinished && project?.generationState ? (
                                 <div className="flex gap-2">
                                     <button
                                         onClick={handleGenerate}
-                                        className="px-4 py-2 rounded-lg border border-gray-800 bg-gray-900/10 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+                                        className="px-4 py-2 rounded-lg border border-gray-800 bg-gray-900 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                     >
                                         Start Over
                                     </button>

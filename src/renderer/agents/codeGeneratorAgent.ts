@@ -12,10 +12,7 @@ export async function runCodeGeneratorAgent(
    let presetPromptSection = '';
    if (typeof window !== 'undefined' && window.electronAPI) {
       try {
-         let presetsJson = await window.electronAPI.readFile('C:/Users/kalic/Ashwin/SaaS testing/tilt_presets.json');
-         if (!presetsJson) {
-            presetsJson = await window.electronAPI.readFile('tilt_presets.json');
-         }
+         const presetsJson = await window.electronAPI.readFile('tilt_presets.json');
          if (presetsJson) {
             const parsed = JSON.parse(presetsJson);
             if (Array.isArray(parsed) && parsed.length > 0) {
@@ -36,8 +33,8 @@ You are an expert Visual Code Generator Agent building Shots.so / DaVinci / Afte
 YOU HAVE FULL FREEDOM to rewrite and customize primitive component code!
 Build a premium, visually breathtaking layout code for a scene.
 
--ALWAYS use 'backgroundColor: 'transparent' ' for the main outer scene container div.
--NEVER write dark solid background colors like '#090090B' or '#000' on the outer scene wrapper, because the user picks custom wallpapers and gradients in the editor studio.
+-ALWAYS use 'backgroundColor: 'transparent'' for the main outer scene container div.
+-ALWAYS use 'width: '100%', height: '100%'' for outer scene wrappers and NEVER use 'minHeight: 100vh' because 100vh breaks Remotion composition sizing.
 
 IMPORTANT COMPONENT EXPORT RULE:
 You MUST export the main component for this scene as Scene${sceneIndex} like this:
@@ -72,8 +69,8 @@ SHOTS.SO ULTRA-HIGH QUALITY DESIGN RULES:
    - Anchor all paddings/margins to 8px increments (\`8px\`, \`16px\`, \`24px\`, \`32px\`, \`48px\`).
    - Nested Radius Rule: Outer Radius = Inner Radius + Padding.
 
-INGESTED PRIMITIVE CODE REFERENCES:
-${Object.entries(ingestCodeMap).map(([name, code]) => `=== ${name} ===\n${code}`).join('\n\n')}
+COMPONENT PROP SCHEMAS & INTERFACES:
+${Object.keys(ingestCodeMap).map(name => `- Component: <${name} />`).join('\n')}
 
 OUTPUT FORMAT:
 Return pure TSX Component code wrapped in \`\`\`tsx code block or plain code.

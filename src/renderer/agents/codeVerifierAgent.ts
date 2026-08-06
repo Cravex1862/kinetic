@@ -29,7 +29,11 @@ export async function runCodeVerifierAgent(
 
         const response = await callLLM(config, systemPrompt, `Attempt ${attempt}:   \n${currentCode}`, true);
         if (response.content) {
-            currentCode = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
+            const cleaned = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
+            if (cleaned === 'SKIP' || cleaned.toUpperCase() === 'SKIP') {
+                return { verifiedTsxCode: animatedTsxCode, passed: true };
+            }
+            currentCode = cleaned;
         }
     }
 

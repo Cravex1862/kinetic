@@ -1,9 +1,10 @@
-export type Provider = 'openai' | 'anthropic' | 'google' | 'hackclub';
+export type Provider = 'openai' | 'anthropic' | 'google' | 'hackclub' | 'ollama' | 'lmstudio' | 'local' | 'byoc';
 
 export interface AgentConfig {
   provider: Provider;
   apiKey: string;
   model?: string;
+  baseUrl?: string;
 }
 
 export interface StoryboardScene {
@@ -61,4 +62,7 @@ export const DEFAULT_MODELS: Record<Provider, string> = {
   anthropic: 'claude-3-5-sonnet-latest',
   google: 'gemini-2.5-flash',
   hackclub: 'gemini-2.5-flash',
+  ollama: 'qwen2.5-coder',
+  lmstudio: 'qwen2.5-coder-7b-instruct',
+  local: 'qwen2.5-coder',
 };

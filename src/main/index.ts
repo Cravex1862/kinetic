@@ -22,6 +22,7 @@ function createWindow(): void { // creates a desktop window
   }
 
   mainWindow = new BrowserWindow({ // creates a new browser window with following properties:
+    title: 'kinetic',
     width: 1400,
     height: 900,
     minWidth: 1024,
@@ -53,6 +54,8 @@ function createWindow(): void { // creates a desktop window
   });
 }
 
+import { handleReadFile, handleWriteFile, handleListProjects } from './fileService';
+
 function registerIpcHandlers(): void {
   ipcMain.handle('read-directory', async (_event: Electron.IpcMainInvokeEvent, dirPath: string): Promise<string[]> => {
     try {
@@ -63,21 +66,11 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('read-file', async (_event: Electron.IpcMainInvokeEvent, filePath: string): Promise<string> => {
-    try {
-      return fs.readFileSync(filePath, 'utf-8');
-    } catch {
-      return '';
-    }
+    return handleReadFile(filePath) || '';
   });
 
   ipcMain.handle('write-file', async (_event: Electron.IpcMainInvokeEvent, filePath: string, content: string): Promise<boolean> => {
-    try {
-      fs.writeFileSync(filePath, content, 'utf-8');
-      return true;
-    } catch (err: unknown) {
-      console.error('Failed to write file:', err instanceof Error ? err.message : err);
-      return false;
-    }
+    return handleWriteFile(filePath, content);
   });
 
   ipcMain.handle('select-directory', async (): Promise<string | null> => {

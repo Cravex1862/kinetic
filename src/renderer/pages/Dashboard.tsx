@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ProjectData } from './AppRouter';
-import { Gear, Plus, Folder, Trash, PencilSimple, FolderPlus, CaretDown, MagnifyingGlass, X, FilmSlate, ArrowRight } from '@phosphor-icons/react';
+import { Gear, Plus, Folder, Trash, PencilSimple, FolderPlus, CaretDown, MagnifyingGlass, X, FilmSlate, ArrowRight, Sparkle } from '@phosphor-icons/react';
 import logoWithText from '../../../kinetic_brand/logo_transparent_with_text.png';
 
 interface DashboardProps {
@@ -20,7 +20,7 @@ interface DashboardProps {
 }
 
 const FOLDER_COLORS: Record<string, { text: string; bg: string; border: string; active: string }> = {
-  purple: { text: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30', active: 'bg-purple-600' },
+  purple: { text: 'text-purple-400', bg: 'bg-transparent', border: 'border-purple-500/50', active: 'bg-purple-600' },
   emerald: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', active: 'bg-emerald-600' },
   amber: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', active: 'bg-amber-600' },
   rose: { text: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30', active: 'bg-rose-600' },
@@ -197,8 +197,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Settings CTA Gear */}
-      <div className="absolute top-6 right-6">
+      {/* Top Bar Actions */}
+      <div className="absolute top-6 right-6 flex items-center gap-3">
         <button
           onClick={onOpenSettings}
           className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
@@ -511,7 +511,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 border border-dashed border-gray-800/60 rounded-2xl bg-gray-950/20 w-full">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-600/10 border border-purple-500/20 mb-5">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-transparent border-2 border-purple-500 mb-5">
                   <FilmSlate size={28} className="text-purple-400" />
                 </div>
                 <h3 className="text-base font-bold text-white mb-1">No projects yet</h3>

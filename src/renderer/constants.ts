@@ -3,6 +3,9 @@ export const MODEL_PRESETS: Record<string, string[]> = {
   anthropic: ['claude-3-5-sonnet-latest', 'claude-3-haiku-20240307', 'claude-3-opus-20240229'],
   google: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'],
   hackclub: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash'],
+  ollama: ['qwen2.5-coder', 'llama3.2', 'codellama', 'mistral', 'phi4', 'gemma2'],
+  lmstudio: ['qwen2.5-coder-7b-instruct', 'llama-3.2-3b-instruct', 'local-model'],
+  local: ['qwen2.5-coder', 'llama3.2', 'local-model'],
 };
 
 import type { TourStep } from './components/TourOverlay';

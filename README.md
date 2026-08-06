@@ -1,62 +1,93 @@
-# Kinetic
+# Kinetic — Desktop Motion-Graphics Video Engine
 
-Kinetic is a desktop app that takes a script you write and turns it into a video with animations and moving graphics. **Note: This project is in active development and this is the first iteration being updated to GitHub**.
+Kinetic is a desktop motion-graphics studio that programmatically generates After-Effects-style videos, SaaS product walkthroughs, and beat-synced animated clips using **Electron, React, and Remotion**.
 
 ![Kinetic Logo](kinetic_brand/logo_with_text.png)
 
-**Try it out:** You can download the latest version for your computer on the releases page or run it locally following the guide below.
+---
 
-## Quick Start
+## 🚀 Quick Start
 
-You can start the app on your computer using these two commands:
+Run Kinetic locally on your machine:
+
 ```bash
+# 1. Install dependencies
 npm install
+
+# 2. Run automated test suite
+npm test
+
+# 3. Launch Electron Studio
 npm run dev
 ```
 
-## Features
+---
 
-* **AI generation**: You write a script or prompt and the AI sets up all the slides and movements.
-* **Easy editing**: You can edit layouts, colors, and sizes using the sidebar controls on the screen.
-* **Morph transitions**: A custom movement engine handles transitions so you don't have to write math or code.
-* **Audio sync**: You can upload a song or a voice clip and the graphics bounce along with the sound.
-* **MP4 rendering**: You can render the whole project into a real MP4 video file on your computer.
+## 🎯 Architectural Overview
 
+Unlike traditional AI video generators that output blurry, warping pixels with corrupted text, Kinetic writes **deterministic React component code** compiled frame-by-frame by Remotion. This guarantees 4K crisp typography, sharp UI chrome, and hardware-accelerated rendering.
 
-## How to Run It Locally
-
-You need to install a couple of things first. Make sure you have Node.js version 18 or higher. You also need to install FFmpeg on your computer and make sure it's added to your environment path. It's necessary because the video exporter needs FFmpeg to stitch the video frames together.
-
-Follow these steps:
-
-1. Clone the repository to your computer:
-```bash
-git clone https://github.com/Cravex1862/kinetic.git
-cd kinetic
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             KINETIC ENGINE                                  │
+├───────────────────┬─────────────────────────────┬───────────────────────────┤
+│ ELECTRON MAIN     │ REACT STUDIO UI             │ REMOTION VIDEO COMPILER   │
+│ - IPC File System │ - MultiTrack Timeline       │ - 60 FPS Canvas Preview   │
+│ - MP4 Exporter    │ - Targeted AI Comment Pins  │ - Monotonic Keyframe AST  │
+│ - Native Audio    │ - DaVinci Audio Waveforms   │ - Hardware Render Pipeline│
+└───────────────────┴─────────────────────────────┴───────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      BEATNET AI MUSIC RHYTHM ENGINE                         │
+│  STFT Spectrogram -> Song Loudness Normalization -> Frame Ooomph Ratings    │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-2. Install all the packages:
+---
+
+## ⚡ Core Features
+
+* **BeatNet AI Music Beat & Ooomph Sync**: Automatically extracts STFT spectrogram magnitude features from audio soundtracks. Calculates song-relative loudness normalization to assign 10%–100% "Ooomph" impact ratings (Heavy, Medium, Subtle) to video keyframe transitions.
+* **Targeted Comment-to-Edit Loop**: Pin feedback comments directly to specific frames on the timeline to scope AI edits exclusively to targeted visual elements.
+* **DaVinci Resolve-Style Audio Track**: Integrated timeline audio track featuring vertical spectrum peak bar lines, mute controls (`M`), and beat marker overlays.
+* **Hardware-Accelerated Morph Engine**: Interpolates numbers, hex colors, 3D perspective transforms, opacity, and vector bounds without writing manual math.
+* **Primitives SDK**:
+  - **12 UI Chrome**: `BrowserFrame`, `SidebarLayout`, `TopNavbar`, `MobileDevice`, etc.
+  - **9 Transition Wrappers**: `SpringEnter`, `FadeBlur`, `SlideInOut`, `PerspectiveFlip`, etc.
+  - **8 SVG Charts**: `Bar`, `Line`, `Pie`, `Area`, `Donut`, `Funnel`, `Scatter`, `Sparkline`.
+  - **10 Card SDKs**: `GlassmorphicCard`, `PricingPlan`, `Kanban`, `CustomCard`, etc.
+
+---
+
+## 🧪 Automated Testing Suite
+
+Kinetic includes a zero-dependency TypeScript test suite under `testing/`:
+
 ```bash
-npm install
+npm test
 ```
 
-3. Start the application:
-```bash
-npm run dev
-```
+### Test Coverage:
+1. **`testing/beatDetector.test.ts`**: Tests STFT spectrogram windowing, frame hop calculations, and song-relative loudness normalization (10%–100% intensity scale).
+2. **`testing/semanticParser.test.ts`**: Tests Remotion keyframe frame deduplication (ensuring `f0 < f1 < f2` to prevent rendering crashes), property extraction, and TSX serialization.
+3. **`testing/MorphSDK.test.ts`**: Tests numeric interpolation, hex color blending, and hardware-accelerated 3D transform generation.
 
-4. Go to the settings page in the app and type in your Gemini API key so the AI generator can talk to the models.
+---
 
-## How It Works
+## 🛠 Tech Stack
 
-I built this app using Electron, React, and Remotion. Most AI video tools make weird, blurry videos where the text is messed up and hard to read. I didn't do that. Instead, my app reads your prompt and builds a layout with actual React components.
+* **Desktop Application**: Electron & Node.js IPC
+* **Frontend UI**: React 18, Tailwind CSS, Phosphor Icons
+* **Video Rendering**: Remotion Engine & FFmpeg
+* **Audio Analysis**: ONNX Runtime Web & Web Audio STFT
+* **Testing**: Node Native Test Runner & `tsx`
 
-Then, I use a morphing library that calculates the movement between visual states. This keeps the text sharp at any size. Remotion takes these React components and exports them frame by frame into an MP4 file. It takes some computing power, but the video looks perfect.
+---
 
-## Credits
+## 📜 Credits
 
-* [Remotion](https://www.remotion.dev) for rendering React components into video files.
-* [Electron](https://www.electronjs.org) for packaging React into a desktop application.
-* [Phosphor Icons](https://phosphoricons.com) for the interface icons I used.
-
-
+* [Remotion](https://www.remotion.dev) for rendering React components into video frames.
+* [Electron](https://www.electronjs.org) for desktop application window management.
+* [ONNX Runtime](https://onnxruntime.ai) & BeatNet for audio beat detection.
+* [Phosphor Icons](https://phosphoricons.com) for interface iconography.

@@ -26,7 +26,11 @@ export async function runAnimationVerifierAgent(
 
         const response = await callLLM(config, systemPrompt, `Attempt ${attempt}:\n${currentCode}`, true);
         if (response.content) {
-            currentCode = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
+            const cleaned = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
+            if (cleaned === 'SKIP' || cleaned.toUpperCase() === 'SKIP') {
+                return { finalTsxCode: verifiedTsxCode, passed: true };
+            }
+            currentCode = cleaned;
         }
     }
 

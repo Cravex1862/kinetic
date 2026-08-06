@@ -3,6 +3,10 @@ import { ArrowLeft, Sparkle, UploadSimple, Palette, FilmStrip, Play, SpeakerHigh
 import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
 import { BrandStylingPanel } from '@/renderer/components/BrandStylingPanel';
 import { BackgroundSelection } from '@/renderer/components/BackgroundSelectorPanel';
+import { ResizableSidebar } from '@/renderer/components/ResizableSidebar';
+import { CustomInstructionsPanel } from '@/renderer/components/CustomInstructionsPanel';
+import { AudioUploadField } from '@/renderer/components/AudioUploadField';
+import { runBeatNetAI } from '@/renderer/utils/beatDetector';
 
 interface YoutubeVideoCreatorProps {
   onBack: () => void;
@@ -45,6 +49,22 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
   const [uploadedAssets, setUploadedAssets] = useState<string[]>([]);
   const [bgSelection, setBgSelection] = useState<BackgroundSelection>({ type: 'color', color: '#09090b', blurPx: 0 });
   const [scanning, setScanning] = useState(false);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [beatFrames, setBeatFrames] = useState<number[]>([]);
+  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
+
+  const handleSelectAudio = async (file: File | null) => {
+    setAudioFile(file);
+    if (!file) {
+      setBeatFrames([]);
+      return;
+    }
+    setIsAnalyzingAudio(true);
+    const predictions = await runBeatNetAI(file);
+    const frames = predictions.map((p) => p.frame);
+    setBeatFrames(frames);
+    setIsAnalyzingAudio(false);
+  };
 
   // Load device system fonts on view mount
   useEffect(() => {
@@ -192,8 +212,8 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
 
   return (
     <div className="flex h-screen bg-gray-950 text-white page-enter overflow-hidden">
-      {/* LEFT SIDEBAR - Configuration Panel (Stretches to 25% width) */}
-      <aside className="w-1/4 min-w-[320px] max-w-[480px] flex-shrink-0 border-r border-gray-900 bg-gray-950 p-5 flex flex-col gap-4 overflow-y-auto">
+      {/* LEFT SIDEBAR - Configuration Panel */}
+      <ResizableSidebar initialWidth={380} minWidth={320} maxWidth={650} className="border-r border-gray-900 bg-gray-950 p-5 gap-4 overflow-y-auto">
         <header className="flex items-center gap-2 border-b border-gray-900 pb-3">
           <button
             onClick={onBack}
@@ -208,13 +228,13 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
         </header>
 
         {/* Section 1: Upload Script */}
-        <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4">
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-4">
           <h4 className="text-xs font-bold text-gray-400 mb-2">Upload Script</h4>
           <textarea
             value={narration}
             onChange={(e) => setNarration(e.target.value)}
             placeholder="Enter YouTube video script..."
-            className="w-full h-24 resize-none premium-input p-2.5 text-xs rounded-lg bg-gray-950/60"
+            className="w-full h-24 resize-none premium-input p-2.5 text-xs rounded-lg bg-gray-950"
           />
         </section>
 
@@ -228,24 +248,13 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
           bgSelection={bgSelection}
           onSelectBackground={setBgSelection}
         />
-
-        {/* Section 3: Custom Instructions */}
-        <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4">
-          <h4 className="text-xs font-bold text-gray-400 mb-2">Custom Instructions</h4>
-          <textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Describe YouTube animation styling instructions..."
-            className="w-full h-24 resize-none premium-input p-2.5 text-xs rounded-lg bg-gray-950/60"
-          />
-        </section>
-      </aside>
+      </ResizableSidebar>
 
       {/* RIGHT MAIN AREA (Stretches to 75% width, content flows full width) */}
-      <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950/40 justify-between h-full">
+      <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950 justify-between h-full">
         
         {/* 1. Preview Window Box (Stretches full width, aspect-video 16:9) */}
-        <div className="w-full aspect-video rounded-2xl border border-gray-900 bg-gray-900/10 p-5 backdrop-blur-md relative overflow-hidden flex-shrink-0">
+        <div className="w-full aspect-video rounded-2xl border border-gray-800 bg-gray-900 p-5 relative overflow-hidden flex-shrink-0">
           <div className="absolute top-4 left-4 flex gap-1.5 z-10">
             <span className="w-3 h-3 rounded-full bg-red-500/70" />
             <span className="w-3 h-3 rounded-full bg-yellow-500/70" />
@@ -402,24 +411,122 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                     }}
-                    className="w-full h-full"
-                  />
-                  
-                  {/* Captions Overlay Container */}
-                  <div className="captions-container">
-                    <p 
-                      style={{
-                        fontFamily: fonts['Paragraph'].fontFamily,
-                        color: fonts['Paragraph'].color,
-                        fontWeight: fonts['Paragraph'].bold ? 'bold' : 'normal',
-                        fontStyle: fonts['Paragraph'].italic ? 'italic' : 'normal',
-                        textDecoration: fonts['Paragraph'].underline ? 'underline' : 'none',
-                        fontSize: `${Math.min(18, fonts['Paragraph'].size)}px`
-                      }}
-                      className="caption-text"
-                    >
-                      {narration.trim() ? narration.slice(0, 80) + '...' : 'Subtitles & captions'}
-                    </p>
+                    className="w-full h-full relative overflow-hidden flex flex-col items-center justify-center p-8 select-none"
+                  >
+                    {/* Ambient Glowing Orbs */}
+                    <div 
+                      style={{ background: `radial-gradient(circle, ${swatches['Primary']}44 0%, transparent 70%)` }}
+                      className="absolute -top-10 -left-10 w-72 h-72 rounded-full blur-3xl pointer-events-none animate-pulse"
+                    />
+                    <div 
+                      style={{ background: `radial-gradient(circle, ${swatches['Secondary']}33 0%, transparent 70%)` }}
+                      className="absolute -bottom-10 -right-10 w-80 h-80 rounded-full blur-3xl pointer-events-none animate-pulse"
+                    />
+
+                    {/* Top Motion Badge */}
+                    <div className="absolute top-4 left-6 flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-md z-10 shadow-lg">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-[10px] font-semibold text-gray-300 tracking-wider uppercase">
+                        Kinetic Motion Engine • 60 FPS
+                      </span>
+                    </div>
+
+                    {/* Center Motion Graphics Composition */}
+                    <div className="relative z-10 w-full max-w-lg flex flex-col gap-4 items-center text-center">
+                      
+                      {/* Animated Title Block */}
+                      <div className="flex flex-col items-center gap-1 transition-all duration-300 transform hover:scale-105">
+                        <h2 
+                          style={{
+                            fontFamily: fonts['Title Font'].fontFamily,
+                            color: fonts['Title Font'].color,
+                            fontWeight: fonts['Title Font'].bold ? 'bold' : 'normal',
+                            fontStyle: fonts['Title Font'].italic ? 'italic' : 'normal',
+                            textDecoration: fonts['Title Font'].underline ? 'underline' : 'none',
+                            fontSize: `${Math.min(36, fonts['Title Font'].size)}px`,
+                            textShadow: `0 4px 20px ${swatches['Primary']}66`
+                          }}
+                          className="tracking-tight leading-tight"
+                        >
+                          {instructions.trim() ? instructions.slice(0, 45) : 'SaaS Motion Showcase'}
+                        </h2>
+                        
+                        <p 
+                          style={{
+                            fontFamily: fonts['Heading'].fontFamily,
+                            color: fonts['Heading'].color,
+                            fontSize: `${Math.min(18, fonts['Heading'].size)}px`
+                          }}
+                          className="opacity-90 font-medium max-w-md"
+                        >
+                          {bgDescription.trim() ? bgDescription.slice(0, 60) : 'Automated 60 FPS Remotion Video Engine'}
+                        </p>
+                      </div>
+
+                      {/* Animated Motion Chart Card */}
+                      <div className="w-full bg-gray-950/80 border border-white/15 rounded-xl p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-3 relative overflow-hidden group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span 
+                              style={{ backgroundColor: swatches['Primary'] }}
+                              className="w-3 h-3 rounded-full shadow-lg" 
+                            />
+                            <span className="text-xs font-bold text-gray-200">Revenue Growth Index</span>
+                          </div>
+                          <span 
+                            style={{ color: swatches['Accent'] || '#10b981' }}
+                            className="text-xs font-mono font-bold bg-white/5 px-2 py-0.5 rounded border border-white/10"
+                          >
+                            +148.5%
+                          </span>
+                        </div>
+
+                        {/* Animated Bar Chart Rows */}
+                        <div className="flex items-end justify-between h-20 pt-2 gap-2 border-b border-white/10 pb-2">
+                          {[35, 65, 45, 90, 75, 100].map((val, idx) => (
+                            <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                              <div 
+                                style={{ 
+                                  height: `${val}%`,
+                                  background: idx === 5 
+                                    ? `linear-gradient(to top, ${swatches['Primary']}, ${swatches['Secondary']})` 
+                                    : `${swatches['Primary']}77`
+                                }}
+                                className="w-full rounded-t transition-all duration-700 hover:brightness-125 shadow-md"
+                              />
+                              <span className="text-[9px] font-mono text-gray-400">M{idx + 1}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Interactive Cursor Overlay */}
+                        <div 
+                          className="absolute bottom-4 right-8 pointer-events-none transition-all duration-1000 transform hover:translate-x-2"
+                        >
+                          <svg className="w-6 h-6 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 3l7 18 3-7 7-3L3 3z" />
+                          </svg>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Captions Overlay Container */}
+                    <div className="captions-container">
+                      <p 
+                        style={{
+                          fontFamily: fonts['Paragraph'].fontFamily,
+                          color: fonts['Paragraph'].color,
+                          fontWeight: fonts['Paragraph'].bold ? 'bold' : 'normal',
+                          fontStyle: fonts['Paragraph'].italic ? 'italic' : 'normal',
+                          textDecoration: fonts['Paragraph'].underline ? 'underline' : 'none',
+                          fontSize: `${Math.min(18, fonts['Paragraph'].size)}px`
+                        }}
+                        className="caption-text"
+                      >
+                        {narration.trim() ? narration.slice(0, 80) + '...' : 'Subtitles & captions will sync dynamically with audio narration'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -490,6 +597,22 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
         </div>
 
 
+
+        {/* 2. Main Content Inputs: Custom Instructions & Beat Sync Audio */}
+        <div className="w-full flex flex-col gap-4 mt-2">
+          <CustomInstructionsPanel
+            instructions={instructions}
+            setInstructions={setInstructions}
+            placeholder="Describe YouTube animation styling instructions..."
+          />
+
+          <AudioUploadField
+            audioFile={audioFile}
+            beatCount={beatFrames.length}
+            isAnalyzing={isAnalyzingAudio}
+            onSelectAudio={handleSelectAudio}
+          />
+        </div>
 
         {/* 3. Bottom Row: Upload Assets & Generate (Stretches full width) */}
         <div className="w-full flex items-center justify-between gap-4 mt-1">

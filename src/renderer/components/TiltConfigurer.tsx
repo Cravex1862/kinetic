@@ -470,7 +470,7 @@ glowConfig: { enabled: true, color: '${glowColor}', spread: ${glowSpread}, inten
       <div className="flex-1 h-full flex flex-col bg-gray-950 overflow-hidden relative">
         <div className="h-12 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between px-6">
           <span className="text-xs font-medium text-gray-400">Live 3D Viewport Preview</span>
-          <span className="text-xs font-mono text-purple-400 bg-purple-950/50 border border-purple-800/50 px-2 py-0.5 rounded">
+          <span className="text-xs font-mono text-purple-300 bg-transparent border border-purple-500/60 px-2 py-0.5 rounded">
             rotateX: {rotateX}° | rotateY: {rotateY}° | rotateZ: {rotateZ}° | perspective: {perspective}px
           </span>
         </div>

@@ -2,16 +2,22 @@ import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import type { SceneOutput } from '../agents/types';
 import BasicGenerator from '../templates/basicAnimation/BasicGenerator';
-import BasicStudio from '../templates/basicAnimation/BasicStudio';
 import TemplateSelector from './TemplateSelector';
 import Settings from './Settings';
 import SetupWizard from './SetupWizard';
 import YoutubeVideoCreator from '../templates/ytVideos/YoutubeVideoCreator';
+import { LogoGenerator } from '../templates/logoAnimator/LogoGenerator';
+import MinecraftStyleCreator from '../templates/minecraft/MinecraftStyleCreator';
+import SaaSGenerator from '../templates/saasVideoDemo/SaaSGenerator';
 import TourOverlay from '../components/TourOverlay';
 import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
 import { PrimitivesDemoOverlay } from '../components/PrimitivesDemoOverlay';
+import { MinecraftPrimitivesDemoOverlay } from '../components/MinecraftPrimitivesDemoOverlay';
 import { TiltConfigurer } from '../components/TiltConfigurer';
 import Studio from './studio/Studio';
+import { registerBYOXHandler } from '../agents/llmClient';
+import { BYOCModal } from '../components/BYOCModal';
+import { sanitizeCompositionCode } from '../agents/pipeline';
 
 
 export interface ProjectData {
@@ -48,9 +54,25 @@ export interface CustomAlertState {
 
 const AppRouter: React.FC = () => {
   const [alertState, setAlertState] = useState<CustomAlertState | null>(null);
-  const [previousPage, setPreviousPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'youtube-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>('dashboard');
+  const [previousPage, setPreviousPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'saas-generator' | 'youtube-creator' | 'logo-generator' | 'minecraft-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>('dashboard');
 
   const [showTiltConfigurer, setShowTiltConfigurer] = useState(false);
+  const [showMinecraftDemo, setShowMinecraftDemo] = useState(false);
+  const [byocPrompt, setByocPrompt] = useState<string | null>(null);
+  const [byocResolver, setByocResolver] = useState<{
+    resolve: (val: string) => void;
+    reject: (err?: any) => void;
+  } | null>(null);
+
+  useEffect(() => {
+    registerBYOXHandler((promptText) => {
+      return new Promise<string>((resolve, reject) => {
+        setByocPrompt(promptText);
+        setByocResolver({ resolve, reject });
+      });
+    });
+    return () => registerBYOXHandler(null);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -112,7 +134,7 @@ const AppRouter: React.FC = () => {
     });
   };
 
-  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'youtube-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>(() => {
+  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'saas-generator' | 'youtube-creator' | 'logo-generator' | 'minecraft-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>(() => {
     const completed = localStorage.getItem('kinetic-setup-completed') === 'true';
     return completed ? 'dashboard' : 'setup';
   });
@@ -162,47 +184,25 @@ const AppRouter: React.FC = () => {
   };
 
   const handleSelectTemplate = async (templateKey: string, selectedDir: string) => {
-    if (templateKey !== 'basic-animation' && templateKey !== 'youtube-videos') {
-      await customAlert("Coming Soon", `${templateKey} template is coming soon!`);
-      return;
-    }
-    let finalDir: string | null = selectedDir || workspaceDir;
-    if (!finalDir) {
-      if (!window.electronAPI?.selectDirectory) {
-        await customAlert("Feature Unavailable", "Please select a directory inside the desktop app.");
-        return;
-      }
-      finalDir = await window.electronAPI.selectDirectory();
-      if (!finalDir) return;
-    }
-
-    const files = await window.electronAPI?.readDirectory(finalDir);
-    let n = 1;
-    while (files?.includes(`untitled_${n}.json`)) {
-      n++;
-    }
-
-    const filename = `untitled_${n}.json`;
-    const separator = finalDir.includes('\\') ? '\\' : '/';
-    const savePath = `${finalDir}${separator}${filename}`;
-
     const newProject: ProjectData = {
-      title: `untitled_${n}`,
+      title: 'Draft Project',
       prompt: '',
       narration: '',
-      savePath,
+      savePath: '', // In-memory draft (only saved to disk upon first generation run)
       scenes: [],
       unfinished: true
     };
 
-    if (window.electronAPI?.writeFile) {
-      await window.electronAPI.writeFile(savePath, JSON.stringify(newProject, null, 2));
-    }
     setProject(newProject);
-    setProjects((prev) => [...prev, newProject]);
 
     if (templateKey === 'youtube-videos') {
       setPage('youtube-creator');
+    } else if (templateKey === 'logo-animator') {
+      setPage('logo-generator');
+    } else if (templateKey === 'minecraft-style') {
+      setPage('minecraft-creator');
+    } else if (templateKey === 'saas-demo-videos' || templateKey === 'ui-ux-walkthrough') {
+      setPage('saas-generator');
     } else {
       setPage('basic-generator');
     }
@@ -215,6 +215,17 @@ const AppRouter: React.FC = () => {
   React.useEffect(() => {
     localStorage.setItem('kinetic-folders', JSON.stringify(folders));
   }, [folders]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+        e.preventDefault();
+        setShowMinecraftDemo((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   React.useEffect(() => {
     const loadProjects = async () => {
@@ -259,11 +270,45 @@ const AppRouter: React.FC = () => {
     }
   };
 
-  const handleGenerate = (data: ProjectData) => {
-    setProject(data);
-    setProjects((prev) =>
-      prev.map((p) => (p.savePath === data.savePath ? data : p))
-    );
+  const handleGenerate = async (data: ProjectData) => {
+    let finalProject = { ...data };
+
+    // If this is an un-saved draft project, generate a savePath and create the file on disk now!
+    if (!finalProject.savePath) {
+      let finalDir = workspaceDir;
+      if (!finalDir && window.electronAPI?.selectDirectory) {
+        finalDir = await window.electronAPI.selectDirectory();
+      }
+      if (finalDir) {
+        const files = await window.electronAPI?.readDirectory(finalDir);
+        let n = 1;
+        while (files?.includes(`untitled_${n}.json`)) {
+          n++;
+        }
+        const filename = `untitled_${n}.json`;
+        const separator = finalDir.includes('\\') ? '\\' : '/';
+        const savePath = `${finalDir}${separator}${filename}`;
+        
+        finalProject.savePath = savePath;
+        if (!finalProject.title || finalProject.title === 'Draft Project') {
+          finalProject.title = `untitled_${n}`;
+        }
+      }
+    }
+
+    if (finalProject.savePath && window.electronAPI?.writeFile) {
+      await window.electronAPI.writeFile(finalProject.savePath, JSON.stringify(finalProject, null, 2));
+    }
+
+    setProject(finalProject);
+    setProjects((prev) => {
+      const exists = prev.some((p) => p.savePath === finalProject.savePath);
+      if (exists) {
+        return prev.map((p) => (p.savePath === finalProject.savePath ? finalProject : p));
+      }
+      return [...prev, finalProject];
+    });
+
     setPage('basic-studio');
     if (tourActive) {
       setTourStep(4);
@@ -494,12 +539,30 @@ const AppRouter: React.FC = () => {
       {page === 'dashboard' && (
         <Dashboard
           onNewProject={handleNewProject}
-          onOpenProject={(p) => {
-            setProject(p);
-            if (p.unfinished) {
-              setPage('basic-generator');
+          onOpenProject={async (p) => {
+            let projectToOpen = p;
+            if (p.savePath && window.electronAPI?.readFile) {
+              const freshContent = await window.electronAPI.readFile(p.savePath);
+              if (freshContent) {
+                try {
+                  const parsed = JSON.parse(freshContent);
+                  parsed.savePath = p.savePath;
+                  projectToOpen = parsed;
+                } catch (e) {
+                  console.error("Failed to parse project file on open:", e);
+                }
+              }
             }
-            else {
+            if (projectToOpen.code && window.electronAPI?.writeFile) {
+              const cleanCode = sanitizeCompositionCode(projectToOpen.code);
+              if (cleanCode) {
+                await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
+              }
+            }
+            setProject(projectToOpen);
+            if (projectToOpen.unfinished) {
+              setPage('basic-generator');
+            } else {
               setPage('basic-studio');
             }
           }}
@@ -560,6 +623,64 @@ const AppRouter: React.FC = () => {
       {page === 'youtube-creator' && (
         <YoutubeVideoCreator
           onBack={() => setPage('template-selector')}
+        />
+      )}
+      {page === 'saas-generator' && (
+        <SaaSGenerator
+          project={project}
+          onGenerate={handleGenerate}
+          onBack={(updatedProject) => {
+            if (updatedProject) {
+              setProject(updatedProject);
+              setProjects((prev) =>
+                prev.map((p) => (p.savePath === updatedProject.savePath ? updatedProject : p))
+              );
+              if (updatedProject.savePath && window.electronAPI?.writeFile) {
+                window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
+              }
+            }
+            setPage('dashboard');
+          }}
+          onUpdateProject={(updated) => {
+            setProject(updated);
+            setProjects((prev) =>
+              prev.map((p) => (p.savePath === updated.savePath ? updated : p))
+            );
+          }}
+          customAlert={customAlert}
+          customConfirm={customConfirm}
+        />
+      )}
+      {(page as any) === 'minecraft-creator' && (
+        <MinecraftStyleCreator
+          onBack={() => setPage('template-selector')}
+          onGenerate={handleGenerate}
+        />
+      )}
+      {page === 'logo-generator' && (
+        <LogoGenerator
+          project={project}
+          onGenerate={handleGenerate}
+          onBack={(updatedProject) => {
+            if (updatedProject) {
+              setProject(updatedProject);
+              setProjects((prev) =>
+                prev.map((p) => (p.savePath === updatedProject.savePath ? updatedProject : p))
+              );
+              if (updatedProject.savePath && window.electronAPI?.writeFile) {
+                window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
+              }
+            }
+            setPage('dashboard');
+          }}
+          onUpdateProject={(updated) => {
+            setProject(updated);
+            setProjects((prev) =>
+              prev.map((p) => (p.savePath === updated.savePath ? updated : p))
+            );
+          }}
+          customAlert={customAlert}
+          customConfirm={customConfirm}
         />
       )}
       {page === 'basic-studio' && project && (
@@ -647,13 +768,35 @@ const AppRouter: React.FC = () => {
       {page === 'primitives-demo' && (
         <PrimitivesDemoOverlay onClose={() => setPage(previousPage)} />
       )}
+      {showMinecraftDemo && (
+        <MinecraftPrimitivesDemoOverlay onClose={() => setShowMinecraftDemo(false)} />
+      )}
       {showTiltConfigurer && (
         <TiltConfigurer
           onClose={() => setShowTiltConfigurer(false)}
           customAlert={customAlert}
         />
       )}
-
+      {byocPrompt && (
+        <BYOCModal
+          promptText={byocPrompt}
+          onSubmit={(response) => {
+            byocResolver?.resolve(response);
+            setByocPrompt(null);
+            setByocResolver(null);
+          }}
+          onCancel={() => {
+            byocResolver?.reject(new Error('User cancelled BYOC prompt'));
+            setByocPrompt(null);
+            setByocResolver(null);
+          }}
+          onSkip={() => {
+            byocResolver?.resolve('SKIP');
+            setByocPrompt(null);
+            setByocResolver(null);
+          }}
+        />
+      )}
     </div>
   );
 };

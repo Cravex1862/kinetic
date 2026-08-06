@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle, Flag, OpenAiLogo } from '@phosphor-icons/react';
+import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle, Flag, OpenAiLogo, ArrowsCounterClockwise, HardDrive, ChatText } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent.svg';
 import { MODEL_PRESETS } from '../constants';
+import { fetchAvailableModels } from '../agents/llmClient';
 
 interface SettingsProps {
   onBack: () => void;
@@ -19,9 +20,14 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
   // AI Configurations State
   const [provider, setProvider] = useState<string>(localStorage.getItem('kinetic-provider') || 'openai');
   const [apiKey, setApiKey] = useState<string>(localStorage.getItem('kinetic-api-key') || '');
+  const [baseUrl, setBaseUrl] = useState<string>(localStorage.getItem('kinetic-base-url') || '');
   const [model, setModel] = useState<string>('');
   const [customModel, setCustomModel] = useState<string>('');
   const [useCustomModel, setUseCustomModel] = useState<boolean>(false);
+
+  const [dynamicModels, setDynamicModels] = useState<string[]>([]);
+  const [fetchingModels, setFetchingModels] = useState<boolean>(false);
+  const [fetchStatus, setFetchStatus] = useState<{ success: boolean; msg: string } | null>(null);
 
   // Video Configurations State
   const [resolution, setResolution] = useState<string>(localStorage.getItem('kinetic-default-resolution') || '1080p');
@@ -33,6 +39,14 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
 
   // Load Model presets on mount/provider change
   useEffect(() => {
+    setFetchStatus(null);
+    setDynamicModels([]);
+    if (provider === 'ollama' && !baseUrl) {
+      setBaseUrl('http://localhost:11434');
+    } else if (provider === 'lmstudio' && !baseUrl) {
+      setBaseUrl('http://localhost:1234');
+    }
+
     const savedModel = localStorage.getItem('kinetic-model') || '';
     const presets = MODEL_PRESETS[provider] || [];
     if (savedModel && presets.includes(savedModel)) {
@@ -59,10 +73,37 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
     }
   };
 
+  const handleFetchModels = async () => {
+    setFetchingModels(true);
+    setFetchStatus(null);
+    try {
+      const res = await fetchAvailableModels(provider as any, baseUrl || undefined, apiKey || undefined);
+      if (res.models && res.models.length > 0) {
+        setDynamicModels(res.models);
+        setModel(res.models[0]);
+        setFetchStatus({ success: true, msg: `Found ${res.models.length} model(s) available on server!` });
+      } else if (res.error) {
+        setFetchStatus({ success: false, msg: res.error });
+      } else {
+        setFetchStatus({ success: false, msg: "No models found on server." });
+      }
+    } catch (err: unknown) {
+      setFetchStatus({ success: false, msg: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setFetchingModels(false);
+    }
+  };
+
   const handleSave = async () => {
     // Save AI configs
     localStorage.setItem('kinetic-provider', provider);
     localStorage.setItem('kinetic-api-key', apiKey.trim());
+    if (baseUrl.trim()) {
+      localStorage.setItem('kinetic-base-url', baseUrl.trim());
+    } else {
+      localStorage.removeItem('kinetic-base-url');
+    }
+
     const finalModel = useCustomModel ? customModel.trim() : model;
     if (finalModel) {
       localStorage.setItem('kinetic-model', finalModel);
@@ -141,8 +182,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           <button
             onClick={() => setActiveTab('ai')}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'ai'
-                ? 'bg-purple-600/10 border border-purple-500/30 text-purple-400 shadow-md shadow-purple-500/5'
-                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
+              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
               }`}
           >
             <Cpu size={18} />
@@ -151,8 +192,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           <button
             onClick={() => setActiveTab('video')}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'video'
-                ? 'bg-purple-600/10 border border-purple-500/30 text-purple-400 shadow-md shadow-purple-500/5'
-                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
+              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
               }`}
           >
             <VideoCamera size={18} />
@@ -161,8 +202,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           <button
             onClick={() => setActiveTab('workspace')}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'workspace'
-                ? 'bg-purple-600/10 border border-purple-500/30 text-purple-400 shadow-md shadow-purple-500/5'
-                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
+              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
               }`}
           >
             <Folder size={18} />
@@ -171,8 +212,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           <button
             onClick={() => setActiveTab('danger')}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'danger'
-                ? 'bg-red-500/10 border border-red-500/30 text-red-400'
-                : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-red-400/80'
+              ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-red-400/80'
               }`}
           >
             <Trash size={18} />
@@ -218,14 +259,14 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 {/* Provider Selector */}
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Active Provider</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {['openai', 'anthropic', 'google', 'hackclub'].map((key) => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {['openai', 'anthropic', 'google', 'hackclub', 'ollama', 'lmstudio', 'byoc'].map((key) => (
                       <button
                         key={key}
                         onClick={() => setProvider(key)}
                         className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${provider === key
-                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
-                            : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {key === 'openai' && (
@@ -259,68 +300,125 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                             <span>HackClub</span>
                           </>
                         )}
+                        {key === 'ollama' && (
+                          <>
+                            <HardDrive size={16} className="text-emerald-400" />
+                            <span>Ollama</span>
+                          </>
+                        )}
+                        {key === 'lmstudio' && (
+                          <>
+                            <HardDrive size={16} className="text-cyan-400" />
+                            <span>LM Studio</span>
+                          </>
+                        )}
+                        {key === 'byoc' && (
+                          <>
+                            <ChatText size={16} className="text-purple-400" />
+                            <span>Bring Your Own Chat</span>
+                          </>
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* API Key Input */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">API Key Credentials</label>
-                  <input
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder={
-                      provider === 'openai' ? 'sk-proj-...' :
-                        provider === 'anthropic' ? 'sk-ant-...' :
-                          provider === 'google' ? 'AIzaSy...' :
-                            'hckc_...'
-                    }
-                    type="password"
-                    className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
-                  />
-                </div>
-
-                {/* Model Selection */}
-                <div className="flex flex-col gap-2 pt-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Model Selector</label>
-                    <button
-                      onClick={() => setUseCustomModel(!useCustomModel)}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        useCustomModel
-                          ? 'border-purple-500/50 bg-purple-600/10 text-purple-300 hover:bg-purple-600/20'
-                          : 'border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-600 hover:text-gray-300'
-                      }`}
-                      aria-label="Toggle custom model input"
-                    >
-                      <Sparkle size={11} weight="fill" />
-                      <span>{useCustomModel ? 'Preset models' : 'Custom model'}</span>
-                    </button>
-                  </div>
-
-                  {useCustomModel ? (
+                {/* Base URL Input (for local servers or custom proxies) */}
+                {(provider === 'ollama' || provider === 'lmstudio' || provider === 'local' || useCustomModel) && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Server Base URL</label>
                     <input
-                      value={customModel}
-                      onChange={(e) => setCustomModel(e.target.value)}
-                      placeholder="e.g. gemini-2.5-pro-preview"
+                      value={baseUrl}
+                      onChange={(e) => setBaseUrl(e.target.value)}
+                      placeholder={
+                        provider === 'ollama' ? 'http://localhost:11434' :
+                          provider === 'lmstudio' ? 'http://localhost:1234' :
+                            'http://localhost:11434'
+                      }
                       type="text"
                       className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
                     />
-                  ) : (
-                    <select
-                      value={model}
-                      onChange={(e) => setModel(e.target.value)}
+                  </div>
+                )}
+
+                {/* API Key Input */}
+                {provider !== 'hackclub' && provider !== 'ollama' && provider !== 'lmstudio' && provider !== 'byoc' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">API Key Credentials</label>
+                    <input
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder={
+                        provider === 'openai' ? 'sk-proj-...' :
+                          provider === 'anthropic' ? 'sk-ant-...' :
+                            provider === 'google' ? 'AIzaSy...' :
+                              'hckc_...'
+                      }
+                      type="password"
                       className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
-                    >
-                      {(MODEL_PRESETS[provider] || []).map((m) => (
-                        <option key={m} value={m} className="bg-gray-950 text-white">
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                    />
+                  </div>
+                )}
+
+                {/* Model Selection */}
+                {provider !== 'byoc' && (
+                  <div className="flex flex-col gap-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Model Selector</label>
+                        <button
+                          onClick={handleFetchModels}
+                          disabled={fetchingModels}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
+                          title="Ping server & fetch installed models"
+                        >
+                          <ArrowsCounterClockwise size={12} className={fetchingModels ? 'animate-spin' : ''} />
+                          <span>{fetchingModels ? 'Pinging...' : 'Fetch Models'}</span>
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => setUseCustomModel(!useCustomModel)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${useCustomModel
+                            ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                            : 'border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                          }`}
+                        aria-label="Toggle custom model input"
+                      >
+                        <Sparkle size={11} weight="fill" />
+                        <span>{useCustomModel ? 'Preset models' : 'Custom model'}</span>
+                      </button>
+                    </div>
+
+                    {useCustomModel ? (
+                      <input
+                        value={customModel}
+                        onChange={(e) => setCustomModel(e.target.value)}
+                        placeholder="e.g. qwen2.5-coder:latest"
+                        type="text"
+                        className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
+                      />
+                    ) : (
+                      <select
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
+                      >
+                        {(dynamicModels.length > 0 ? dynamicModels : (MODEL_PRESETS[provider] || [])).map((m) => (
+                          <option key={m} value={m} className="bg-gray-950 text-white">
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {fetchStatus && (
+                      <div className={`rounded-lg border px-3 py-2 text-[11px] leading-relaxed mt-1 ${fetchStatus.success ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
+                        {fetchStatus.msg}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -345,8 +443,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setResolution(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${resolution === val
-                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
-                            : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {val === '4k' && '4K (3840x2160)'}
@@ -367,8 +465,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setAspectRatio(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${aspectRatio === val
-                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
-                            : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {val === '16:9' && '16:9 Horizontal (YouTube, Demos)'}
@@ -387,8 +485,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setFps(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${fps === val
-                            ? 'border-purple-500 bg-purple-600/10 text-purple-300'
-                            : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {val} Frames Per Second

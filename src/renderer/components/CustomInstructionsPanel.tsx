@@ -16,17 +16,27 @@ export const CustomInstructionsPanel: React.FC<InstructionProps> = ({
     handleRefinePrompt,
     placeholder = "Describe custom layout or animation instructions..."
 }) => {
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    React.useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${Math.max(80, textareaRef.current.scrollHeight)}px`;
+        }
+    }, [instructions]);
+
     return (
-        <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4 flex flex-col gap-3">
+        <section className="bg-gray-900/40 border border-gray-900 rounded-xl p-4 flex flex-col gap-2.5 w-full">
             <div className="flex items-center justify-between border-b border-gray-900 pb-2">
                 <h4 className="text-xs font-bold text-gray-400">Custom Instructions</h4>
             </div>
-            <div className="relative">
+            <div className="relative w-full">
                 <textarea
+                    ref={textareaRef}
                     value={instructions}
                     onChange={(e) => setInstructions(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full h-24 resize-none premium-input pl-3 pr-10 py-2.5 text-xs rounded-lg bg-gray-950/60 font-sans"
+                    className="w-full min-h-[80px] resize-none premium-input pl-3 pr-10 py-2.5 text-xs rounded-lg bg-gray-950/60 font-sans transition-all duration-150 overflow-hidden"
                 />
                 {handleRefinePrompt && (
                     <button

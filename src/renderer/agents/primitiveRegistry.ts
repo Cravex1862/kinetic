@@ -31,9 +31,8 @@ EXHAUSTIVE COMPONENT AND PROP REGISTRY (ALL SDKS)
            onBackClick?, onForwardClick?, onNewTabClick?, rotateX?, rotateY?, rotateZ?, perspective?,
            translateZ?
 -SidebarLayout:
-    Props: logoText?, logoUrl?, items: Array<{ id: string, label: string, icon?: string, badge?: string, active?: boolean}>, 
-           activeId?, userProfile?: { name: string, role: string, avatarUrl?: string}, width?, backgroundColor?, activeItemBgColor?,
-           itemTextColor?, activeItemColor?, borderRadius?, glowConfig?, rotateX?, rotateY?, rotateZ?, perspective?, translateZ?, children?
+    Props: appName?, appLogo?, menuItems: Array<{ id?: string, label?: string, icon?: React.ReactNode, active?: boolean }>, 
+           activeMenuItemId?, profileName?, profileHandle?, profileAvatar?, sidebarContent?, sidebarWidth?, width?, height?, backgroundColor?, borderRadius?, style?, children?
 -TopNavbar:
     Props: title?, breadcumbs?: string[], actions?: Array<{ label: string, icon?: string, variant?: 'primary'|'secondary'|'ghost' }>, showSearch?: boolean,
            searchPlaceholder?, backgroundColor?, borderBottomColor?, height?, glowConfig?, rotateX?, rotateY, rotateZ, perspective?, translateZ?
@@ -193,6 +192,7 @@ const PRIMITIVE_PATH_MAP: Record<string, string> = {
     PieChartCard: 'charts/PieChartCard.tsx',
     ScatterPlotCard: 'charts/ScatterPlotCard.tsx',
     StockCard: 'charts/StockCard.tsx',
+    VectorMorph: 'VectorMorph.tsx',
 };
 
 export async function ingestPrimitiveSourceCode(componentNames: string[]): Promise<Record<string, string>> {

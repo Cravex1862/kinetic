@@ -10,6 +10,7 @@
     "build": "tsc -p tsconfig.node.json && vite build",
     "preview": "npx remotion studio src/renderer/Root.tsx",
     "preview:test": "npx remotion studio testing/TestRoot.tsx",
+    "test": "npx tsx testing/runTests.ts",
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
     "package:linux": "npm run build && electron-builder --linux",
@@ -17,10 +18,15 @@
     "package:all": "npm run build && electron-builder --win --linux --mac"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@phosphor-icons/react": "^2.1.0",
+    "@types/flubber": "^0.4.0",
+    "flubber": "^0.4.2",
+    "onnxruntime-web": "^1.27.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "remotion": "^4.0.0"
+    "remotion": "^4.0.0",
+    "vader-sentiment": "^1.1.3"
   },
   "devDependencies": {
     "@remotion/cli": "^4.0.0",

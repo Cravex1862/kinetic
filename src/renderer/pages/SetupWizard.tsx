@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ArrowRight, ArrowLeft, UploadSimple, ArrowClockwise, Monitor, DeviceMobile, OpenAiLogo } from '@phosphor-icons/react';
+import { Check, ArrowRight, ArrowLeft, UploadSimple, ArrowClockwise, Monitor, DeviceMobile, OpenAiLogo, HardDrive, ChatText } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent_with_text.png';
 import { MODEL_PRESETS } from '../constants';
 
@@ -91,7 +91,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
       setTestResult({ success: true, msg: "Hack Club provider uses a shared key. Validation skipped!" });
       return;
     }
-    if (!apiKey.trim()) {
+    if (!apiKey.trim() && provider !== 'ollama' && provider !== 'lmstudio') {
       customAlert("API Key Missing", "Please enter an API key to test the connection.");
       return;
     }
@@ -101,7 +101,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
       let url = '';
       let headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-      if (provider === 'openai') {
+      if (provider === 'ollama') {
+        url = 'http://localhost:11434/api/tags';
+      } else if (provider === 'lmstudio') {
+        url = 'http://localhost:1234/v1/models';
+      } else if (provider === 'openai') {
         url = 'https://api.openai.com/v1/models';
         headers['Authorization'] = `Bearer ${apiKey}`;
       } else if (provider === 'anthropic') {
@@ -114,7 +118,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
       const timeoutId = setTimeout(() => controller.abort(), 6000);
       
       const res = await fetch(url, { 
-        method: provider === 'openai' || provider === 'google' ? 'GET' : 'POST', 
+        method: (provider === 'openai' || provider === 'google' || provider === 'ollama' || provider === 'lmstudio') ? 'GET' : 'POST', 
         headers, 
         signal: controller.signal 
       });
@@ -124,16 +128,20 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
         if (res.status === 401) {
           setTestResult({ success: false, msg: "Unauthorized! The provided API key is invalid." });
         } else {
-          setTestResult({ success: true, msg: "Connection successful! The API is reachable." });
+          setTestResult({ success: true, msg: `Connection successful! ${provider} server is reachable.` });
         }
       } else {
         setTestResult({ success: false, msg: `Connection returned status ${res.status}.` });
       }
-    } catch (err: any) {
-      if (apiKey.length > 20) {
+    } catch (err: unknown) {
+      if (provider === 'ollama') {
+        setTestResult({ success: false, msg: "Could not reach Ollama server at http://localhost:11434. Make sure Ollama is running!" });
+      } else if (provider === 'lmstudio') {
+        setTestResult({ success: false, msg: "Could not reach LM Studio server at http://localhost:1234. Make sure server is turned on!" });
+      } else if (apiKey.length > 20) {
         setTestResult({ success: true, msg: "API endpoint reached (Validation bypassed local CORS)." });
       } else {
-        setTestResult({ success: false, msg: "Connection failed. Please verify your internet connection and API key." });
+        setTestResult({ success: false, msg: "Connection failed. Please verify your network connection and credentials." });
       }
     } finally {
       setTestingKey(false);
@@ -295,8 +303,8 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                 {/* Provider Selector */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">Active Provider</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {['openai', 'anthropic', 'google', 'hackclub'].map((key) => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {['openai', 'anthropic', 'google', 'hackclub', 'ollama', 'lmstudio', 'byoc'].map((key) => (
                       <button
                         key={key}
                         onClick={() => {
@@ -304,7 +312,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                           setTestResult(null);
                         }}
                         className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${provider === key
-                          ? 'border-purple-500 bg-purple-600/10 text-purple-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
                           : 'border-gray-800 bg-gray-950 text-gray-500 hover:border-gray-700 hover:text-gray-300'
                         }`}
                       >
@@ -339,13 +347,31 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                             <span>Hack Club</span>
                           </>
                         )}
+                        {key === 'ollama' && (
+                          <>
+                            <HardDrive size={16} className="text-emerald-400 flex-shrink-0" />
+                            <span>Ollama</span>
+                          </>
+                        )}
+                        {key === 'lmstudio' && (
+                          <>
+                            <HardDrive size={16} className="text-cyan-400 flex-shrink-0" />
+                            <span>LM Studio</span>
+                          </>
+                        )}
+                        {key === 'byoc' && (
+                          <>
+                            <ChatText size={16} className="text-purple-400 flex-shrink-0" />
+                            <span>BYOC Chat</span>
+                          </>
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* API Key */}
-                {provider !== 'hackclub' && (
+                {provider !== 'hackclub' && provider !== 'ollama' && provider !== 'lmstudio' && provider !== 'byoc' && (
                   <div className="flex flex-col gap-1.5">
                     <div className="flex justify-between items-center">
                       <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">API Key Credentials</label>
@@ -364,27 +390,34 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                         setApiKey(e.target.value);
                         setTestResult(null);
                       }}
-                      placeholder={`Paste your ${provider} API key here...`}
+                      placeholder={
+                        provider === 'openai' ? 'sk-proj-...' :
+                        provider === 'anthropic' ? 'sk-ant-...' :
+                        provider === 'google' ? 'AIzaSy...' :
+                        'hckc_...'
+                      }
                       className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-xs text-gray-300 outline-none focus:border-purple-500"
                     />
                   </div>
                 )}
 
                 {/* Model Selector */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">Model Selector</label>
-                  <select
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-xs text-gray-300 outline-none"
-                  >
-                    {(MODEL_PRESETS[provider] || []).map((m) => (
-                      <option key={m} value={m} className="bg-gray-950 text-white">
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {provider !== 'byoc' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">Model Selector</label>
+                    <select
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-xs text-gray-300 outline-none"
+                    >
+                      {(MODEL_PRESETS[provider] || []).map((m) => (
+                        <option key={m} value={m} className="bg-gray-950 text-white">
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Verification result messages */}
                 {testResult && (
@@ -416,7 +449,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                         key={val}
                         onClick={() => setResolution(val)}
                         className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all text-center ${resolution === val
-                          ? 'border-purple-500 bg-purple-600/10 text-purple-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
                           : 'border-gray-800 bg-gray-950 text-gray-500 hover:border-gray-700 hover:text-gray-300'
                         }`}
                       >
@@ -438,7 +471,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                         key={val}
                         onClick={() => setAspectRatio(val)}
                         className={`flex-1 rounded-xl border px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-2 ${aspectRatio === val
-                          ? 'border-purple-500 bg-purple-600/10 text-purple-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
                           : 'border-gray-800 bg-gray-950 text-gray-500 hover:border-gray-700 hover:text-gray-300'
                         }`}
                       >
@@ -467,7 +500,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
                         key={val}
                         onClick={() => setFps(val)}
                         className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all text-center ${fps === val
-                          ? 'border-purple-500 bg-purple-600/10 text-purple-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
                           : 'border-gray-800 bg-gray-950 text-gray-500 hover:border-gray-700 hover:text-gray-300'
                         }`}
                       >

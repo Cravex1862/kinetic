@@ -25,8 +25,8 @@ export const SceneHierarchyPanel: React.FC<SceneHierarchyPanelProps> = ({
                         key={node.id}
                         onClick={() => onSelectNode(node.id)}
                         className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition ${selectedNodeId === node.id
-                                ? 'bg-purple-600/30 border border-purple-500/50 text-purple-200 font-semibold'
-                                : 'hover:bg-gray-800/60 text-gray-400 hover:text-white'
+                                ? 'bg-transparent border border-purple-500 text-purple-300 font-bold'
+                                : 'hover:bg-gray-800 text-gray-400 hover:text-white border border-transparent'
                             }`}
                     >
                         <Stack size={14} />

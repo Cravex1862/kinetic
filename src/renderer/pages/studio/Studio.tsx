@@ -2,13 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ProjectData } from '../AppRouter';
 import { ArrowLeft, DownloadSimple, CheckCircle, XCircle, CircleNotch, FolderOpen, X, Video } from '@phosphor-icons/react';
 import { parseSceneCodeToNodes, updateCodeWithNodeProps, ComponentNode, EasingType } from './semanticParser';
-
+import { generateFCPXML } from '../../utils/fcpxmlExporter';
 import { InspectorPanel } from './InspectorPanel';
 import { MultiTrackTimeline } from './MultiTrackTimeline';
 import { SceneHierarchyPanel } from './SceneHierarchyPanel';
 import VideoComposition from '@/renderer/scenes/VideoComposition';
 import { Player, PlayerRef } from '@remotion/player';
 import { sanitizeCompositionCode } from '../../agents/pipeline';
+import { getStoredConfig, callLLM } from '../../agents/llmClient';
+import { TimelineCommentPins } from './TimelineCommentPins';
+import { buildTargetedCommentPrompt } from './scopedAiEdit';
+import { TimelineCommentPin } from './semanticParser';
 
 interface StudioProps {
     project: ProjectData;
@@ -34,12 +38,44 @@ export const Studio: React.FC<StudioProps> = ({
     const [exportWidth, setExportWidth] = useState(1920);
     const [exportHeight, setExportHeight] = useState(1080);
     const [exportFps, setExportFps] = useState(30);
+    const [exportFormat, setExportFormat] = useState<'mp4' | 'fcpxml'>('mp4');
     const [exportFilename, setExportFilename] = useState(`${project.title.replace(/[^a-zA-Z0-9_-]/g, '_')}_render.mp4`);
 
     const handleStartExport = async () => {
         setExporting(true);
         setExportResult(null);
         const duration = (project as any).durationInFrames || durationInFrames || 150;
+
+        if (exportFormat === 'fcpxml') {
+            try {
+                const xmlFilename = exportFilename.replace(/\.mp4$/i, '.xml');
+                const outputPath = `C:\\Users\\kalic\\Downloads\\${xmlFilename}`;
+
+                const clips = nodes.map((node, i) => ({
+                    id: node.id || `node-${i}`,
+                    name: node.label || node.name || `Layer_${i + 1}`,
+                    srcPath: `Assets/${node.name || 'Component'}_${i + 1}.png`,
+                    trackType: 'video' as const,
+                    trackIndex: i + 1,
+                    startFrame: 0,
+                    durationInFrames: duration,
+                }));
+
+                const xmlContent = generateFCPXML(project.title, exportWidth, exportHeight, exportFps, clips);
+
+                const api = (window as any).electronAPI;
+                if (api?.writeFile) {
+                    await api.writeFile(outputPath, xmlContent);
+                }
+                setExportResult({ success: true, outputPath });
+            } catch (err: any) {
+                setExportResult({ success: false, error: err.message || 'FCPXML export failed' });
+            } finally {
+                setExporting(false);
+            }
+            return;
+        }
+
         setExportProgress({ frame: 0, total: duration, status: 'Initializing Remotion Engine...' });
 
 
@@ -100,26 +136,102 @@ export const Studio: React.FC<StudioProps> = ({
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [bgSelection, setBgSelection] = useState<BackgroundSelection>({ type: 'color', color: '#09090b' });
     const playerRef = useRef<PlayerRef>(null);
+    const [commentPins, setCommentPins] = useState<TimelineCommentPin[]>([]);
+    const [isMuted, setIsMuted] = useState(false);
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastWrittenCodeRef = useRef<string>('');
 
+    const [dynamicComponent, setDynamicComponent] = useState<React.ComponentType | null>(null);
+    const lastSyncedCodeRef = React.useRef<string>('');
+    const lastSyncedPathRef = React.useRef<string>('');
+    // Sync project.code to VideoComposition.tsx whenever project code or project changes
+    useEffect(() => {
+        const syncCode = async () => {
+            if (!project?.code || !window.electronAPI?.writeFile) return;
+            const cleanCode = sanitizeCompositionCode(project.code);
+            if (!cleanCode) return;
+
+            lastSyncedPathRef.current = project.savePath || '';
+            lastSyncedCodeRef.current = cleanCode;
+            await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
+
+            try {
+                const mod = await import(/* @vite-ignore */ `../../scenes/VideoComposition.tsx?t=${Date.now()}`);
+                const comp = mod.VideoComposition || mod.default;
+                if (comp) {
+                    setDynamicComponent(() => comp);
+                }
+            } catch (e) {
+                console.warn('[Studio] Dynamic import fallback:', e);
+            }
+            setCompKey((k) => k + 1);
+        };
+        syncCode();
+    }, [project?.code, project?.savePath, project?.title]);
 
     useEffect(() => {
         const parsed = parseSceneCodeToNodes(project.code || '');
-        setNodes((prevNodes) => {
-            if (!prevNodes || prevNodes.length === 0) return parsed;
-            return parsed.map((pNode) => {
-                const existing = prevNodes.find((n) => n.id === pNode.id);
-                if (!existing) return pNode;
-                return {
-                    ...pNode,
-                    props: { ...pNode.props, ...existing.props },
-                };
-            });
-        });
+        setNodes(parsed);
         if (parsed.length > 0 && !selectedNodeId) setSelectedNodeId(parsed[0].id);
     }, [project.code]);
 
+    useEffect(() => {
+        if (!project?.code) return;
+        const sequenceMatches = [...project.code.matchAll(/durationInFrames=\{?(\d+)\}?/gi)];
+        if (sequenceMatches.length > 0) {
+            const totalCalculatedFrames = sequenceMatches.reduce((sum, match) => sum + parseInt(match[1], 10), 0);
+            if (totalCalculatedFrames > 0) {
+                setDurationInFrames(totalCalculatedFrames);
+            }
+        }
+    }, [project?.code]);
+
+    const handleAddCommentPin = (targetFrame: number, text: string) => {
+        const newPin: TimelineCommentPin = {
+            id: `pin-${Date.now()}`,
+            frame: targetFrame,
+            text,
+            targetNodeId: selectedNodeId || undefined,
+            resolved: false,
+            createdAt: Date.now(),
+        };
+        setCommentPins((prev) => [...prev, newPin])
+    };
+
+    const handleResolveCommentPin = (pinId: string) => {
+        setCommentPins((prev) => prev.map((pin) => (pin.id === pinId ? { ...pin, resolved: !pin.resolved } : pin)));
+    };
+
+    const [isAiFixing, setIsAiFixing] = useState<string | null>(null);
+
+    const handleFixWithAI = async (pin: TimelineCommentPin) => {
+        setIsAiFixing(pin.id);
+        const activeNode = nodes.find((n) => n.id === pin.targetNodeId) || nodes[0];
+        const scopedPrompt = buildTargetedCommentPrompt(pin, activeNode, project.code);
+
+        try {
+            const config = getStoredConfig();
+            if (config && config.apiKey && project.code) {
+                const systemPrompt = `You are an expert Remotion code animator AI agent. Execute the following targeted section edit request for frame ${pin.frame}: "${pin.text}". Modify keyframe values or layout parameters strictly at frame ${pin.frame}. Return pure TSX code inside a markdown code block.`;
+                const response = await callLLM(config, systemPrompt, scopedPrompt);
+                const generatedCode = response.content || (response as any).code;
+                if (generatedCode && window.electronAPI?.writeFile) {
+                    const sanitized = sanitizeCompositionCode(generatedCode);
+                    await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', sanitized);
+                    setCompKey((k) => k + 1);
+                }
+            } else if (activeNode) {
+                // Fallback: Create/update a keyframe marker at the target frame for the active element
+                const defaultProp = 'translateY';
+                handleUpdateProp(activeNode.id, defaultProp, (activeNode.props[defaultProp] ?? 0) + 10);
+            }
+        } catch (err) {
+            console.error("Targeted AI fix failed:", err);
+        } finally {
+            setIsAiFixing(null);
+            handleResolveCommentPin(pin.id);
+        }
+    };
 
     const syncCodeAndAutoSave = (updatedNodes: ComponentNode[]) => {
         if (!project.code) return;
@@ -244,15 +356,30 @@ export const Studio: React.FC<StudioProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [nodes]);
 
-    const handleMoveKeyframe = (nodeId: string, propKey: string, pointIdx: number, newFrame: number) => {
+    const handleMoveKeyframe = (nodeId: string, propKey: string, pointIdx: number, newFrame: number): number => {
+        let newIdx = pointIdx;
         pushHistory(nodes);
         setNodes((prev) => {
             const updatedNodes = prev.map((node) => {
                 if (node.id !== nodeId) return node;
                 const points = node.keyframes[propKey] || [];
-                const updatedPoints = points
-                    .map((pt, idx) => (idx === pointIdx ? { ...pt, frame: Math.max(0, Math.min(durationInFrames, newFrame)) } : pt))
-                    .sort((a, b) => a.frame - b.frame);
+                if (!points[pointIdx]) return node;
+
+                const targetFrame = Math.max(0, Math.min(durationInFrames, newFrame));
+                const targetPoint = { ...points[pointIdx], frame: targetFrame };
+
+                const remainingPoints = points.filter((_, idx) => idx !== pointIdx);
+                const updatedPoints = [...remainingPoints, targetPoint].sort((a, b) => a.frame - b.frame);
+
+                // Ensure keyframe points never occupy the exact same frame number
+                for (let i = 1; i < updatedPoints.length; i++) {
+                    if (updatedPoints[i].frame <= updatedPoints[i - 1].frame) {
+                        updatedPoints[i].frame = updatedPoints[i - 1].frame + 1;
+                    }
+                }
+
+                newIdx = updatedPoints.findIndex((pt) => pt === targetPoint || (pt.frame === targetPoint.frame && pt.value === targetPoint.value));
+
                 return {
                     ...node,
                     keyframes: { ...node.keyframes, [propKey]: updatedPoints }
@@ -262,6 +389,7 @@ export const Studio: React.FC<StudioProps> = ({
             syncCodeAndAutoSave(updatedNodes);
             return updatedNodes;
         });
+        return newIdx;
     };
 
     const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
@@ -379,18 +507,18 @@ export const Studio: React.FC<StudioProps> = ({
                 />
 
                 <main className='flex-1 flex items-center justify-center p-6 relative overflow-hidden bg-gray-950'>
-                    <div style={{ width: 1150, height: 650, position: 'relative' }} className="rounded-xl overflow-hidden shadow-2xl border border-gray-800/80">
+                    <div className="w-full max-w-[1150px] aspect-video relative rounded-xl overflow-hidden shadow-2xl border border-gray-800/80">
                         <Player
-                            key={compKey}
+                            key={`${project?.savePath || 'proj'}_${compKey}_${durationInFrames}_${JSON.stringify(bgSelection || {})}`}
                             ref={playerRef}
-                            component={VideoComposition}
+                            component={dynamicComponent || VideoComposition}
                             inputProps={{ bgSelection }}
 
                             durationInFrames={durationInFrames}
                             compositionWidth={1920}
                             compositionHeight={1080}
                             fps={30}
-                            style={{ width: '100%', height: '100%' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         />
                     </div>
                 </main>
@@ -404,11 +532,25 @@ export const Studio: React.FC<StudioProps> = ({
                     onUpdateEasing={handleUpdateEasing}
                     availableTargetIds={availableTargetIds}
                     bgSelection={bgSelection}
-                    onSelectBackground={setBgSelection}
+                    onSelectBackground={(newBg) => {
+                        setBgSelection(newBg);
+                        setCompKey((k) => k + 1);
+                        onUpdateProject({ ...project, bgSelection: newBg });
+                    }}
                 />
 
 
             </div>
+
+            <TimelineCommentPins
+                pins={commentPins}
+                maxFrames={durationInFrames}
+                currentFrame={frame}
+                onAddPin={handleAddCommentPin}
+                onResolvePin={handleResolveCommentPin}
+                onFixWithAI={handleFixWithAI}
+            />
+
 
             <MultiTrackTimeline
                 nodes={nodes}
@@ -423,6 +565,8 @@ export const Studio: React.FC<StudioProps> = ({
                 onSelectNode={setSelectedNodeId}
                 selectedNodeId={selectedNodeId}
                 onMoveKeyframe={handleMoveKeyframe}
+                isMuted={isMuted}
+                onToggleMute={() => setIsMuted((m) => !m)}
             />
 
             {/* Export Video Modal & Progress Overlay */}
@@ -533,6 +677,18 @@ export const Studio: React.FC<StudioProps> = ({
                         ) : (
                             /* Export Form Settings View */
                             <div className="space-y-4 text-xs">
+                                <div className="space-y-1">
+                                    <label className="text-gray-300 font-semibold">Export Format</label>
+                                    <select
+                                        value={exportFormat}
+                                        onChange={(e) => setExportFormat(e.target.value as 'mp4' | 'fcpxml')}
+                                        className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-purple-500 cursor-pointer"
+                                    >
+                                        <option value="mp4">MP4 Video Render (H.264)</option>
+                                        <option value="fcpxml">DaVinci Resolve / Premiere Pro (.xml Package)</option>
+                                    </select>
+                                </div>
+
                                 <div className="space-y-1">
                                     <label className="text-gray-300 font-semibold">Output Filename</label>
                                     <input

@@ -56,7 +56,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     <Diamond
                         size={14}
                         weight={isKeyframed ? 'fill' : 'regular'}
-                        className={isKeyframed ? 'text-purple-400 drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]' : 'text-gray-500 hover:text-gray-300'}
+                        className={isKeyframed ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'}
                     />
                 </button>
             </div>
@@ -66,19 +66,23 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
         <aside className="w-80 flex flex-col border-l border-gray-800 bg-gray-900/90 overflow-hidden select-none text-xs">
             {/* Top Tab Switcher */}
-            <div className="flex border-b border-gray-800 bg-gray-950/60 p-1">
+            <div className="flex border-b border-gray-800 bg-gray-950 px-2 pt-2 gap-1 relative z-10">
                 <button
                     onClick={() => setActiveTab('element')}
-                    className={`flex-1 py-1.5 text-center font-medium rounded transition ${
-                        activeTab === 'element' ? 'bg-purple-600/30 text-purple-300 border border-purple-500/30' : 'text-gray-400 hover:text-white'
+                    className={`flex-1 py-1.5 px-3 text-center text-xs font-semibold rounded-t-lg transition-all relative ${
+                        activeTab === 'element'
+                            ? 'bg-gray-900 text-purple-300 border-2 border-purple-500 border-b-transparent -mb-px z-20 shadow-sm'
+                            : 'bg-transparent text-gray-400 hover:text-white border-b border-gray-800'
                     }`}
                 >
                     Element Props
                 </button>
                 <button
                     onClick={() => setActiveTab('background')}
-                    className={`flex-1 py-1.5 text-center font-medium rounded transition ${
-                        activeTab === 'background' ? 'bg-purple-600/30 text-purple-300 border border-purple-500/30' : 'text-gray-400 hover:text-white'
+                    className={`flex-1 py-1.5 px-3 text-center text-xs font-semibold rounded-t-lg transition-all relative ${
+                        activeTab === 'background'
+                            ? 'bg-gray-900 text-purple-300 border-2 border-purple-500 border-b-transparent -mb-px z-20 shadow-sm'
+                            : 'bg-transparent text-gray-400 hover:text-white border-b border-gray-800'
                     }`}
                 >
                     Video Background

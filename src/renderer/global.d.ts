@@ -47,3 +47,5 @@ interface ScrapedFindings {
   colors: string[],
   fonts: string[],
 }
+
+declare module 'vader-sentiment';

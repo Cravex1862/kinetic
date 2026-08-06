@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { CaretDown, CaretUp, Sliders, Palette, Image as ImageIcon } from '@phosphor-icons/react';
+import { CaretDown, CaretUp, Sliders, Palette, Image as ImageIcon, Check } from '@phosphor-icons/react';
 
 export interface BackgroundSelection {
     type: 'color' | 'gradient' | 'image';
     color?: string;
     gradient?: string;
     imageUrl?: string;
+    rawUrl?: string;
     blurPx?: number;
 }
 
@@ -14,10 +15,26 @@ interface BackgroundSelectorPanelProps {
     onSelectBackground: (bg: BackgroundSelection) => void;
 }
 
-const rawBackgrounds = ((import.meta as any).glob(
+const rawBackgrounds1 = ((import.meta as any).glob(
+    '../primitives/backgrounds/*/*.{png,jpg,jpeg,webp,svg}',
+    { eager: true, import: 'default' }
+) || {}) as Record<string, string>;
+
+const rawBackgrounds2 = ((import.meta as any).glob(
     '/src/renderer/primitives/backgrounds/*/*.{png,jpg,jpeg,webp,svg}',
     { eager: true, import: 'default' }
 ) || {}) as Record<string, string>;
+
+const rawBackgrounds = { ...rawBackgrounds1, ...rawBackgrounds2 };
+
+const PRESET_GRADIENTS = [
+    { name: 'Sunset Glow', gradient: 'linear-gradient(135deg, #FF5E3A 0%, #FF2A6D 40%, #9B51E0 80%, #6366F1 100%)' },
+    { name: 'Cyber Neon', gradient: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)' },
+    { name: 'Midnight Aura', gradient: 'linear-gradient(135deg, #09090b 0%, #1e1b4b 50%, #311042 100%)' },
+    { name: 'Emerald Matrix', gradient: 'linear-gradient(135deg, #022c22 0%, #059669 50%, #10b981 100%)' },
+    { name: 'Sunset Purple', gradient: 'linear-gradient(135deg, #2e1065 0%, #7c3aed 50%, #db2777 100%)' },
+    { name: 'Cosmic Slate', gradient: 'linear-gradient(135deg, #18181b 0%, #27272a 50%, #3f3f46 100%)' },
+];
 
 const toDataUrl = (url: string): Promise<string> => {
     if (!url || url.startsWith('data:')) return Promise.resolve(url);
@@ -91,6 +108,7 @@ export const BackgroundSelectorPanel: React.FC<BackgroundSelectorPanelProps> = (
         onSelectBackground({
             type: 'image',
             imageUrl: dataUrl,
+            rawUrl: url,
             blurPx,
         });
     };
@@ -142,51 +160,86 @@ export const BackgroundSelectorPanel: React.FC<BackgroundSelectorPanelProps> = (
 
             {/* 3. GRADIENT CONFIG (WHEN CHECKED) */}
             {useGradient ? (
-                <div className="space-y-3 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
-                    <h4 className="text-[11px] font-bold text-gray-400">Gradient Controls</h4>
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 rounded bg-gray-900 p-1.5 border border-gray-800 flex-1">
-                            <input
-                                type="color"
-                                value={color1}
-                                onChange={(e) => {
-                                    setColor1(e.target.value);
-                                    handleGradientApply(e.target.value, color2);
-                                }}
-                                className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
-                            />
-                            <span className="text-[10px] font-mono text-gray-400">{color1}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 rounded bg-gray-900 p-1.5 border border-gray-800 flex-1">
-                            <input
-                                type="color"
-                                value={color2}
-                                onChange={(e) => {
-                                    setColor2(e.target.value);
-                                    handleGradientApply(color1, e.target.value);
-                                }}
-                                className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
-                            />
-                            <span className="text-[10px] font-mono text-gray-400">{color2}</span>
+                <div className="space-y-4 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
+                    <div className="space-y-2">
+                        <h4 className="text-[11px] font-bold text-gray-300 flex items-center gap-1.5">
+                            <Palette size={14} className="text-purple-400" />
+                            Preset Gradients
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2">
+                            {PRESET_GRADIENTS.map((p) => {
+                                const isSelected = currentSelection?.type === 'gradient' && currentSelection?.gradient === p.gradient;
+                                return (
+                                    <button
+                                        key={p.name}
+                                        type="button"
+                                        onClick={() => {
+                                            onSelectBackground({ type: 'gradient', gradient: p.gradient, blurPx });
+                                        }}
+                                        style={{ background: p.gradient }}
+                                        className={`h-11 w-full rounded-lg text-left p-2 font-bold text-[10px] text-white shadow-md transition-all relative flex items-end ${isSelected
+                                                ? 'ring-2 ring-purple-500 border-2 border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-[1.02] z-10'
+                                                : 'border border-white/10 hover:border-white/30'
+                                            }`}
+                                    >
+                                        <span className="drop-shadow-md bg-black/40 px-1.5 py-0.5 rounded truncate">{p.name}</span>
+                                        {isSelected && (
+                                            <div className="absolute top-1 right-1 bg-purple-600 text-white rounded-full p-0.5 shadow border border-purple-300">
+                                                <Check size={10} weight="bold" />
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-400">Angle:</span>
-                        <input
-                            type="range"
-                            min={0}
-                            max={360}
-                            value={angle}
-                            onChange={(e) => {
-                                const a = Number(e.target.value);
-                                setAngle(a);
-                                handleGradientApply(color1, color2, a);
-                            }}
-                            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-800 accent-purple-600 outline-none"
-                        />
-                        <span className="text-[10px] font-mono text-purple-400 w-8 text-right">{angle}°</span>
+                    <div className="pt-2 border-t border-gray-800 space-y-3">
+                        <h4 className="text-[11px] font-bold text-gray-400">Custom Gradient Controls</h4>
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 rounded bg-gray-900 p-1.5 border border-gray-800 flex-1">
+                                <input
+                                    type="color"
+                                    value={color1}
+                                    onChange={(e) => {
+                                        setColor1(e.target.value);
+                                        handleGradientApply(e.target.value, color2);
+                                    }}
+                                    className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+                                />
+                                <span className="text-[10px] font-mono text-gray-400">{color1}</span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 rounded bg-gray-900 p-1.5 border border-gray-800 flex-1">
+                                <input
+                                    type="color"
+                                    value={color2}
+                                    onChange={(e) => {
+                                        setColor2(e.target.value);
+                                        handleGradientApply(color1, e.target.value);
+                                    }}
+                                    className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+                                />
+                                <span className="text-[10px] font-mono text-gray-400">{color2}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-gray-400">Angle:</span>
+                            <input
+                                type="range"
+                                min={0}
+                                max={360}
+                                value={angle}
+                                onChange={(e) => {
+                                    const a = Number(e.target.value);
+                                    setAngle(a);
+                                    handleGradientApply(color1, color2, a);
+                                }}
+                                className="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-800 accent-purple-600 outline-none"
+                            />
+                            <span className="text-[10px] font-mono text-purple-400 w-8 text-right">{angle}°</span>
+                        </div>
                     </div>
                 </div>
             ) : (
@@ -196,11 +249,10 @@ export const BackgroundSelectorPanel: React.FC<BackgroundSelectorPanelProps> = (
                     <button
                         type="button"
                         onClick={() => onSelectBackground({ type: 'color', color: 'transparent', blurPx: 0 })}
-                        className={`w-full flex items-center justify-center gap-2 p-2 rounded-lg border-2 text-xs font-semibold transition-all ${
-                            currentSelection?.color === 'transparent'
-                                ? 'border-purple-500 bg-purple-500/20 text-purple-300 shadow-md shadow-purple-500/20'
+                        className={`w-full flex items-center justify-center gap-2 p-2 rounded-lg border-2 text-xs font-semibold transition-all ${currentSelection?.color === 'transparent'
+                                ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
                                 : 'border-gray-800 bg-gray-950/60 text-gray-400 hover:text-white hover:border-gray-700'
-                        }`}
+                            }`}
                     >
                         <div className="w-4 h-4 rounded border border-gray-700 bg-[linear-gradient(45deg,#333_25%,transparent_25%),linear-gradient(-45deg,#333_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#333_75%),linear-gradient(-45deg,transparent_75%,#333_75%)] bg-[length:8px_8px]" />
                         <span>No Background (Transparent)</span>
@@ -231,19 +283,27 @@ export const BackgroundSelectorPanel: React.FC<BackgroundSelectorPanelProps> = (
 
                                     <div className="grid grid-cols-4 gap-2">
                                         {visibleImages.map((img) => {
-                                            const isSelected = currentSelection?.imageUrl === img.url;
+                                            const isSelected = !!(
+                                                currentSelection?.type === 'image' &&
+                                                (currentSelection?.rawUrl === img.url || currentSelection?.imageUrl === img.url)
+                                            );
 
                                             return (
                                                 <button
                                                     key={img.url}
+                                                    type="button"
                                                     onClick={() => handleImageSelect(img.url)}
-                                                    className={`relative aspect-[16/10] w-full overflow-hidden rounded-lg border-2 transition-all ${
-                                                        isSelected
-                                                            ? 'border-purple-500 shadow-md shadow-purple-500/30 scale-105'
-                                                            : 'border-gray-800 hover:border-gray-600'
-                                                    }`}
+                                                    className={`relative aspect-[16/10] w-full overflow-hidden rounded-lg transition-all ${isSelected
+                                                            ? 'ring-2 ring-purple-500 border-2 border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105 z-10'
+                                                            : 'border-2 border-gray-800 hover:border-purple-500/50 hover:scale-[1.02]'
+                                                        }`}
                                                 >
                                                     <img src={img.url} alt={img.name} className="h-full w-full object-cover" />
+                                                    {isSelected && (
+                                                        <div className="absolute top-1 right-1 bg-purple-600 text-white rounded-full p-0.5 shadow-md border border-purple-300">
+                                                            <Check size={10} weight="bold" />
+                                                        </div>
+                                                    )}
                                                 </button>
                                             );
                                         })}

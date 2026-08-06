@@ -67,15 +67,29 @@ abstract class BaseLLMClient implements ILLMClient {
 
 class OpenAICompatibleClient extends BaseLLMClient {
   getUrl(): string {
+    if (this.config.baseUrl) {
+      const cleaned = this.config.baseUrl.replace(/\/+$/, '');
+      return cleaned.endsWith('/chat/completions') ? cleaned : `${cleaned}/chat/completions`;
+    }
     if (this.config.provider === 'hackclub') {
       return 'https://ai.hackclub.com/proxy/v1/chat/completions';
+    }
+    if (this.config.provider === 'ollama') {
+      return 'http://localhost:11434/v1/chat/completions';
+    }
+    if (this.config.provider === 'lmstudio') {
+      return 'http://localhost:1234/v1/chat/completions';
+    }
+    if (this.config.provider === 'local') {
+      return 'http://localhost:11434/v1/chat/completions';
     }
     return 'https://api.openai.com/v1/chat/completions';
   }
 
   getHeaders(): Record<string, string> {
+    const key = this.config.apiKey || 'local';
     return {
-      'Authorization': `Bearer ${this.config.apiKey}`,
+      'Authorization': `Bearer ${key}`,
       'Content-Type': 'application/json',
     };
   }
@@ -161,6 +175,9 @@ export class LLMClientFactory {
     switch (config.provider) {
       case 'openai':
       case 'hackclub':
+      case 'ollama':
+      case 'lmstudio':
+      case 'local':
         return new OpenAICompatibleClient(config);
       case 'anthropic':
         return new AnthropicClient(config);
@@ -179,12 +196,126 @@ export function clearLLMCache(): void {
   console.log("🧹 LLM Response cache cleared.");
 }
 
+export async function fetchAvailableModels(
+  provider: Provider,
+  baseUrl?: string,
+  apiKey?: string
+): Promise<{ models: string[]; error?: string }> {
+  try {
+    if (provider === 'ollama') {
+      const host = (baseUrl || 'http://localhost:11434').replace(/\/v1\/?$/, '').replace(/\/+$/, '');
+      try {
+        const res = await fetch(`${host}/api/tags`);
+        if (res.ok) {
+          const data = await res.json();
+          const models = (data.models || []).map((m: any) => m.name);
+          if (models.length > 0) return { models };
+        }
+      } catch (e) {
+        // Fallback to /v1/models endpoint
+      }
+      const v1Endpoint = `${host}/v1/models`;
+      const v1Res = await fetch(v1Endpoint);
+      if (v1Res.ok) {
+        const data = await v1Res.json();
+        const models = (data.data || []).map((m: any) => m.id);
+        return { models };
+      }
+      return { models: [], error: `Could not reach Ollama server at ${host}. Make sure Ollama is running!` };
+    }
+
+    if (provider === 'lmstudio' || provider === 'local') {
+      const host = (baseUrl || 'http://localhost:1234').replace(/\/+$/, '');
+      const endpoint = host.endsWith('/v1') ? `${host}/models` : `${host}/v1/models`;
+      const res = await fetch(endpoint);
+      if (res.ok) {
+        const data = await res.json();
+        const models = (data.data || []).map((m: any) => m.id);
+        return { models };
+      }
+      return { models: [], error: `Could not reach LM Studio server at ${host}. Make sure server is turned on!` };
+    }
+
+    if (provider === 'openai') {
+      if (!apiKey) return { models: [], error: 'API key is required to fetch OpenAI models.' };
+      const res = await fetch('https://api.openai.com/v1/models', {
+        headers: { Authorization: `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const models = (data.data || [])
+          .map((m: any) => m.id)
+          .filter((id: string) => id.includes('gpt'));
+        return { models };
+      }
+      return { models: [], error: `OpenAI returned status ${res.status}` };
+    }
+
+    if (provider === 'google') {
+      if (!apiKey) return { models: [], error: 'API key is required to fetch Google models.' };
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      if (res.ok) {
+        const data = await res.json();
+        const models = (data.models || [])
+          .map((m: any) => m.name.replace(/^models\//, ''))
+          .filter((name: string) => name.includes('gemini'));
+        return { models };
+      }
+      return { models: [], error: `Google API returned status ${res.status}` };
+    }
+
+    if (provider === 'anthropic') {
+      if (!apiKey) return { models: [], error: 'API key is required to fetch Anthropic models.' };
+      const res = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const models = (data.data || []).map((m: any) => m.id);
+        return { models };
+      }
+      return { models: [], error: `Anthropic API returned status ${res.status}` };
+    }
+
+    return { models: [], error: 'Provider model fetching not supported' };
+  } catch (err: unknown) {
+    return { models: [], error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export type BYOXHandler = (prompt: string) => Promise<string>;
+let globalBYOCHandler: BYOXHandler | null = null;
+
+export function registerBYOXHandler(handler: BYOXHandler | null) {
+  globalBYOCHandler = handler;
+}
+
 export async function callLLM(
   config: AgentConfig,
   systemPrompt: string,
   userPrompt: string,
   bypassCache: boolean = false
 ): Promise<LLMResponse> {
+
+  if (config.provider === 'byoc') {
+    if (!globalBYOCHandler) {
+      return { error: 'BYOC Mode is active, but no UI prompt handler is registered.', content: '' }
+    }
+    const fullPrompt = `${systemPrompt}\n\n=============User Request==================\n\n${userPrompt}`;
+    try {
+      const responseText = await globalBYOCHandler(fullPrompt);
+      return { content: responseText };
+    }
+    catch (e: any) {
+      return { error: e.message || 'BYOC user cancelled prompt.', content: '' }
+    };
+  }
+
+
+
   const cacheKey = `${config.provider}:${config.model || ''}:${systemPrompt}:${userPrompt}`;
   if (!bypassCache && responseCache.has(cacheKey)) {
     console.log("⚡ Returning cached LLM response (0ms)");
@@ -217,11 +348,15 @@ export async function callLLM(
 }
 
 export function getStoredConfig(): AgentConfig | null {
-  const apiKey = localStorage.getItem('kinetic-api-key');
+  const apiKey = localStorage.getItem('kinetic-api-key') || '';
   const provider = localStorage.getItem('kinetic-provider') as Provider | null;
   const model = localStorage.getItem('kinetic-model') || undefined;
-  if (!apiKey || !provider) return null;
-  return { apiKey, provider, model };
+  const baseUrl = localStorage.getItem('kinetic-base-url') || undefined;
+  if (!provider) return null;
+  if (!apiKey && provider !== 'hackclub' && provider !== 'ollama' && provider !== 'lmstudio' && provider !== 'local') {
+    return null;
+  }
+  return { apiKey: apiKey || 'local_key', provider, model, baseUrl };
 }
 
 export function safeParseJson<T>(content: string, defaultValue: T): T {
@@ -232,6 +367,11 @@ export function safeParseJson<T>(content: string, defaultValue: T): T {
     console.error('Failed to parse JSON content:', err instanceof Error ? err.message : err);
     return defaultValue;
   }
+}
+
+export function sanitizeCompositionCode(code: string): string {
+  if (!code) return '';
+  return code.replace(/^```[a-z]*\n?/gi, '').replace(/\n?```$/gi, '').trim();
 }
 
 
