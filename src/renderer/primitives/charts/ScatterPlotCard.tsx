@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { Easing } from 'remotion';
 import { useFrame } from '../useFrame';
@@ -11,7 +12,7 @@ export interface ScatterPlotPoint {
     label?: string;
 }
 
-export interface ScatterPlotCardProps {
+export interface ScatterPlotCardProps extends BaseMotionProps {
     width?: number;
     height?: number;
     titleText?: string;

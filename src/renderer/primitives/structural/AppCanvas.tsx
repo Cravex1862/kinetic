@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleConfig, configToStyle, GlowConfig } from "../types";
+import { StyleConfig, configToStyle, GlowConfig, BaseMotionProps } from "../types";
 import { buildGlowFilter, getTransform3DStyle } from "../utils/styleHelpers";
 
 type AspectRatio = '16:9' | '9:16' | '4:3' | '1:1';
@@ -11,7 +11,7 @@ const aspectRatioMap: Record<AspectRatio, string> = {
   '1:1': '1 / 1',
 };
 
-export interface AppCanvasProps {
+export interface AppCanvasProps extends BaseMotionProps {
   children?: React.ReactNode;
   osType?: 'mac' | 'windows';
   appTitle?: string;

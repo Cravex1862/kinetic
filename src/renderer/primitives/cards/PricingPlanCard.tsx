@@ -1,7 +1,8 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 import { glowConfigProps, TextFormatConfig, getGlowFilter, getTransform3DStyle, textFormatToStyle } from '../utils/styleHelpers';
 
-export interface PricingPlanCardProps {
+export interface PricingPlanCardProps extends BaseMotionProps {
     glowConfig?: glowConfigProps;
     width?: number;
     height?: number;

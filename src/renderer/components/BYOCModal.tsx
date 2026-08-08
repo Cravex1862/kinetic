@@ -13,6 +13,7 @@ export const BYOCModal: React.FC<BYOCModalProps> = ({
     stageName = 'Pipeline Stage',
     onSubmit,
     onCancel,
+    onSkip,
 }) => {
     const [copied, setCopied] = useState(false);
     const [pastedResponse, setPastedResponse] = useState('');

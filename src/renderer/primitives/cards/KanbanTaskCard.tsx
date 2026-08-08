@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 import { glowConfigProps, TextFormatConfig, getGlowFilter, getTransform3DStyle, textFormatToStyle } from '../utils/styleHelpers';
 import { getLowOpacityColor } from '../utils/colorHelpers';
@@ -10,7 +11,7 @@ export interface KanbanSubCardConfig {
     maxSizeCap?: number;
 }
 
-export interface KanbanTaskCardProps {
+export interface KanbanTaskCardProps extends BaseMotionProps {
     glowConfig: glowConfigProps;
     titleText: string;
     titleConfig?: TextFormatConfig;

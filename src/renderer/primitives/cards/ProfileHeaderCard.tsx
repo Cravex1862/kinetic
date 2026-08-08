@@ -1,8 +1,8 @@
 import React from 'react';
-import { GlowConfig, StyleConfig, configToStyle } from '../types';
+import { GlowConfig, StyleConfig, configToStyle, BaseMotionProps } from '../types';
 import { buildGlowFilter } from '../utils/styleHelpers';
 
-interface ProfileHeaderCardProps {
+interface ProfileHeaderCardProps extends BaseMotionProps {
   glowConfig: GlowConfig;
   avatarUrl?: string;
   avatarInitials?: string;

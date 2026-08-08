@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { Easing } from "remotion";
 import { useFrame } from "../useFrame";
@@ -9,7 +10,7 @@ export interface FunnelStepData {
     color?: string;
 }
 
-export interface MetricFunnelCardProps {
+export interface MetricFunnelCardProps extends BaseMotionProps {
     width?: number;
     height?: number;
     titleText?: string;

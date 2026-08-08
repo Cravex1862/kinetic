@@ -1,8 +1,9 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 import { User, SealCheck } from '@phosphor-icons/react';
 import { glowConfigProps, TextFormatConfig, getGlowFilter, getTransform3DStyle, textFormatToStyle } from '../utils/styleHelpers';
 
-export interface ProfileCardProps {
+export interface ProfileCardProps extends BaseMotionProps {
     glowConfig?: glowConfigProps;
     width?: number;
     height?: number;

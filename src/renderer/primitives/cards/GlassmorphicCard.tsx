@@ -1,8 +1,8 @@
 import React from 'react';
-import { GlowConfig, StyleConfig, configToStyle } from '../types';
+import { GlowConfig, StyleConfig, configToStyle, BaseMotionProps } from '../types';
 import { buildGlowFilter, getTransform3DStyle } from '../utils/styleHelpers';
 
-export interface GlassmorphicCardProps {
+export interface GlassmorphicCardProps extends BaseMotionProps {
   children: React.ReactNode;
   glowConfig?: GlowConfig;
   blur?: number;

@@ -1,6 +1,7 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 
-export interface MinecraftButtonProps {
+export interface MinecraftButtonProps extends BaseMotionProps {
   label: string;
   onClick?: () => void;
   disabled?: boolean;

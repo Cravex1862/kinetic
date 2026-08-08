@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 
 export interface ChatMessage {
@@ -7,7 +8,7 @@ export interface ChatMessage {
   color?: string;
 }
 
-export interface MinecraftChatProps {
+export interface MinecraftChatProps extends BaseMotionProps {
   messages: ChatMessage[];
   className?: string;
 }

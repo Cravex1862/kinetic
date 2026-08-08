@@ -1,8 +1,9 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 import { Sparkle } from '@phosphor-icons/react';
 import { glowConfigProps, TextFormatConfig, getGlowFilter, getTransform3DStyle, textFormatToStyle } from '../utils/styleHelpers';
 
-export interface FeatureCardProps {
+export interface FeatureCardProps extends BaseMotionProps {
     glowConfig?: glowConfigProps;
     width?: number;
     height?: number;

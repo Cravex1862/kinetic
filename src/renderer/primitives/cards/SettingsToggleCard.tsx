@@ -1,9 +1,10 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 import { interpolate, interpolateColors } from 'remotion';
 import { useFrame } from '../useFrame';
 import { glowConfigProps, TextFormatConfig, getGlowFilter, getTransform3DStyle, textFormatToStyle } from '../utils/styleHelpers';
 
-export interface SettingsToggleCardProps {
+export interface SettingsToggleCardProps extends BaseMotionProps {
     glowConfig?: glowConfigProps;
     width?: number;
     height?: number;

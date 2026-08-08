@@ -1,8 +1,8 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import { StyleConfig, configToStyle } from '../types';
+import { StyleConfig, configToStyle, BaseMotionProps } from '../types';
 
-interface TypingGhostCursorProps {
+interface TypingGhostCursorProps extends BaseMotionProps {
   isActive: boolean;
   blinkRate?: number;
   frame?: number;

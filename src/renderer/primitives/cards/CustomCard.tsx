@@ -1,10 +1,10 @@
 import React from 'react';
-import { GlowConfig, StyleConfig, configToStyle } from '../types';
+import { GlowConfig, StyleConfig, configToStyle, BaseMotionProps } from '../types';
 import { buildGlowFilter } from '../utils/styleHelpers';
 
 type CardVariant = 'elevated' | 'outlined' | 'flat';
 
-interface CustomCardProps {
+interface CustomCardProps extends BaseMotionProps {
   children: React.ReactNode;
   glowConfig?: GlowConfig;
   styleConfig?: StyleConfig;

@@ -200,13 +200,13 @@ export async function runMinecraftPipeline(input: MinecraftPipelineInput): Promi
   }
 
   // 3. Verification
-  onState({ status: 'compiling', progress: 0.7 });
+  onState({ status: 'assembling', progress: 0.7 });
   console.log('[MinecraftPipeline] Stage 3: Verifying scene code...');
   const verified = await runMinecraftVerifierAgent(config, codeResult.tsxCode);
   const cleanedCode = stripAllImports(verified.verifiedCode);
 
   // 4. Assembly
-  onState({ status: 'compiling', progress: 0.9 });
+  onState({ status: 'assembling', progress: 0.9 });
   console.log('[MinecraftPipeline] Stage 4: Assembling final composition...');
 
   const finalComposition = `import React from 'react';

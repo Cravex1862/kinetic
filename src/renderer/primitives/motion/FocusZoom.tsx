@@ -1,9 +1,9 @@
 import React from 'react';
 import { interpolate, Easing } from 'remotion';
-import { StyleConfig, configToStyle } from '../types';
+import { StyleConfig, configToStyle, BaseMotionProps } from '../types';
 import { useFrame } from '../useFrame';
 
-interface FocusZoomProps {
+interface FocusZoomProps extends BaseMotionProps {
   children: React.ReactNode;
   zoomScale?: number;
   duration?: number;

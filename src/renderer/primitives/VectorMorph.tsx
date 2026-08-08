@@ -37,34 +37,29 @@ export const VectorMorph: React.FC<VectorMorphProps> = ({
     startFrame = 0,
     duration = 30,
     width = 100,
+    height = 100,
     viewBox = '0 0 100 100',
     fill = '#8b5cf6',
     stroke = 'none',
     strokeWidth = 0,
-    easing = 'ease-out',
+    easing = 'ease-in-out',
     style,
     glowConfig,
 }) => {
     const frame = useCurrentFrame();
 
-    const easingFn = useMemo(() => {
-        switch (easing) {
-            case 'ease-in-out': return Easing.inOut(Easing.ease);
-            case 'ease-in': return Easing.in(Easing.ease);
-            case 'linear': return (t: number) => t;
-            case 'bounce': return Easing.out(Easing.bounce);
-            case 'ease-out':
-            default:
-                return Easing.out(Easing.ease);
-        }
-    }, [easing]);
+    const progress = useMemo(() => {
+        const relativeFrame = frame - startFrame;
+        if (relativeFrame <= 0) return 0;
+        if (relativeFrame >= duration) return 1;
 
-    const progress = interpolate(
-        frame - startFrame,
-        [0, duration],
-        [0, 1],
-        { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: easingFn }
-    );
+        const raw = relativeFrame / duration;
+        if (easing === 'linear') return raw;
+        if (easing === 'ease-in') return Easing.in(Easing.quad)(raw);
+        if (easing === 'ease-out') return Easing.out(Easing.quad)(raw);
+        if (easing === 'bounce') return Easing.bounce(raw);
+        return Easing.inOut(Easing.quad)(raw);
+    }, [frame, startFrame, duration, easing]);
 
     const interpolator = useMemo(() => {
         try {
@@ -77,7 +72,7 @@ export const VectorMorph: React.FC<VectorMorphProps> = ({
     }, [fromPath, toPath]);
 
     const currentPath = interpolator(progress);
-    const userStyles = configToStyle(style, glowConfig);
+    const userStyles = configToStyle(style);
 
     return (
         <svg

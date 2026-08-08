@@ -1,7 +1,8 @@
+import { BaseMotionProps } from '../types';
 import React, { useState } from 'react';
 import { getItemTexture } from './itemRegistry';
 
-export interface InventorySlotProps {
+export interface InventorySlotProps extends BaseMotionProps {
     id?: string;
     itemIcon?: string | React.ReactNode;
     itemName?: string;

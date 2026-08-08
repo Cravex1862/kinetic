@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, MagnifyingGlass, Check, Sparkle, ArrowLeft } from '@phosphor-icons/react';
 import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
 import { CustomInstructionsPanel } from "../../components/CustomInstructionsPanel";
@@ -20,7 +20,7 @@ import { PipelineState } from "@/renderer/agents/types";
 const STATUS_LABELS: Record<string, string> = {
   'storyboarding': 'Storyboarding scenes...',
   'designing': 'Generating scene code...',
-  'compiling': 'Verifying Remotion physics...',
+  'assembling': 'Verifying Remotion physics...',
   'done': 'Complete!',
   'error': 'Error',
 };
@@ -126,28 +126,40 @@ export const MinecraftStyleCreator: React.FC<MinecraftStyleCreatorProps> = ({
     setIsGenerating(false);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (handleClose) handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose]);
+
   return (
     <div className="h-screen w-screen bg-gray-950 text-white flex flex-col font-sans select-none overflow-hidden page-enter">
       {/* Top Header Navigation */}
       <header className="flex items-center justify-between border-b border-gray-900 px-6 py-3 bg-gray-950 shrink-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {handleClose && (
             <button
               onClick={handleClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-800 bg-gray-900 text-gray-400 hover:text-white hover:border-purple-500 transition-all hover:scale-105"
-              title="Go Back"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-900 hover:text-purple-400"
+              title="Return to Dashboard"
             >
-              <ArrowLeft size={16} weight="bold" />
+              <ArrowLeft size={16} />
             </button>
           )}
-          <div className="flex items-center gap-2">
-            <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{
-              filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)'
-            }} />
-            <span className="text-sm font-bold tracking-wide text-white">kinetic</span>
-          </div>
-          <span className="text-xs text-gray-700">/</span>
-          <span className="text-xs text-amber-400 font-semibold">Minecraft Studio</span>
+          <button
+            onClick={handleClose}
+            className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+            title="Return to Dashboard"
+          >
+            <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)' }} />
+            <span className="text-sm font-bold text-white">kinetic</span>
+          </button>
+          <span className="text-sm text-gray-700">/</span>
+          <span className="text-sm text-gray-400">Minecraft Studio</span>
         </div>
       </header>
 
@@ -155,6 +167,14 @@ export const MinecraftStyleCreator: React.FC<MinecraftStyleCreatorProps> = ({
       <div className="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden bg-gray-950">
 
           <div className="col-span-4 flex flex-col gap-4 h-full overflow-y-auto pr-1 custom-scrollbar">
+
+            <CustomInstructionsPanel
+              instructions={instructions}
+              setInstructions={setInstructions}
+              isRefining={isRefiningPrompt}
+              handleRefinePrompt={handleRefinePrompt}
+              placeholder="Enter animation prompt..."
+            />
 
             <VoiceoverAudioField
               mode={voiceoverMode}
@@ -221,14 +241,6 @@ export const MinecraftStyleCreator: React.FC<MinecraftStyleCreatorProps> = ({
                 />
               </PreviewWindow>
             </div>
-
-            <CustomInstructionsPanel
-              instructions={instructions}
-              setInstructions={setInstructions}
-              isRefining={isRefiningPrompt}
-              handleRefinePrompt={handleRefinePrompt}
-              placeholder="Enter animation prompt..."
-            />
 
             <div className="flex items-center gap-4">
               <div className="flex-1">

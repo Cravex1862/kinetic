@@ -1,9 +1,9 @@
 import React from 'react';
 import { Easing } from 'remotion';
-import { StyleConfig, configToStyle } from '../types';
+import { StyleConfig, configToStyle, BaseMotionProps } from '../types';
 import { useFrame } from '../useFrame';
 
-interface ChartAnimateProps {
+interface ChartAnimateProps extends BaseMotionProps {
   children: React.ReactNode | ((progress: number, frame: number) => React.ReactNode);
   duration?: number;
   delay?: number;

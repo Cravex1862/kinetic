@@ -1,8 +1,8 @@
 import React from 'react';
 import { useCurrentFrame, Easing } from 'remotion';
-import { StyleConfig } from '../types';
+import { StyleConfig, BaseMotionProps } from '../types';
 
-interface ProgressRingProps {
+interface ProgressRingProps extends BaseMotionProps {
   strokeWidth?: number;
   color?: string;
   targetPercentage: number;

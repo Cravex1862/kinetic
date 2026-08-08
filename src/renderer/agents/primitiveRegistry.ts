@@ -222,3 +222,72 @@ export async function ingestPrimitiveSourceCode(componentNames: string[]): Promi
     return codeMap;
 }
 
+// ─── SDK Import Map (used by assembler to build correct import header) ────────────────────
+export const PRIMITIVE_SDK_MAP: Record<string, string> = {
+    // Structural SDK
+    BrowserFrame:           "'../primitives/StructuralSDK'",
+    SidebarLayout:          "'../primitives/StructuralSDK'",
+    TopNavbar:              "'../primitives/StructuralSDK'",
+    AppCanvas:              "'../primitives/StructuralSDK'",
+    MockWindow:             "'../primitives/StructuralSDK'",
+    HeroMetricCard:         "'../primitives/StructuralSDK'",
+    DataGridContainer:      "'../primitives/StructuralSDK'",
+    SplitHeroLayout:        "'../primitives/StructuralSDK'",
+    TabSwitcherContainer:   "'../primitives/StructuralSDK'",
+    ActionButton:           "'../primitives/StructuralSDK'",
+    BreadcrumbHeader:       "'../primitives/StructuralSDK'",
+    NotificationToaster:    "'../primitives/StructuralSDK'",
+    // Cards SDK
+    GlassmorphicCard:       "'../primitives/CardSDK'",
+    KanbanTaskCard:         "'../primitives/CardSDK'",
+    NotificationCard:       "'../primitives/CardSDK'",
+    PricingPlanCard:        "'../primitives/CardSDK'",
+    PriceCard:              "'../primitives/CardSDK'",
+    ProfileCard:            "'../primitives/CardSDK'",
+    SettingsToggleCard:     "'../primitives/CardSDK'",
+    CustomCard:             "'../primitives/CardSDK'",
+    FeatureCard:            "'../primitives/CardSDK'",
+    FeatureBenefitCard:     "'../primitives/CardSDK'",
+    BillingInvoiceCard:     "'../primitives/CardSDK'",
+    PushNotificationToast:  "'../primitives/CardSDK'",
+    RegularCard:            "'../primitives/CardSDK'",
+    ProfileHeaderCard:      "'../primitives/CardSDK'",
+    // Charts SDK
+    BarChartCard:           "'../primitives/ChartsSDK'",
+    AreaChart:              "'../primitives/ChartsSDK'",
+    DonutChartCard:         "'../primitives/ChartsSDK'",
+    LineChartCard:          "'../primitives/ChartsSDK'",
+    MetricFunnelCard:       "'../primitives/ChartsSDK'",
+    PieChartCard:           "'../primitives/ChartsSDK'",
+    ScatterPlotCard:        "'../primitives/ChartsSDK'",
+    StockCard:              "'../primitives/ChartsSDK'",
+};
+
+// All TransitionSDK wrapper names — used by assembler to detect which ones appear in animated JSX
+export const TRANSITION_WRAPPER_NAMES = [
+    'SpringEnter', 'FadeBlur', 'SlideInOut', 'CardReveal',
+    'PulseScale', 'RotateFlip', 'GlitchIntro', 'StaggerContainer', 'AccordionExpand',
+];
+
+// ─── getPrimitiveSpec ────────────────────────────────────────────────────────────
+// Extracts ONLY the named component's section from PRIMITIVE_MENU_SUMMARY.
+// This is the core optimization for small models: they only see one component's spec.
+export function getPrimitiveSpec(name: string): string {
+    // Match the component entry: starts with optional spaces + dash + name + colon
+    // Ends before the next component entry (dash + word) or a section separator (===)
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(
+        `[-\\s]*${escapedName}:\\s*\\r?\\n[\\s\\S]*?(?=\\n[-\\s]*[A-Z][\\w]+:|={3,}|$)`,
+        'i'
+    );
+
+    const match = PRIMITIVE_MENU_SUMMARY.match(pattern);
+    if (!match) {
+        // Fallback: search for the name anywhere and grab surrounding context
+        const idx = PRIMITIVE_MENU_SUMMARY.indexOf(name);
+        if (idx === -1) return '';
+        return PRIMITIVE_MENU_SUMMARY.slice(idx, idx + 400).trim();
+    }
+
+    return match[0].trim();
+}

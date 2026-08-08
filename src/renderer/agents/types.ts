@@ -1,4 +1,4 @@
-export type Provider = 'openai' | 'anthropic' | 'google' | 'hackclub' | 'ollama' | 'lmstudio' | 'local' | 'byoc';
+export type Provider = 'openai' | 'anthropic' | 'google' | 'hackclub' | 'ollama' | 'lmstudio' | 'local' | 'byoc' | 'groq';
 
 export interface AgentConfig {
   provider: Provider;
@@ -50,9 +50,51 @@ export interface SceneOutput {
   captions: string[];
 }
 
+// ─── Multi-Agent Pipeline Types ──────────────────────────────────────────────
+
+export interface DesignTokens {
+  fontFamily: string;
+  primaryColor: string;
+  backgroundColor: string;
+  accentColor: string;
+  textColor: string;
+  surfaceColor: string;
+  theme: 'dark' | 'light';
+}
+
+export interface SceneBlueprint {
+  id: string;
+  purpose: string;
+  durationInFrames: number;
+  componentList: string[];  // primitive names e.g. ["BrowserFrame", "BarChartCard"]
+}
+
+export interface ComponentCode {
+  primitiveName: string;
+  rawJSX: string;      // output of Component Creator Agent
+  animatedJSX: string; // output of Animator Agent
+}
+
+export interface SceneCode {
+  blueprintId: string;
+  durationInFrames: number;
+  components: ComponentCode[];
+}
+
 export interface PipelineState {
-  status: 'idle' | 'storyboarding' | 'laying-out' | 'designing' | 'animating' | 'copywriting' | 'compiling' | 'done' | 'error';
+  status:
+    | 'idle'
+    | 'designing'
+    | 'storyboarding'
+    | 'component-building'
+    | 'animating'
+    | 'assembling'
+    | 'verifying'
+    | 'done'
+    | 'error';
   progress: number;
+  currentScene?: string;    // e.g. "scene2"
+  currentComponent?: string; // e.g. "BarChartCard"
   error?: string;
   output?: SceneOutput[];
 }
@@ -65,4 +107,6 @@ export const DEFAULT_MODELS: Record<Provider, string> = {
   ollama: 'qwen2.5-coder',
   lmstudio: 'qwen2.5-coder-7b-instruct',
   local: 'qwen2.5-coder',
+  byoc: 'byoc',
+  groq: 'llama-3.1-8b-instant',
 };

@@ -1,8 +1,9 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { useParentTransform, combineTransforms, TransformContext, TransformState } from './TransformContext';
 import { getTransform3DStyle } from "./styleHelpers";
 
-export interface TransformNodeProps extends TransformState {
+export interface TransformNodeProps extends TransformState, BaseMotionProps {
     children?: React.ReactNode;
     style?: React.CSSProperties;
     className?: string;

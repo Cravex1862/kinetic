@@ -1,8 +1,9 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 import { Bell } from '@phosphor-icons/react';
 import { glowConfigProps, TextFormatConfig, getGlowFilter, getTransform3DStyle, textFormatToStyle } from '../utils/styleHelpers';
 
-export interface NotificationCardProps {
+export interface NotificationCardProps extends BaseMotionProps {
     glowConfig?: glowConfigProps;
     width?: number;
     height?: number;

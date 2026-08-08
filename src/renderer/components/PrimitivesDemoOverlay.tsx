@@ -3,7 +3,7 @@ import { ArrowLeft, Palette, ChartBar, Layout, CursorClick, ArrowsMerge, Sliders
 
 // Import all 45 primitive components from SDKs
 import { CustomCard, GlassmorphicCard, PricingPlanCard, KanbanTaskCard, ProfileHeaderCard, FeatureBenefitCard, BillingInvoiceCard, SettingsToggleCard, PushNotificationToast } from '../primitives/CardSDK';
-import { BarChart, LineChart, PieChart, AreaChart, DonutChart, MetricFunnel, ScatterPlot, SparklineTicker } from '../primitives/ChartsSDK';
+import { BarChart, BarChartCard, LineChartCard, PieChartCard, AreaChartCard, DonutChartCard, MetricFunnelCard, ScatterPlotCard, SparklineTicker } from '../primitives/ChartsSDK';
 import { BrowserFrame, HeroMetricCard, TopNavbar, AppCanvas, MockWindow, SidebarLayout, DataGridContainer, SplitHeroLayout, TabSwitcherContainer, BreadcrumbHeader, NotificationToaster } from '../primitives/StructuralSDK';
 import { Cursor, TextTyper, ProgressRing, SmoothScroll, FocusZoom, ChartAnimate, DragAndDrop, TypingGhostCursor, MarqueeTrack } from '../primitives/MotionSDK';
 import { SpringEnter, StaggerContainer, FadeBlur, SlideInOut, CardReveal, PulseScale, AccordionExpand, RotateFlip, GlitchIntro } from '../primitives/TransitionSDK';
@@ -128,13 +128,13 @@ export const PrimitivesDemoOverlay: React.FC<PrimitivesDemoOverlayProps> = ({ on
             case 'PricingPlanCard':
                 return (
                     <div className="w-[280px]">
-                        <PricingPlanCard glowConfig={glowConfig} price="$99" features={['Unlimited projects', 'Export custom layouts']} ctaLabel="Select Plan" />
+                        <PricingPlanCard glowConfig={glowConfig} pricetext="$99" features={['Unlimited projects', 'Export custom layouts']} buttonText="Select Plan" />
                     </div>
                 );
             case 'KanbanTaskCard':
                 return (
                     <div className="w-[320px]">
-                        <KanbanTaskCard glowConfig={glowConfig} title={titleText} status="In Progress" priorityLabel="High" />
+                        <KanbanTaskCard glowConfig={glowConfig} titleText={titleText} subCards={[{ text: 'In Progress', textColor: '#a78bfa' }]} />
                     </div>
                 );
             case 'ProfileHeaderCard':
@@ -158,7 +158,7 @@ export const PrimitivesDemoOverlay: React.FC<PrimitivesDemoOverlayProps> = ({ on
             case 'SettingsToggleCard':
                 return (
                     <div className="w-[340px]">
-                        <SettingsToggleCard glowConfig={glowConfig} label={titleText} description={descriptionText} toggled={toggledState} onToggle={setToggledState} />
+                        <SettingsToggleCard glowConfig={glowConfig} titleText={titleText} descriptionText={descriptionText} toggled={toggledState} />
                     </div>
                 );
             case 'PushNotificationToast':
@@ -172,43 +172,43 @@ export const PrimitivesDemoOverlay: React.FC<PrimitivesDemoOverlayProps> = ({ on
             case 'BarChart':
                 return (
                     <div className="p-4 bg-gray-900/40 rounded-xl border border-gray-900">
-                        <BarChart data={mockChartData} width={340} height={180} showValues={true} glowConfig={glowConfig} frame={progressValue * 30} />
+                        <BarChartCard data={mockChartData} width={340} height={180} showValues={true} glowConfig={glowConfig} frame={progressValue * 30} />
                     </div>
                 );
             case 'LineChart':
                 return (
                     <div className="p-4 bg-gray-900/40 rounded-xl border border-gray-900">
-                        <LineChart data={mockChartData} width={340} height={180} lineColor={accentColor} showGrid={true} showArea={true} glowConfig={glowConfig} frame={progressValue * 30} />
+                        <LineChartCard data={mockChartData} width={340} height={180} lineColor={accentColor} showGridLines={true} frame={progressValue * 30} />
                     </div>
                 );
             case 'PieChart':
                 return (
                     <div className="p-4 bg-gray-900/40 rounded-xl border border-gray-900">
-                        <PieChart data={mockPieData} size={220} glowConfig={glowConfig} frame={progressValue * 30} />
+                        <PieChartCard data={mockPieData} width={220} height={220} frame={progressValue * 30} />
                     </div>
                 );
             case 'AreaChart':
                 return (
                     <div className="p-4 bg-gray-900/40 rounded-xl border border-gray-900">
-                        <AreaChart data={mockChartData} width={340} height={180} lineColor={accentColor} glowConfig={glowConfig} frame={progressValue * 30} />
+                        <AreaChartCard datasets={[{ label: 'Growth', values: [10, 25, 45, 80], color: accentColor }]} labels={['Jan', 'Feb', 'Mar', 'Apr']} width={340} height={180} frame={progressValue * 30} />
                     </div>
                 );
             case 'DonutChart':
                 return (
                     <div className="p-4 bg-gray-900/40 rounded-xl border border-gray-900">
-                        <DonutChart data={mockPieData} size={220} innerRadius={70} glowConfig={glowConfig} frame={progressValue * 30} />
+                        <DonutChartCard data={mockPieData} width={220} height={220} innerHoleRatio={0.6} frame={progressValue * 30} />
                     </div>
                 );
             case 'MetricFunnel':
                 return (
                     <div className="p-4 bg-gray-900/40 rounded-xl border border-gray-900">
-                        <MetricFunnel data={[{ label: 'Visits', value: 100, color: accentColor }, { label: 'Clicks', value: 60, color: accentColor }, { label: 'Conversions', value: 15, color: '#ef4444' }]} width={320} height={180} glowConfig={glowConfig} frame={progressValue * 30} />
+                        <MetricFunnelCard data={[{ label: 'Visits', value: 100, color: accentColor }, { label: 'Clicks', value: 60, color: accentColor }, { label: 'Conversions', value: 15, color: '#ef4444' }]} width={320} height={180} frame={progressValue * 30} />
                     </div>
                 );
             case 'ScatterPlot':
                 return (
                     <div className="p-4 bg-gray-900/40 rounded-xl border border-gray-900">
-                        <ScatterPlot points={[{ x: 10, y: 20, color: accentColor }, { x: 40, y: 80, color: accentColor }, { x: 80, y: 40, color: '#ef4444' }]} width={320} height={180} glowConfig={glowConfig} frame={progressValue * 30} />
+                        <ScatterPlotCard data={[{ x: 10, y: 20, color: accentColor }, { x: 40, y: 80, color: accentColor }, { x: 80, y: 40, color: '#ef4444' }]} width={320} height={180} frame={progressValue * 30} />
                     </div>
                 );
             case 'SparklineTicker':
@@ -223,7 +223,7 @@ export const PrimitivesDemoOverlay: React.FC<PrimitivesDemoOverlayProps> = ({ on
             case 'BrowserFrame':
                 return (
                     <div className="w-[450px] h-[250px]">
-                        <BrowserFrame glowConfig={glowConfig} url={urlText} windowStyle={windowStyle} rotateX={rotateX} rotateY={rotateY} perspective={800}>
+                        <BrowserFrame glowConfig={glowConfig} url={urlText} osType={windowStyle as any} rotateX={rotateX} rotateY={rotateY} perspective={800}>
                             <div className="flex items-center justify-center h-full text-xs text-gray-500 bg-gray-950">Viewport Content</div>
                         </BrowserFrame>
                     </div>

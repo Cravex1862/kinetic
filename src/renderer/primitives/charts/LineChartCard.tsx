@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { Easing } from 'remotion';
 import { useFrame } from "../useFrame";
@@ -8,7 +9,7 @@ export interface LineChartDataPoint {
     value: number;
 }
 
-export interface LineChartCardProps {
+export interface LineChartCardProps extends BaseMotionProps {
     width?: number;
     height?: number;
     titleText?: string;

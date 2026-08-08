@@ -17,6 +17,8 @@ import { TiltConfigurer } from '../components/TiltConfigurer';
 import Studio from './studio/Studio';
 import { registerBYOXHandler } from '../agents/llmClient';
 import { BYOCModal } from '../components/BYOCModal';
+import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal';
+import { AudioTesterModal } from '../components/AudioTesterModal';
 import { sanitizeCompositionCode } from '../agents/pipeline';
 
 
@@ -258,6 +260,30 @@ const AppRouter: React.FC = () => {
     loadProjects();
   }, []);
 
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  React.useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      // Ctrl + , or Cmd + , -> Open Settings
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        setPage('settings');
+        return;
+      }
+
+      // Toggle Keyboard Shortcuts Modal on ? or Ctrl + / (ignore when typing in input/textarea)
+      if (!isInput && (e.key === '?' || (e.key === '/' && (e.ctrlKey || e.metaKey)))) {
+        e.preventDefault();
+        setShowShortcutsModal(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, []);
+
   React.useEffect(() => {
     const paths = projects.map((p) => p.savePath).filter(Boolean) as string[];
     localStorage.setItem('kinetic-project-paths', JSON.stringify(paths));
@@ -275,7 +301,7 @@ const AppRouter: React.FC = () => {
 
     // If this is an un-saved draft project, generate a savePath and create the file on disk now!
     if (!finalProject.savePath) {
-      let finalDir = workspaceDir;
+      let finalDir: string | null = workspaceDir;
       if (!finalDir && window.electronAPI?.selectDirectory) {
         finalDir = await window.electronAPI.selectDirectory();
       }
@@ -288,7 +314,7 @@ const AppRouter: React.FC = () => {
         const filename = `untitled_${n}.json`;
         const separator = finalDir.includes('\\') ? '\\' : '/';
         const savePath = `${finalDir}${separator}${filename}`;
-        
+
         finalProject.savePath = savePath;
         if (!finalProject.title || finalProject.title === 'Draft Project') {
           finalProject.title = `untitled_${n}`;
@@ -297,7 +323,21 @@ const AppRouter: React.FC = () => {
     }
 
     if (finalProject.savePath && window.electronAPI?.writeFile) {
-      await window.electronAPI.writeFile(finalProject.savePath, JSON.stringify(finalProject, null, 2));
+      try {
+        await window.electronAPI.writeFile(finalProject.savePath, JSON.stringify(finalProject, null, 2));
+      } catch (e) {
+        console.warn('[AppRouter] Save project failed:', e);
+      }
+    }
+    if (finalProject.code && window.electronAPI?.writeFile) {
+      try {
+        const sanitized = sanitizeCompositionCode(finalProject.code);
+        if (sanitized) {
+          await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', sanitized);
+        }
+      } catch (e) {
+        console.warn('[AppRouter] Write composition failed:', e);
+      }
     }
 
     setProject(finalProject);
@@ -606,7 +646,7 @@ const AppRouter: React.FC = () => {
                 window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
               }
             }
-            setPage('dashboard');
+            setPage('template-selector');
           }}
           onUpdateProject={(updated) => {
             setProject(updated);
@@ -639,7 +679,7 @@ const AppRouter: React.FC = () => {
                 window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
               }
             }
-            setPage('dashboard');
+            setPage('template-selector');
           }}
           onUpdateProject={(updated) => {
             setProject(updated);
@@ -654,7 +694,7 @@ const AppRouter: React.FC = () => {
       {(page as any) === 'minecraft-creator' && (
         <MinecraftStyleCreator
           onBack={() => setPage('template-selector')}
-          onGenerate={handleGenerate}
+          onGenerate={(data: any) => handleGenerate({ title: 'Minecraft Video', narration: data.scriptText, prompt: data.instructions, ...data })}
         />
       )}
       {page === 'logo-generator' && (
@@ -671,7 +711,7 @@ const AppRouter: React.FC = () => {
                 window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
               }
             }
-            setPage('dashboard');
+            setPage('template-selector');
           }}
           onUpdateProject={(updated) => {
             setProject(updated);
@@ -797,6 +837,11 @@ const AppRouter: React.FC = () => {
           }}
         />
       )}
+      <KeyboardShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+      />
+      <AudioTesterModal />
     </div>
   );
 };

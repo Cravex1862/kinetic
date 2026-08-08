@@ -15,17 +15,10 @@ interface BackgroundSelectorPanelProps {
     onSelectBackground: (bg: BackgroundSelection) => void;
 }
 
-const rawBackgrounds1 = ((import.meta as any).glob(
+const rawBackgrounds = ((import.meta as any).glob(
     '../primitives/backgrounds/*/*.{png,jpg,jpeg,webp,svg}',
     { eager: true, import: 'default' }
 ) || {}) as Record<string, string>;
-
-const rawBackgrounds2 = ((import.meta as any).glob(
-    '/src/renderer/primitives/backgrounds/*/*.{png,jpg,jpeg,webp,svg}',
-    { eager: true, import: 'default' }
-) || {}) as Record<string, string>;
-
-const rawBackgrounds = { ...rawBackgrounds1, ...rawBackgrounds2 };
 
 const PRESET_GRADIENTS = [
     { name: 'Sunset Glow', gradient: 'linear-gradient(135deg, #FF5E3A 0%, #FF2A6D 40%, #9B51E0 80%, #6366F1 100%)' },

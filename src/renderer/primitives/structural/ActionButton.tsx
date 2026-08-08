@@ -1,12 +1,12 @@
 import React from 'react';
-import { StyleConfig, configToStyle, GlowConfig } from '../types';
+import { StyleConfig, configToStyle, GlowConfig, BaseMotionProps } from '../types';
 import { buildGlowFilter } from '../utils/styleHelpers';
 import { jsx } from 'react/jsx-runtime';
 
 type ButtonSize = 'sm' | 'md' | 'lg';
 type ButtonLayout = 'icon-only' | 'label-only' | 'icon-label';
 
-interface ActionButtonProps {
+interface ActionButtonProps extends BaseMotionProps {
   glowConfig: GlowConfig;
   size: ButtonSize;
   icon?: string;

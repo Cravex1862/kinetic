@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { Easing } from 'remotion';
 import { useFrame } from "../useFrame";
@@ -5,7 +6,7 @@ import { TextFormatConfig, getTransform3DStyle, textFormatToStyle } from "../uti
 
 export type StockChangeMode = 'percentage' | 'price' | 'value';
 
-export interface StockCardProps {
+export interface StockCardProps extends BaseMotionProps {
     width?: number;
     height?: number;
     tickerSymbol: string;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GlowConfig, StyleConfig, buildGlowFilter, configToStyle, getTransform3DStyle } from '../types';
+import { GlowConfig, StyleConfig, buildGlowFilter, configToStyle, getTransform3DStyle, BaseMotionProps } from '../types';
 
 
 
@@ -9,7 +9,7 @@ export interface BarChartDataItem {
     color?: string;
 }
 
-export interface BarChartCardProps {
+export interface BarChartCardProps extends BaseMotionProps {
     data?: BarChartDataItem[];
     width?: number;
     height?: number;

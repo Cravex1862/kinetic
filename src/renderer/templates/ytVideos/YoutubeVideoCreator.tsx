@@ -210,6 +210,16 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
     );
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onBack();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onBack]);
+
   return (
     <div className="flex h-screen bg-gray-950 text-white page-enter overflow-hidden">
       {/* LEFT SIDEBAR - Configuration Panel */}
@@ -221,11 +231,24 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
           >
             <ArrowLeft size={16} />
           </button>
-          <div className="flex items-center gap-2">
-            <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" />
-            <span className="text-sm font-bold text-white">YouTube Creator</span>
-          </div>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+            title="Return to Dashboard"
+          >
+            <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)' }} />
+            <span className="text-sm font-bold text-white">kinetic</span>
+          </button>
+          <span className="text-sm text-gray-700">/</span>
+          <span className="text-sm text-gray-400">YouTube Creator</span>
         </header>
+
+        {/* Custom Instructions Panel */}
+        <CustomInstructionsPanel
+          instructions={instructions}
+          setInstructions={setInstructions}
+          placeholder="Enter YouTube animation directives, lower thirds, or scene transitions..."
+        />
 
         {/* Section 1: Upload Script */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-4">
@@ -264,7 +287,7 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
             walkthrough preview canvas
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center relative w-full h-full mt-4">
+          <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full h-full mt-4">
             <div className="flex flex-col gap-2 w-full h-full items-center youtube-preview-canvas">
               <style>
                 {`
@@ -413,6 +436,38 @@ const YoutubeVideoCreator: React.FC<YoutubeVideoCreatorProps> = ({ onBack }) => 
                     }}
                     className="w-full h-full relative overflow-hidden flex flex-col items-center justify-center p-8 select-none"
                   >
+                    {/* Background Dynamic Selection Layer */}
+                    <div
+                      className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden"
+                      style={{
+                        ...(bgSelection?.color === 'transparent'
+                          ? {
+                              backgroundImage:
+                                'linear-gradient(45deg, #18181b 25%, transparent 25%), linear-gradient(-45deg, #18181b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #18181b 75%), linear-gradient(-45deg, transparent 75%, #18181b 75%)',
+                              backgroundSize: '16px 16px',
+                              backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                              backgroundColor: '#09090b',
+                            }
+                          : bgSelection?.type === 'image' && bgSelection.imageUrl
+                          ? {
+                              backgroundImage: `url(${bgSelection.imageUrl})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              filter: `blur(${bgSelection.blurPx || 0}px)`,
+                              transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                            }
+                          : bgSelection?.type === 'gradient' && bgSelection.gradient
+                          ? {
+                              background: bgSelection.gradient,
+                              filter: `blur(${bgSelection.blurPx || 0}px)`,
+                              transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                            }
+                          : {
+                              backgroundColor: bgSelection?.color || '#000000',
+                            }),
+                      }}
+                    />
+
                     {/* Ambient Glowing Orbs */}
                     <div 
                       style={{ background: `radial-gradient(circle, ${swatches['Primary']}44 0%, transparent 70%)` }}

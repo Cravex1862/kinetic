@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React, { createContext, useContext } from "react";
 import { getTransform3DStyle } from "./styleHelpers";
 

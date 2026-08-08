@@ -1,7 +1,8 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { useCurrentFrame } from "remotion";
 
-export interface GradientBackgroundProps {
+export interface GradientBackgroundProps extends BaseMotionProps {
     colors?: string[];
     type?: 'linear' | 'radial' | 'conic';
     angle?: number;

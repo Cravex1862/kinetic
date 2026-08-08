@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ProjectData } from '../AppRouter';
-import { ArrowLeft, DownloadSimple, CheckCircle, XCircle, CircleNotch, FolderOpen, X, Video } from '@phosphor-icons/react';
+import { ArrowLeft, DownloadSimple, CheckCircle, XCircle, CircleNotch, FolderOpen, X, Video, Microphone } from '@phosphor-icons/react';
+import { VoiceoverModal } from './VoiceoverModal';
 import { parseSceneCodeToNodes, updateCodeWithNodeProps, ComponentNode, EasingType } from './semanticParser';
 import { generateFCPXML } from '../../utils/fcpxmlExporter';
 import { InspectorPanel } from './InspectorPanel';
@@ -32,6 +33,7 @@ export const Studio: React.FC<StudioProps> = ({
     customAlert,
 }) => {
     const [showExportModal, setShowExportModal] = useState(false);
+    const [showVoiceoverModal, setShowVoiceoverModal] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState<{ frame: number; total: number; status: string } | null>(null);
     const [exportResult, setExportResult] = useState<{ success: boolean; error?: string; outputPath?: string } | null>(null);
@@ -53,8 +55,8 @@ export const Studio: React.FC<StudioProps> = ({
 
                 const clips = nodes.map((node, i) => ({
                     id: node.id || `node-${i}`,
-                    name: node.label || node.name || `Layer_${i + 1}`,
-                    srcPath: `Assets/${node.name || 'Component'}_${i + 1}.png`,
+                    name: node.label || (node as any).type || `Layer_${i + 1}`,
+                    srcPath: `Assets/${node.label || (node as any).type || 'Component'}_${i + 1}.png`,
                     trackType: 'video' as const,
                     trackIndex: i + 1,
                     startFrame: 0,
@@ -151,29 +153,34 @@ export const Studio: React.FC<StudioProps> = ({
             const cleanCode = sanitizeCompositionCode(project.code);
             if (!cleanCode) return;
 
-            lastSyncedPathRef.current = project.savePath || '';
+            if (lastSyncedCodeRef.current === cleanCode) return;
             lastSyncedCodeRef.current = cleanCode;
-            await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
+            lastSyncedPathRef.current = project?.savePath || '';
 
-            try {
-                const mod = await import(/* @vite-ignore */ `../../scenes/VideoComposition.tsx?t=${Date.now()}`);
-                const comp = mod.VideoComposition || mod.default;
-                if (comp) {
-                    setDynamicComponent(() => comp);
-                }
-            } catch (e) {
-                console.warn('[Studio] Dynamic import fallback:', e);
-            }
-            setCompKey((k) => k + 1);
+            await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
+            setTimeout(() => {
+                setCompKey((k) => k + 1);
+            }, 100);
         };
         syncCode();
     }, [project?.code, project?.savePath, project?.title]);
 
     useEffect(() => {
-        const parsed = parseSceneCodeToNodes(project.code || '');
-        setNodes(parsed);
-        if (parsed.length > 0 && !selectedNodeId) setSelectedNodeId(parsed[0].id);
-    }, [project.code]);
+        const loadNodes = async () => {
+            let codeToParse = project?.code || '';
+            if (!codeToParse && window.electronAPI?.readFile) {
+                const diskCode = await window.electronAPI.readFile('src/renderer/scenes/VideoComposition.tsx');
+                if (diskCode) codeToParse = diskCode;
+            }
+            const parsed = parseSceneCodeToNodes(codeToParse);
+            setNodes(parsed);
+            setSelectedNodeId((prev) => {
+                if (prev && parsed.some(n => n.id === prev)) return prev;
+                return parsed.length > 0 ? parsed[0].id : null;
+            });
+        };
+        loadNodes();
+    }, [project?.code, project?.savePath]);
 
     useEffect(() => {
         if (!project?.code) return;
@@ -485,18 +492,27 @@ export const Studio: React.FC<StudioProps> = ({
                     <span className='font-bold text-sm text-purple-300'>{project.title}</span>
                 </div>
 
-                <button
-                    onClick={() => {
-                        setShowExportModal(true);
-                        setExportResult(null);
-                        setExportProgress(null);
-                    }}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition shadow-[0_0_12px_rgba(168,85,247,0.4)] active:scale-95 cursor-pointer"
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowVoiceoverModal(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium text-xs transition cursor-pointer"
+                    >
+                        <Microphone size={15} className="text-purple-400" />
+                        <span>Voiceover AI</span>
+                    </button>
 
-                >
-                    <DownloadSimple size={15} weight="bold" />
-                    <span>Export Video</span>
-                </button>
+                    <button
+                        onClick={() => {
+                            setShowExportModal(true);
+                            setExportResult(null);
+                            setExportProgress(null);
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition shadow-[0_0_12px_rgba(168,85,247,0.4)] active:scale-95 cursor-pointer"
+                    >
+                        <DownloadSimple size={15} weight="bold" />
+                        <span>Export Video</span>
+                    </button>
+                </div>
             </header>
 
             <div className='flex-1 flex overflow-hidden'>
@@ -506,12 +522,12 @@ export const Studio: React.FC<StudioProps> = ({
                     onSelectNode={setSelectedNodeId}
                 />
 
-                <main className='flex-1 flex items-center justify-center p-6 relative overflow-hidden bg-gray-950'>
+                <main data-tour="result-preview" className='flex-1 flex items-center justify-center p-6 relative overflow-hidden bg-gray-950'>
                     <div className="w-full max-w-[1150px] aspect-video relative rounded-xl overflow-hidden shadow-2xl border border-gray-800/80">
                         <Player
                             key={`${project?.savePath || 'proj'}_${compKey}_${durationInFrames}_${JSON.stringify(bgSelection || {})}`}
                             ref={playerRef}
-                            component={dynamicComponent || VideoComposition}
+                            component={VideoComposition}
                             inputProps={{ bgSelection }}
 
                             durationInFrames={durationInFrames}
@@ -752,6 +768,13 @@ export const Studio: React.FC<StudioProps> = ({
                     </div>
                 </div>
             )}
+            <VoiceoverModal
+                isOpen={showVoiceoverModal}
+                onClose={() => setShowVoiceoverModal(false)}
+                onTranscribeComplete={(subs, text) => {
+                    customAlert('Voiceover Transcribed', `Parsed ${subs.length} spoken phrases/words. Ready for scene synchronization!`);
+                }}
+            />
         </div>
     );
 };

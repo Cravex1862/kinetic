@@ -9,6 +9,7 @@ import type { ProjectData, AlertButton } from '../../pages/AppRouter';
 import { BrandStylingPanel } from '@/renderer/components/BrandStylingPanel';
 import { BackgroundSelection } from '@/renderer/components/BackgroundSelectorPanel';
 import { VoiceoverAudioField } from '@/renderer/components/VoiceoverAudioField';
+import { extractAudioFeatures } from '@/renderer/utils/audioUtils';
 import { CustomInstructionsPanel } from '@/renderer/components/CustomInstructionsPanel';
 import { AudioUploadField } from '@/renderer/components/AudioUploadField';
 import { runBeatNetAI } from '@/renderer/utils/beatDetector';
@@ -58,6 +59,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
     const [narration, setNarration] = useState(project?.narration || '');
     const [voiceoverMode, setVoiceoverMode] = useState<'text' | 'audio'>('text');
     const [voiceoverAudioFile, setVoiceoverAudioFile] = useState<File | null>(null);
+    const [isTranscribingVoiceover, setIsTranscribingVoiceover] = useState(false);
     const [repoLink, setRepoLink] = useState('');
     const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
     const [fonts, setFonts] = useState<Record<FontRow, FontSettings>>(project?.fonts as Record<FontRow, FontSettings> || defaultFonts);
@@ -80,6 +82,41 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [beatFrames, setBeatFrames] = useState<number[]>([]);
     const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
+
+    const handleVoiceoverAudioChange = async (file: File | null) => {
+        setVoiceoverAudioFile(file);
+        if (!file) return;
+
+        setIsTranscribingVoiceover(true);
+        try {
+            const float32Array = await extractAudioFeatures(file);
+            const worker = new Worker(new URL('../../agents/whisperWorker.ts', import.meta.url), { type: 'module' });
+
+            worker.onmessage = (e) => {
+                const { status, result } = e.data;
+                if (status === 'complete') {
+                    setIsTranscribingVoiceover(false);
+                    worker.terminate();
+
+                    const chunks = result?.chunks || [];
+                    const formattedScript = chunks.map((c: any) => {
+                        const startSec = Array.isArray(c.timestamp) ? c.timestamp[0] : 0;
+                        const endSec = Array.isArray(c.timestamp) ? (c.timestamp[1] || startSec + 1.5) : startSec + 1.5;
+                        return `[${startSec.toFixed(1)}s - ${endSec.toFixed(1)}s] ${c.text.trim()}`;
+                    }).join('\n');
+
+                    setNarration(formattedScript || result.text || '');
+                } else if (status === 'error') {
+                    setIsTranscribingVoiceover(false);
+                    worker.terminate();
+                }
+            };
+
+            worker.postMessage({ action: 'transcribe', audioData: float32Array });
+        } catch (err) {
+            setIsTranscribingVoiceover(false);
+        }
+    };
 
     const handleSelectAudio = async (file: File | null) => {
         setAudioFile(file);
@@ -293,6 +330,16 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
             onBack();
         }
     };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                handleBack();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [instructions, narration, fonts, swatches, backgroundImage, bgDescription, showVisualizer, project]);
 
     const handleAssetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -518,10 +565,16 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
                     >
                         <ArrowLeft size={16} />
                     </button>
-                    <div className="flex items-center gap-2">
-                        <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" />
-                        <span className="text-sm font-bold text-white">kinetic <span className="text-gray-500 font-normal">/ saas</span></span>
-                    </div>
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+                        title="Return to Dashboard"
+                    >
+                        <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)' }} />
+                        <span className="text-sm font-bold text-white">kinetic</span>
+                    </button>
+                    <span className="text-sm text-gray-700">/</span>
+                    <span className="text-sm text-gray-400">SaaS</span>
                 </header>
 
                 {/* Section 1: Upload Script (Optional) */}
@@ -532,7 +585,8 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
                         scriptText={narration}
                         onScriptTextChange={setNarration}
                         audioFile={voiceoverAudioFile}
-                        onAudioFileChange={setVoiceoverAudioFile}
+                        onAudioFileChange={handleVoiceoverAudioChange}
+                        isTranscribing={isTranscribingVoiceover}
                     />
                 </section>
 
@@ -616,12 +670,39 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
             <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950/40 justify-between h-full">
                 {/* Grid Grey Stage with New Browser Frame Preview Canvas */}
                 <div className="aspect-video relative overflow-hidden flex-shrink-0 max-h-[64vh] w-full max-w-[114vh] mx-auto rounded-2xl border border-gray-800/80 bg-gray-900/95 p-5 flex items-center justify-center shadow-2xl">
-                    {/* Background Soft Gray Ambient Radial Glow & Grid Overlay */}
-                    <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-gray-700/20 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-slate-800/30 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+                    {/* Background Dynamic Selection Layer */}
+                    <div
+                        className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden"
+                        style={{
+                            ...(bgSelection?.color === 'transparent'
+                                ? {
+                                    backgroundImage:
+                                        'linear-gradient(45deg, #18181b 25%, transparent 25%), linear-gradient(-45deg, #18181b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #18181b 75%), linear-gradient(-45deg, transparent 75%, #18181b 75%)',
+                                    backgroundSize: '16px 16px',
+                                    backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                                    backgroundColor: '#09090b',
+                                }
+                                : bgSelection?.type === 'image' && bgSelection.imageUrl
+                                ? {
+                                    backgroundImage: `url(${bgSelection.imageUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    filter: `blur(${bgSelection.blurPx || 0}px)`,
+                                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                                }
+                                : bgSelection?.type === 'gradient' && bgSelection.gradient
+                                ? {
+                                    background: bgSelection.gradient,
+                                    filter: `blur(${bgSelection.blurPx || 0}px)`,
+                                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                                }
+                                : {
+                                    backgroundColor: bgSelection?.color || '#09090b',
+                                }),
+                        }}
+                    />
 
-                    <div className="w-full h-full relative flex items-center justify-center [perspective:1200px]">
+                    <div className="w-full h-full relative z-10 flex items-center justify-center [perspective:1200px]">
                         {pipelineState ? (
                             <div className="w-full h-full flex items-center justify-center bg-gray-950/80 backdrop-blur-sm rounded-2xl border border-gray-900 z-20">
                                 <div className="w-full max-w-md flex flex-col gap-3 p-6 rounded-2xl border-2 border-purple-500 bg-gray-950/90 backdrop-blur-xl">

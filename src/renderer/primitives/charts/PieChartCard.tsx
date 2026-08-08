@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { Easing } from 'remotion';
 import { useFrame } from "../useFrame";
@@ -10,7 +11,7 @@ export interface PieChartDataPoint {
     color?: string;
 }
 
-export interface PieChartCardProps {
+export interface PieChartCardProps extends BaseMotionProps {
     width?: number;
     height?: number;
     titleText?: string;

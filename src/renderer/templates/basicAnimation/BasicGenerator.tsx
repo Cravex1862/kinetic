@@ -14,8 +14,10 @@ import { BarChart } from '@/renderer/primitives/ChartsSDK';
 
 import { AudioUploadField } from '@/renderer/components/AudioUploadField';
 import { VoiceoverAudioField } from '@/renderer/components/VoiceoverAudioField';
+import { extractAudioFeatures } from '@/renderer/utils/audioUtils';
 import { runBeatNetAI } from '@/renderer/utils/beatDetector';
 import { ResizableSidebar } from '@/renderer/components/ResizableSidebar';
+import { MOCK_TOUR_PROJECT } from '@/renderer/constants';
 
 interface AnimationGeneratorProps {
     project: ProjectData | null;
@@ -61,6 +63,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     const [useNarration, setUseNarration] = useState(!!project?.narration);
     const [voiceoverMode, setVoiceoverMode] = useState<'text' | 'audio'>('text');
     const [voiceoverAudioFile, setVoiceoverAudioFile] = useState<File | null>(null);
+    const [isTranscribingVoiceover, setIsTranscribingVoiceover] = useState(false);
     const [fonts, setFonts] = useState<Record<string, any>>(project?.fonts as any || defaultFonts);
     const [swatches, setSwatches] = useState<Record<string, string>>(project?.colors || Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])));
     const [availableFonts, setAvailableFonts] = useState<string[]>(['Inter', 'Roboto', 'Poppins', 'DM Sans']);
@@ -76,6 +79,42 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
     const assetInputRef = useRef<HTMLInputElement>(null);
 
+    const handleVoiceoverAudioChange = async (file: File | null) => {
+        setVoiceoverAudioFile(file);
+        if (!file) return;
+
+        setIsTranscribingVoiceover(true);
+        try {
+            const float32Array = await extractAudioFeatures(file);
+            const worker = new Worker(new URL('../../agents/whisperWorker.ts', import.meta.url), { type: 'module' });
+
+            worker.onmessage = (e) => {
+                const { status, result } = e.data;
+                if (status === 'complete') {
+                    setIsTranscribingVoiceover(false);
+                    worker.terminate();
+
+                    const chunks = result?.chunks || [];
+                    const formattedScript = chunks.map((c: any) => {
+                        const startSec = Array.isArray(c.timestamp) ? c.timestamp[0] : 0;
+                        const endSec = Array.isArray(c.timestamp) ? (c.timestamp[1] || startSec + 1.5) : startSec + 1.5;
+                        return `[${startSec.toFixed(1)}s - ${endSec.toFixed(1)}s] ${c.text.trim()}`;
+                    }).join('\n');
+
+                    setNarration(formattedScript || result.text || '');
+                    setUseNarration(true);
+                } else if (status === 'error') {
+                    setIsTranscribingVoiceover(false);
+                    worker.terminate();
+                }
+            };
+
+            worker.postMessage({ action: 'transcribe', audioData: float32Array });
+        } catch (err) {
+            setIsTranscribingVoiceover(false);
+        }
+    };
+
     const handleSelectAudio = async (file: File | null) => {
         setAudioFile(file);
         if (!file) {
@@ -89,6 +128,12 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
         setBeatFrames(frames);
         setIsAnalyzingAudio(false);
     };
+
+    useEffect(() => {
+        if (tourActive && !instructions) {
+            setInstructions('Create a clean kinetic dashboard animation with rising bar charts and sleek typography');
+        }
+    }, [tourActive]);
 
     useEffect(() => {
         const fetchSystemFonts = async () => {
@@ -159,6 +204,16 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
         }
     };
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                handleBack();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [instructions, useNarration, narration, fonts, swatches, backgroundImage, bgDescription, showVisualizer, project]);
+
     const handleResume = async () => {
         if (!project || !project.generationState) return;
         setPipelineState({ status: 'storyboarding', progress: 0.1 });
@@ -207,6 +262,10 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     };
 
     const handleGenerate = async () => {
+        if (tourActive) {
+            onGenerate(MOCK_TOUR_PROJECT as any);
+            return;
+        }
         if (!instructions.trim() && !narration.trim()) return;
         setPipelineState({ status: 'storyboarding', progress: 0 });
         const onCheckpoint = (checkpoint: any) => {
@@ -272,6 +331,17 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                     <span className="text-sm text-gray-400">Basic</span>
                 </header>
 
+                {/* Reusable Instructions Panel Block */}
+                <div data-tour="prompt-input">
+                    <CustomInstructionsPanel
+                        instructions={instructions}
+                        setInstructions={setInstructions}
+                        isRefining={isRefining}
+                        handleRefinePrompt={handleRefinePrompt}
+                        placeholder="Describe custom layout or animation instructions..."
+                    />
+                </div>
+
                 {/* Upload Script Panel block */}
                 <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4 flex flex-col gap-3">
                     <div className="flex items-center justify-between border-b border-gray-900 pb-2">
@@ -285,7 +355,8 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                             scriptText={narration}
                             onScriptTextChange={setNarration}
                             audioFile={voiceoverAudioFile}
-                            onAudioFileChange={setVoiceoverAudioFile}
+                            onAudioFileChange={handleVoiceoverAudioChange}
+                            isTranscribing={isTranscribingVoiceover}
                         />
                     )}
                 </section>
@@ -299,15 +370,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                     availableFonts={availableFonts}
                     bgSelection={bgSelection}
                     onSelectBackground={setBgSelection}
-                />
-
-                {/* Reusable Instructions Panel Block */}
-                <CustomInstructionsPanel
-                    instructions={instructions}
-                    setInstructions={setInstructions}
-                    isRefining={isRefining}
-                    handleRefinePrompt={handleRefinePrompt}
-                    placeholder="Describe custom layout or animation instructions..."
                 />
             </ResizableSidebar>
 
@@ -532,6 +594,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                                 </div>
                             ) : (
                                 <button
+                                    data-tour="generate-btn"
                                     onClick={handleGenerate}
                                     className="premium-button-primary px-6 py-2 text-xs font-bold rounded-lg"
                                 >

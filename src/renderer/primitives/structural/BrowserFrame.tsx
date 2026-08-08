@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { StyleConfig, configToStyle, GlowConfig } from '../types';
+import { StyleConfig, configToStyle, GlowConfig, BaseMotionProps } from '../types';
 import { buildGlowFilter, getTransform3DStyle } from '../utils/styleHelpers';
 
-export interface BrowserFrameProps {
+export interface BrowserFrameProps extends BaseMotionProps {
   children?: React.ReactNode;
   url?: string;
   osType?: 'mac' | 'windows';

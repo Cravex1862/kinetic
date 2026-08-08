@@ -21,3 +21,6 @@ opencode_session_*.json
 test.json
 testing.mp4
 testing/
+
+# Research repos (cloned externally, not part of source)
+research/

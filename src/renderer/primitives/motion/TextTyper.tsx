@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleConfig, configToStyle } from '../types';
+import { StyleConfig, configToStyle, BaseMotionProps } from '../types';
 import { useFrame } from '../useFrame';
 
-interface TextTyperProps {
+interface TextTyperProps extends BaseMotionProps {
   text: string;
   charsPerFrame?: number;
   showCursor?: boolean;

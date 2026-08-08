@@ -1,10 +1,10 @@
 import React from 'react';
 import { useVideoConfig, delayRender, continueRender, interpolate } from 'remotion';
-import { StyleConfig, configToStyle } from '../types';
+import { StyleConfig, configToStyle, BaseMotionProps } from '../types';
 import { useFrame } from '../useFrame';
 import { Easing } from 'remotion';
 
-interface CursorProps {
+interface CursorProps extends BaseMotionProps {
   startX: number;
   startY: number;
   endX?: number;

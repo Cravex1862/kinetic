@@ -1,12 +1,13 @@
+import { BaseMotionProps } from '../types';
 import React, { useState } from 'react';
 import { InventorySlot } from "./InventorySlot";
 import inventoryPng from './gui/container/inventory.png';
 import recipeBookBtn from './gui/sprites/recipe_book/button.png';
 import recipeBookBtnHighlight from './gui/sprites/recipe_book/button_highlighted.png';
 
-export interface WholeInventoryProps {
+export interface WholeInventoryProps extends BaseMotionProps {
     inventorySlots: Array<{ id: string; itemIcon?: string | React.ReactNode; itemName?: string; count?: number }>;
-    hotbarSlots: Array<{ id: string; itemIcon?: string | React.ReactNode; itemName?: string }>;
+    hotbarSlots: Array<{ id: string; itemIcon?: string | React.ReactNode; itemName?: string; count?: number }>;
     armorSlots?: Array<{ id: string; itemIcon?: string | React.ReactNode; itemName?: string }>;
     shieldSlot?: { id: string; itemIcon?: string | React.ReactNode; itemName?: string };
     activeHotbarIndex: number;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, UploadSimple, Warning, Image as ImageIcon, Sparkle, Info } from '@phosphor-icons/react';
+import { ArrowLeft, UploadSimple, Image as ImageIcon, Sparkle } from '@phosphor-icons/react';
 import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
 import { callLLM, getStoredConfig } from "@/renderer/agents/llmClient";
 import { ProjectData } from "@/renderer/pages/AppRouter";
@@ -12,9 +12,7 @@ import { ResizableSidebar } from "@/renderer/components/ResizableSidebar";
 import {
   runLogoPipeline,
   LOGO_STYLE_PRESETS,
-  LogoStylePreset,
-  isMultimodalCapable,
-  isSvgFile
+  LogoStylePreset
 } from "./logoPipeline";
 
 interface LogoGeneratorProps {
@@ -43,11 +41,12 @@ const defaultSwatches: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  'laying-out': 'Preparing logo...',
+  'storyboarding': 'Preparing logo...',
   'designing': 'Creating animation...',
   'animating': 'Adding motion...',
-  'compiling': 'Verifying & assembling...',
-  'storyboarding': 'Starting up...',
+  'assembling': 'Verifying & assembling...',
+  'component-building': 'Building components...',
+  'verifying': 'Checking output...',
   'done': 'Complete!',
   'error': 'Error',
 };
@@ -70,16 +69,12 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
   const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
   const [logoFileUrl, setLogoFileUrl] = useState<string>((project as any)?.logoUrl || '');
   const [logoFileName, setLogoFileName] = useState<string>((project as any)?.logoFileName || '');
+  const [customSvgContent, setCustomSvgContent] = useState<string>('');
   const [selectedStyle, setSelectedStyle] = useState<LogoStylePreset>(LOGO_STYLE_PRESETS[1]); // Default to 3D Spin
   const [isAnimating, setIsAnimating] = useState<boolean>(true);
   const [animKey, setAnimKey] = useState<number>(1);
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-
-  // Detect multimodal capability of the current model
-  const currentConfig = getStoredConfig();
-  const isModelMultimodal = currentConfig ? isMultimodalCapable(currentConfig.provider, currentConfig.model) : false;
-  const logoIsSvg = logoFileName ? isSvgFile(logoFileName) : false;
 
   useEffect(() => {
     const fetchSystemFonts = async () => {
@@ -120,6 +115,15 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
       const url = URL.createObjectURL(file);
       setLogoFileUrl(url);
       setLogoFileName(file.name);
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (typeof event.target?.result === 'string') {
+          setCustomSvgContent(event.target.result);
+        }
+      };
+      reader.readAsText(file);
+
       if (selectedStyle.id !== 'custom') {
         triggerPreviewAnimation();
       }
@@ -170,18 +174,19 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleBack();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [instructions, fonts, swatches, bgSelection, logoFileUrl, logoFileName, project]);
+
   const handleGenerateClick = async () => {
     if (!instructions.trim()) {
       await customAlert("Missing Instructions", "Please enter an animation prompt before generating.");
-      return;
-    }
-
-    // Warn if non-multimodal model with a non-SVG logo
-    if (logoFileName && !logoIsSvg && !isModelMultimodal) {
-      await customAlert(
-        "SVG Required",
-        "Your current AI model does not support images. Only SVG logos are supported with text-only models. Please upload an SVG file or switch to a multimodal model (GPT-4o, Gemini, Claude 3+) in Settings."
-      );
       return;
     }
 
@@ -234,6 +239,27 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
     }
   };
 
+  const renderLogoAsset = (extraClassName = "", extraStyle?: React.CSSProperties) => {
+    if (customSvgContent) {
+      return (
+        <div
+          className={`max-h-[220px] max-w-[380px] flex items-center justify-center [&>svg]:max-h-[220px] [&>svg]:max-w-[380px] [&>svg]:w-full [&>svg]:h-auto [&>svg]:object-contain ${extraClassName}`}
+          style={extraStyle}
+          dangerouslySetInnerHTML={{ __html: customSvgContent }}
+        />
+      );
+    }
+
+    return (
+      <img
+        src={logoFileUrl || logoIcon}
+        alt={logoFileName || "Kinetic Logo Preview"}
+        className={`max-h-[220px] max-w-[380px] object-contain ${extraClassName}`}
+        style={extraStyle}
+      />
+    );
+  };
+
   return (
     <div className="flex h-screen bg-gray-950 text-white page-enter">
       {/* LEFT COLUMN: Controls Sidebar */}
@@ -254,26 +280,17 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             <span className="text-sm font-bold text-white">kinetic</span>
           </button>
           <span className="text-sm text-gray-700">/</span>
-          <span className="text-sm text-purple-400 font-semibold">Logo</span>
+          <span className="text-sm text-gray-400">Logo</span>
         </header>
 
-        {/* Context-Aware Notice Badge */}
-        <div className={`p-3 rounded-lg border text-xs flex items-start gap-2.5 leading-relaxed ${isModelMultimodal
-          ? 'border-emerald-500/40 bg-gray-900 text-emerald-200'
-          : 'border-amber-500/40 bg-gray-900 text-amber-200'
-          }`}>
-          {isModelMultimodal ? (
-            <>
-              <Info size={16} className="flex-shrink-0 text-emerald-400 mt-0.5" />
-              <span>Your model supports images — SVG, PNG, JPG, and WebP logos are all supported.</span>
-            </>
-          ) : (
-            <>
-              <Warning size={16} className="flex-shrink-0 text-amber-400 mt-0.5" />
-              <span>Your model does not support images. Only <strong>.svg</strong> logos are supported. Switch to a multimodal model (GPT-4o, Gemini, Claude 3+) for full image support.</span>
-            </>
-          )}
-        </div>
+        {/* Custom Instructions Panel */}
+        <CustomInstructionsPanel
+          instructions={instructions}
+          setInstructions={setInstructions}
+          isRefining={isRefining}
+          handleRefinePrompt={handleRefinePrompt}
+          placeholder="Describe logo reveal effects, particle colors, or motion directives..."
+        />
 
         {/* Logo File Upload Section */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
@@ -293,7 +310,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             type="file"
             ref={logoInputRef}
             onChange={handleLogoUpload}
-            accept=".svg,.png,.jpg,.jpeg,.webp"
+            accept=".svg,image/svg+xml"
             className="hidden"
           />
 
@@ -304,15 +321,15 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             {logoFileUrl ? (
               <div className="flex flex-col items-center gap-2">
                 <img src={logoFileUrl} alt="Uploaded logo preview" className="h-12 w-auto max-w-[160px] object-contain drop-shadow-md" />
-                <span className="text-[11px] text-purple-400 font-medium group-hover:underline">Change logo image</span>
+                <span className="text-[11px] text-purple-400 font-medium group-hover:underline">Change SVG logo</span>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1.5 text-center">
                 <div className="h-9 w-9 rounded-full bg-gray-900 border border-purple-500/40 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform">
                   <UploadSimple size={18} />
                 </div>
-                <span className="text-xs font-semibold text-gray-300">Click or drop SVG / Image logo</span>
-                <span className="text-[10px] text-gray-500">Supports SVG, PNG, JPG, WebP</span>
+                <span className="text-xs font-semibold text-gray-300">Click or drop SVG vector logo</span>
+                <span className="text-[10px] text-purple-400/90 font-medium">SVG Vector File Required (.svg)</span>
               </div>
             )}
           </div>
@@ -450,21 +467,40 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             }
           `}</style>
 
+          {/* Dynamic Background Stage Layer */}
           <div
-            className="absolute inset-0 z-0 transition-all duration-300 flex items-center justify-center overflow-hidden"
+            className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden"
             style={{
-              ...(bgSelection?.type === 'color' && { backgroundColor: bgSelection.color }),
-              ...(bgSelection?.type === 'gradient' && { backgroundImage: (bgSelection as any).gradient }),
-              ...(bgSelection?.type === 'image' && (bgSelection as any).imageUrl && {
-                backgroundImage: `url(${(bgSelection as any).imageUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                filter: bgSelection.blurPx ? `blur(${bgSelection.blurPx}px)` : undefined,
-              }),
+              ...(bgSelection?.color === 'transparent'
+                ? {
+                    backgroundImage:
+                      'linear-gradient(45deg, #18181b 25%, transparent 25%), linear-gradient(-45deg, #18181b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #18181b 75%), linear-gradient(-45deg, transparent 75%, #18181b 75%)',
+                    backgroundSize: '16px 16px',
+                    backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                    backgroundColor: '#09090b',
+                  }
+                : bgSelection?.type === 'image' && bgSelection.imageUrl
+                ? {
+                    backgroundImage: `url(${bgSelection.imageUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: `blur(${bgSelection.blurPx || 0}px)`,
+                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                  }
+                : bgSelection?.type === 'gradient' && bgSelection.gradient
+                ? {
+                    background: bgSelection.gradient,
+                    filter: `blur(${bgSelection.blurPx || 0}px)`,
+                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
+                  }
+                : {
+                    backgroundColor: bgSelection?.color || '#09090b',
+                  }),
             }}
-          >
-            {/* Centered Logo Preview */}
-            <div className="relative z-10 flex flex-col items-center justify-center p-8 transition-all">
+          />
+
+          {/* Centered Crisp Logo Preview Layer */}
+          <div className="relative z-10 w-full h-full flex items-center justify-center p-8 transition-all">
               {selectedStyle.id === 'shatter-reform' && isAnimating ? (
                 <div
                   key={animKey}
@@ -473,45 +509,44 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                   className="cursor-pointer relative max-h-[220px] max-w-[380px]"
                 >
                   {/* Fragment 1: Top-Left Jagged Shard */}
-                  <img
-                    src={logoFileUrl || logoIcon}
-                    alt="Fragment TL"
-                    className="max-h-[220px] max-w-[380px] object-contain drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]"
+                  <div
                     style={{
                       clipPath: 'polygon(0 0, 62% 0, 44% 48%, 0 68%)',
                       animation: 'logo-shatter-tl 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
                     }}
-                  />
+                  >
+                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+                  </div>
                   {/* Fragment 2: Top-Right Jagged Shard */}
-                  <img
-                    src={logoFileUrl || logoIcon}
-                    alt="Fragment TR"
-                    className="absolute inset-0 max-h-[220px] max-w-[380px] object-contain drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]"
+                  <div
+                    className="absolute inset-0"
                     style={{
                       clipPath: 'polygon(62% 0, 100% 0, 100% 54%, 44% 48%)',
                       animation: 'logo-shatter-tr 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
                     }}
-                  />
+                  >
+                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+                  </div>
                   {/* Fragment 3: Bottom-Left Jagged Shard */}
-                  <img
-                    src={logoFileUrl || logoIcon}
-                    alt="Fragment BL"
-                    className="absolute inset-0 max-h-[220px] max-w-[380px] object-contain drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]"
+                  <div
+                    className="absolute inset-0"
                     style={{
                       clipPath: 'polygon(0 68%, 44% 48%, 56% 100%, 0 100%)',
                       animation: 'logo-shatter-bl 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
                     }}
-                  />
+                  >
+                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+                  </div>
                   {/* Fragment 4: Bottom-Right Jagged Shard */}
-                  <img
-                    src={logoFileUrl || logoIcon}
-                    alt="Fragment BR"
-                    className="absolute inset-0 max-h-[220px] max-w-[380px] object-contain drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]"
+                  <div
+                    className="absolute inset-0"
                     style={{
                       clipPath: 'polygon(44% 48%, 100% 54%, 100% 100%, 56% 100%)',
                       animation: 'logo-shatter-br 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
                     }}
-                  />
+                  >
+                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+                  </div>
                 </div>
               ) : selectedStyle.id === 'particle-burst' && isAnimating ? (
                 <div
@@ -550,14 +585,9 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                   })}
 
                   {/* Shockwave Burst + Logo Reveal */}
-                  <img
-                    src={logoFileUrl || logoIcon}
-                    alt={logoFileName || "Kinetic Logo Preview"}
-                    className="max-h-[220px] max-w-[380px] object-contain"
-                    style={{
-                      animation: 'logo-particle-burst-reveal 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                    }}
-                  />
+                  {renderLogoAsset("", {
+                    animation: 'logo-particle-burst-reveal 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                  })}
                 </div>
               ) : (
                 <div
@@ -580,15 +610,10 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                       : undefined,
                   }}
                 >
-                  <img
-                    src={logoFileUrl || logoIcon}
-                    alt={logoFileName || "Kinetic Logo Preview"}
-                    className="max-h-[220px] max-w-[380px] object-contain drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]"
-                  />
+                  {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
                 </div>
               )}
             </div>
-          </div>
         </PreviewWindow>
 
         {/* Custom Instructions Panel */}
@@ -632,7 +657,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             <button
               onClick={handleGenerateClick}
               disabled={!!pipelineState && pipelineState.status !== 'done' && pipelineState.status !== 'error' && pipelineState.status !== 'idle'}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white font-semibold text-sm shadow-lg shadow-purple-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="premium-button-primary flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-semibold text-sm shadow-lg shadow-purple-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Sparkle size={16} className="text-purple-200" />
               <span>Generate</span>

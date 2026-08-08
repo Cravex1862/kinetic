@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleConfig, configToStyle, GlowConfig } from '../types';
+import { StyleConfig, configToStyle, GlowConfig, BaseMotionProps } from '../types';
 import { buildGlowFilter, getTransform3DStyle } from '../utils/styleHelpers';
 
 export interface SideBarMenuItem {
@@ -10,10 +10,11 @@ export interface SideBarMenuItem {
   onClick?: () => void;
 }
 
-export interface SidebarLayoutProps {
+export interface SidebarLayoutProps extends BaseMotionProps {
   children?: React.ReactNode;
   sidebarContent?: React.ReactNode;
   sidebarWidth?: number;
+  glowConfig?: GlowConfig | any;
   appName?: string;
   appLogo?: React.ReactNode;
   showCollapseButton?: boolean;

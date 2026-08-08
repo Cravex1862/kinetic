@@ -1,6 +1,7 @@
+import { BaseMotionProps } from '../types';
 import React, { useEffect, useState, useRef } from 'react';
 
-export interface SteveCharacter3DProps {
+export interface SteveCharacter3DProps extends BaseMotionProps {
   className?: string;
   autoRotate?: boolean;
 }

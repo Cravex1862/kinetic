@@ -1,6 +1,7 @@
+import { BaseMotionProps } from '../types';
 import { InventorySlot } from "./InventorySlot";
 
-export interface HotbarProps {
+export interface HotbarProps extends BaseMotionProps {
     slots: Array<{ id: string; itemIcon?: string | React.ReactNode; itemName?: string; count?: number }>
     activeSlotIndex: number;
     onSelectSlot?: (index: number) => void;

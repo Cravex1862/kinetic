@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { Easing } from 'remotion';
 import { useFrame } from "../useFrame";
@@ -11,7 +12,7 @@ export interface AreaSeries {
     fillOpacity?: number;
 }
 
-export interface AreaChartCardProps {
+export interface AreaChartCardProps extends BaseMotionProps {
     width?: number;
     height?: number;
     titleText?: string;

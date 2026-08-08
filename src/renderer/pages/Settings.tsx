@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle, Flag, OpenAiLogo, ArrowsCounterClockwise, HardDrive, ChatText } from '@phosphor-icons/react';
+import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle, Flag, OpenAiLogo, ArrowsCounterClockwise, HardDrive, ChatText, Keyboard, Eye, Lightning } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent.svg';
 import { MODEL_PRESETS } from '../constants';
 import { fetchAvailableModels } from '../agents/llmClient';
@@ -10,12 +10,22 @@ interface SettingsProps {
   customConfirm: (title: string, message: string, buttons?: any[]) => Promise<any>;
 }
 
-type SettingsTab = 'ai' | 'video' | 'workspace' | 'danger';
+type SettingsTab = 'ai' | 'video' | 'workspace' | 'shortcuts' | 'danger';
 
 
 const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ai');
   const [savedToast, setSavedToast] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onBack();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onBack]);
 
   // AI Configurations State
   const [provider, setProvider] = useState<string>(localStorage.getItem('kinetic-provider') || 'openai');
@@ -210,6 +220,16 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
             <span>Workspace & Files</span>
           </button>
           <button
+            onClick={() => setActiveTab('shortcuts')}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'shortcuts'
+              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
+              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+              }`}
+          >
+            <Keyboard size={18} />
+            <span>Keyboard Shortcuts</span>
+          </button>
+          <button
             onClick={() => setActiveTab('danger')}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'danger'
               ? 'bg-red-500/10 border border-red-500/30 text-red-400'
@@ -260,7 +280,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Active Provider</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {['openai', 'anthropic', 'google', 'hackclub', 'ollama', 'lmstudio', 'byoc'].map((key) => (
+                    {['openai', 'anthropic', 'google', 'groq', 'hackclub', 'ollama', 'lmstudio', 'byoc'].map((key) => (
                       <button
                         key={key}
                         onClick={() => setProvider(key)}
@@ -290,6 +310,12 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
                             </svg>
                             <span>Google</span>
+                          </>
+                        )}
+                        {key === 'groq' && (
+                          <>
+                            <Lightning size={16} className="text-orange-400" />
+                            <span>Groq</span>
                           </>
                         )}
                         {key === 'hackclub' && (
@@ -352,7 +378,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         provider === 'openai' ? 'sk-proj-...' :
                           provider === 'anthropic' ? 'sk-ant-...' :
                             provider === 'google' ? 'AIzaSy...' :
-                              'hckc_...'
+                              provider === 'groq' ? 'gsk_...' :
+                                'hckc_...'
                       }
                       type="password"
                       className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
@@ -531,7 +558,84 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
             </div>
           )}
 
-          {/* Tab 4: Maintenance & Danger Zone */}
+          {/* Tab 4: Keyboard Shortcuts */}
+          {activeTab === 'shortcuts' && (
+            <div className="space-y-8 animate-fade-in max-w-3xl">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                  <Keyboard size={24} className="text-purple-400" />
+                  Keyboard Shortcuts
+                </h2>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  Master app hotkeys to speed up motion-graphics creation and navigation.
+                </p>
+              </div>
+
+              <div className="space-y-6 pt-4 border-t border-gray-900">
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400">Navigation & Routing</h4>
+                  <div className="bg-gray-900/40 border border-gray-900 rounded-xl p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between py-1 border-b border-gray-900/60">
+                      <span className="text-xs text-gray-300 font-medium">Open Settings Page from anywhere</span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Ctrl</kbd>
+                        <span className="text-xs text-gray-500">+</span>
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">,</kbd>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-gray-900/60">
+                      <span className="text-xs text-gray-300 font-medium">Return to Dashboard Homepage</span>
+                      <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Esc</kbd>
+                    </div>
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-xs text-gray-300 font-medium">Exit Template Generator to Template Selector</span>
+                      <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Esc</kbd>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">Video Generation & Rendering</h4>
+                  <div className="bg-gray-900/40 border border-gray-900 rounded-xl p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-xs text-gray-300 font-medium">Trigger Video Generation inside any template</span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Ctrl</kbd>
+                        <span className="text-xs text-gray-500">+</span>
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Enter</kbd>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Tools & Inspection Overlays</h4>
+                  <div className="bg-gray-900/40 border border-gray-900 rounded-xl p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between py-1 border-b border-gray-900/60">
+                      <span className="text-xs text-gray-300 font-medium">Toggle Minecraft Primitives Global Demo Overlay</span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Ctrl</kbd>
+                        <span className="text-xs text-gray-500">+</span>
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Shift</kbd>
+                        <span className="text-xs text-gray-500">+</span>
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">I</kbd>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-xs text-gray-300 font-medium">Open Keyboard Shortcuts Modal</span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">?</kbd>
+                        <span className="text-xs text-gray-500">or</span>
+                        <kbd className="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs font-mono font-bold text-purple-300">Ctrl + /</kbd>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 5: Maintenance & Danger Zone */}
           {activeTab === 'danger' && (
             <div className="space-y-6">
               <div>

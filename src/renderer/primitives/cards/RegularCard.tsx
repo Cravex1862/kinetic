@@ -1,7 +1,8 @@
+import { BaseMotionProps } from '../types';
 import React from 'react';
 import { glowConfigProps, TextFormatConfig, getGlowFilter, getTransform3DStyle, textFormatToStyle } from '../utils/styleHelpers';
 
-export interface RegularCardProps {
+export interface RegularCardProps extends BaseMotionProps {
     glowConfig?: glowConfigProps;
     titleText: string;
     titleConfig?: TextFormatConfig;

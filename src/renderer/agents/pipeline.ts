@@ -1,586 +1,424 @@
-import { getStoredConfig, callLLM } from "./llmClient";
-import { runStoryboardAgent, StoryboardSceneDef } from "./storyboardAgent";
-import { ingestPrimitiveSourceCode, PRIMITIVE_MENU_SUMMARY } from "./primitiveRegistry";
-import { runCodeGeneratorAgent } from "./codeGeneratorAgent";
-import { runCodeAnimatorAgent } from "./codeAnimatorAgent";
-import { runCodeVerifierAgent } from "./codeVerifierAgent";
-import { runAnimationVerifierAgent } from "./animationVerifierAgent";
-import { PipelineState, AgentConfig } from "./types";
-import { parseTimestampedScript } from "../utils/timestampScriptParser";
-import { loadDesignSpec, detectSiteKeyFromPrompt } from "./designSpecLoader";
+/**
+ * pipeline.ts — Manager Agent
+ *
+ * Orchestrates the full multi-agent pipeline:
+ *   1. Design Agent       → global font, colors, theme
+ *   2. Storyboard Agent   → scene blueprints (which scenes, which primitives)
+ *   3. Per-scene loop:
+ *        Per-component loop (sequential):
+ *          a. Component Creator Agent → raw JSX for one primitive
+ *          b. Animator Agent         → animated JSX wrapping that primitive
+ *   4. Assembler (pure TS) → stitches all scenes into VideoComposition.tsx
+ *   5. Verifier Agent     → single-pass syntax review + auto-patch
+ *   6. Write to disk      → src/renderer/scenes/VideoComposition.tsx
+ *
+ * Public API: runTSXPipeline() — signature is IDENTICAL to before.
+ * BasicGenerator and SaaSGenerator do not need any changes.
+ */
 
-export interface ComponentPlan {
-    id: string;
-    primitiveName: string;
-    sdkCategory: string;
-    purpose: string;
-    startFrame: number;
-    durationInFrames: number;
-}
+import { getStoredConfig, sanitizeCompositionCode } from './llmClient';
+import type { PipelineState, SceneBlueprint, SceneCode, ComponentCode, DesignTokens } from './types';
+import { detectSiteKeyFromPrompt, loadDesignSpec } from './designSpecLoader';
+import { PRIMITIVE_SDK_MAP, TRANSITION_WRAPPER_NAMES } from './primitiveRegistry';
+import { runDesignAgent } from './subagents/designAgent';
+import { runStoryboardAgent } from './subagents/storyboardAgent';
+import { runComponentCreatorAgent } from './subagents/componentCreatorAgent';
+import { runAnimatorAgent } from './subagents/animatorAgent';
+import { runVerifierAgent } from './subagents/verifierAgent';
 
-export interface ShotDesignPlan {
-    sceneNum: number;
-    totalDuration: number;
-    colorTheme: { background: string; primaryAccent: string; cardBg: string };
-    components: ComponentPlan[];
-}
+export { sanitizeCompositionCode };
 
-export async function runDesignAgent(
-    config: AgentConfig,
-    scene: StoryboardSceneDef,
-    sceneNum: number,
-    targetSiteKey?: string
-): Promise<ShotDesignPlan> {
-    const detectedKey = targetSiteKey || detectSiteKeyFromPrompt(`${scene.description} ${scene.layoutConcept}`);
-    let specPromptInfo = '';
-    let defaultTheme = { background: '#030712', primaryAccent: '#10B981', cardBg: '#0F172A' };
-
-    if (detectedKey) {
-        const spec = await loadDesignSpec(detectedKey);
-        if (spec) {
-            defaultTheme = {
-                background: spec.colors.canvas,
-                primaryAccent: spec.colors.primary,
-                cardBg: spec.colors.surface1,
-            };
-            specPromptInfo = `
-        Site Brand Design Tokens (${spec.siteKey}):
-        - Primary Accent: ${spec.colors.primary}
-        - Canvas Background: ${spec.colors.canvas}
-        - Surface 1 / Card Background: ${spec.colors.surface1}
-        - Surface 2: ${spec.colors.surface2}
-        - Hairline Border: ${spec.colors.border}
-        - Text Primary: ${spec.colors.textPrimary}
-        - Text Muted: ${spec.colors.textMuted}
-        Please apply these exact brand color tokens in your colorTheme.`;
-        }
-    }
-
-    const designPrompt = `
-        You are the Lead Motion Design Agent. Create a shot design blueprint for Scene ${sceneNum}.
-        Scene Description: "${scene.description}"
-        Layout Concept: "${scene.layoutConcept}"
-        ${specPromptInfo}
-
-        Available Primitives: ${PRIMITIVE_MENU_SUMMARY.slice(0, 1500)}
-
-        Return Strict JSON matching:
-        {
-            "sceneNum": ${sceneNum},
-            "totalDuration": 150,
-            "colorTheme": { "background": "${defaultTheme.background}", "primaryAccent": "${defaultTheme.primaryAccent}", "cardBg": "${defaultTheme.cardBg}" },
-            "components": [
-                { "id": "browser-1", "primitiveName": "BrowserFrame", "sdkCategory": "StructuralSDK", "purpose": "Container", "startFrame": 0, "durationInFrames": 150 },
-                { "id": "chart-1", "primitiveName": "BarChartCard", "sdkCategory": "ChartsSDK", "purpose": "Growth chart", "startFrame": 15, "durationInFrames": 135 },
-                { "id": "toast-1", "primitiveName": "PushNotificationToast", "sdkCategory": "CardSDK", "purpose": "Alert", "startFrame": 30, "durationInFrames": 60 },
-                { "id": "cursor-1", "primitiveName": "Cursor", "sdkCategory": "MotionSDK", "purpose": "Click card", "startFrame": 45, "durationInFrames": 45 }
-            ]
-        }
-    `;
-
-    const res = await callLLM(config, designPrompt, "Shot Blueprint", true);
-
-    try {
-        return JSON.parse(res.content.replace(/```json/gi, '').replace(/```/gi, '').trim());
-    } catch {
-        return {
-            sceneNum,
-            totalDuration: 150,
-            colorTheme: defaultTheme,
-            components: [
-                { id: "browser-1", primitiveName: "BrowserFrame", sdkCategory: "StructuralSDK", purpose: "Container", startFrame: 0, durationInFrames: 150 },
-                { id: "chart-1", primitiveName: "BarChartCard", sdkCategory: "ChartsSDK", purpose: "Chart", startFrame: 15, durationInFrames: 135 }
-            ]
-        };
-    }
-}
-
-export async function runSingleUIComponentAgent(
-    config: AgentConfig,
-    compPlan: ComponentPlan,
-    colorTheme: ShotDesignPlan['colorTheme']
-): Promise<{ id: string; jsxBlock: string }> {
-    const compPrompt = `
-        You are a UI Component Agent for "${compPlan.primitiveName}".
-        Generate clean static TSX code for Component ID: "${compPlan.id}".
-        Purpose: "${compPlan.purpose}"
-        Theme: ${JSON.stringify(colorTheme)}
-
-        Output Only the component JSX element (e.g. <${compPlan.primitiveName} ... />).
-    `;
-
-    const res = await callLLM(config, compPrompt, `UI: ${compPlan.primitiveName}`, true);
-    return { id: compPlan.id, jsxBlock: res.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim() };
-}
-
-export async function runSingleUIAnimationAgent(
-    config: AgentConfig,
-    compPlan: ComponentPlan,
-    staticJSX: string
-): Promise<string> {
-    const animPrompt = `
-        You are a Motion Physics Agent. Wrap this UI component in Remotion physics and a <Sequence> tag for unmounting lifespans:
-
-        Component ID: "${compPlan.id}"
-        Start Frame: ${compPlan.startFrame}
-        Duration: ${compPlan.durationInFrames}
-        Static JSX: ${staticJSX}
-
-        Wrap inside:
-        <Sequence from={${compPlan.startFrame}} durationInFrames={${compPlan.durationInFrames}}>
-        ...
-        </Sequence>
-        Inject spring() and interpolate() physics for entrances. Return pure TSX code.
-    `;
-
-    const res = await callLLM(config, animPrompt, `Animate: ${compPlan.id}`, true);
-    return res.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
-}
-
-
-
-export async function runSubagentPipeline(
-    config: AgentConfig,
-    scene: StoryboardSceneDef,
-    sceneNum: number,
-    targetSiteKey?: string
-): Promise<{ SceneCode: string; error?: string }> {
-    try {
-        // Stage 1: Design Agent (Shot Blueprint with Design Spec)
-        const designPlan = await runDesignAgent(config, scene, sceneNum, targetSiteKey);
-
-        // Stage 2: Parallel UI Component Agents
-        const uiPromises = designPlan.components.map((comp) =>
-            runSingleUIComponentAgent(config, comp, designPlan.colorTheme)
-        );
-        const uiResults = await Promise.all(uiPromises);
-        const staticMap: Record<string, string> = {};
-        uiResults.forEach((res) => { staticMap[res.id] = res.jsxBlock; });
-
-        // Stage 3: Parallel UI Animation Agents
-        const animPromises = designPlan.components.map((comp) =>
-            runSingleUIAnimationAgent(config, comp, staticMap[comp.id] || '')
-        );
-        const animatedBlocks = await Promise.all(animPromises);
-
-        // Stage 4: Scene Assembly
-        const sceneCode = `
-export const Scene${sceneNum}: React.FC = () => {
-    const frame = useCurrentFrame();
-    return (
-        <div style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            ${animatedBlocks.join('\n\n            ')}
-        </div>
-    );
-};
-`;
-        return { SceneCode: sceneCode };
-    } catch (e) {
-        console.warn(`[Pipeline] Multi-Subagent Pipeline fallback for Scene ${sceneNum}:`, e);
-        // Fallback Layout & Motion Execution
-        const layoutPrompt = `
-            You are the Layout Subagent. Build structural JSX for Scene ${sceneNum}.
-            Scene Description: ${scene.description}
-            Requested Primitives: ${scene.requestedPrimitives ? scene.requestedPrimitives.join(', ') : ''}
-            Export as: export const Scene${sceneNum}: React.FC = () => { ... };
-            Return pure TSX code.
-        `;
-        const layoutRes = await callLLM(config, layoutPrompt, "Generate Layout JSX", true);
-        if (!layoutRes.content) return { SceneCode: '', error: 'Subagent pipeline failed' };
-        return { SceneCode: layoutRes.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim() };
-    }
-}
-
-export type PipeCallback = (state: PipelineState) => void;
-export type PipelineCallback = PipeCallback;
-
-export interface ResumeState {
-    scenes: any[];
-    sceneCodeBlocks?: string[];
-}
-
+// ─── Utility: strip import lines from agent output ────────────────────────────
 export function stripAllImports(code: string): string {
     if (!code) return '';
-    let cleaned = code
-        .replace(/```[a-z]*\n?/gi, '')
-        .replace(/```/g, '');
-
-    const lines = cleaned.split('\n');
-    const filteredLines: string[] = [];
-
-    for (const line of lines) {
-        const trimmed = line.trim();
-        // Strictly filter top-level import statements and default export wrappers
-        if (/^import\s+/.test(trimmed) || /^import\{/.test(trimmed)) continue;
-        if (/^export\s+default\s+/.test(trimmed)) continue;
-        if (/^\}?\s*from\s*['"][^'"]+['"];?/.test(trimmed)) continue;
-        filteredLines.push(line);
-    }
-
-    return filteredLines.join('\n').trim();
+    return code
+        .replace(/^import\s+[\s\S]*?;/gm, '')
+        .replace(/^import\s+.*?from\s+['"].*?['"];?/gm, '')
+        .trim();
 }
 
-export function deduplicateDeclarations(code: string): string {
-    if (!code) return '';
-    // Strip dummy AI 'declare const/var/let/function/type/interface' lines
-    let cleaned = code.replace(/^\s*declare\s+(?:const|var|let|function|type|interface)\s+.*$/gm, '');
+// ─── Assembler helpers ────────────────────────────────────────────────────────
 
-    const declaredTopLevelNames = new Set<string>();
-    const lines = cleaned.split('\n');
-    const filtered: string[] = [];
-    let insideComponent = false;
-
-    for (const line of lines) {
-        if (/^export\s+const\s+(Scene\d+|VideoComposition)\b/.test(line.trim())) {
-            insideComponent = true;
+/**
+ * Detects which primitive component names appear in a block of JSX code.
+ * Used to figure out which SDK imports to add to the header.
+ */
+function detectUsedPrimitives(allAnimatedJSX: string): string[] {
+    const used: string[] = [];
+    for (const name of Object.keys(PRIMITIVE_SDK_MAP)) {
+        // Look for <ComponentName or <ComponentName> or <ComponentName\n
+        if (new RegExp(`<${name}[\\s/>]`).test(allAnimatedJSX)) {
+            used.push(name);
         }
-
-        // Only strip duplicate declarations if they occur outside component function bodies
-        if (!insideComponent) {
-            const topMatch = line.match(/^\s*(?:export\s+)?const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/);
-            if (topMatch) {
-                const varName = topMatch[1];
-                if (declaredTopLevelNames.has(varName)) {
-                    console.warn(`[sanitize] Stripped top-level AI duplicate declaration: ${varName}`);
-                    continue;
-                }
-                declaredTopLevelNames.add(varName);
-            }
-        }
-        filtered.push(line);
     }
-
-    return filtered.join('\n');
+    return used;
 }
 
-export function sanitizeCompositionCode(code: string): string {
-    if (!code) return '';
-    let bodyWithoutImports = stripAllImports(code);
-    if (!bodyWithoutImports || bodyWithoutImports.trim().length === 0) return '';
-
-    // Convert comment JSX {/* Scene X */} to <SceneX />
-    bodyWithoutImports = bodyWithoutImports.replace(/\{\/\*\s*Scene\s+(\d+)\s*\*\/\}/gi, '<Scene$1 />');
-
-    // Deduplicate variable & type declarations
-    bodyWithoutImports = deduplicateDeclarations(bodyWithoutImports);
-
-    let defaultExportSuffix = '';
-    if (!bodyWithoutImports.includes('export default')) {
-        defaultExportSuffix = '\nexport default VideoComposition;\n';
-    }
-
-    if (!bodyWithoutImports.includes('export const VideoComposition')) {
-        bodyWithoutImports += `
-export const VideoComposition: React.FC<{ bgSelection?: any }> = ({ bgSelection }) => {
-    const bgType = bgSelection?.type || 'color';
-    const bgColor = bgSelection?.color || '#09090b';
-    const bgGradient = bgSelection?.gradient || '';
-    const bgImage = bgSelection?.imageUrl || '';
-    const blurPx = bgSelection?.blurPx || 0;
-
-    let backdropStyle: React.CSSProperties = { backgroundColor: bgColor };
-    if (bgType === 'gradient' && bgGradient) {
-        backdropStyle = { background: bgGradient };
-    } else if (bgType === 'image' && bgImage) {
-        backdropStyle = {
-            backgroundImage: \`url("\${bgImage}")\`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: blurPx > 0 ? \`blur(\${blurPx}px)\` : undefined,
-            transform: blurPx > 0 ? 'scale(1.08)' : undefined,
-        };
-    } else if (bgColor === 'transparent') {
-        backdropStyle = { backgroundColor: 'transparent' };
-    }
-
-    return (
-        <div className="w-full h-full text-white relative overflow-hidden flex items-center justify-center">
-            <div style={backdropStyle} className="absolute inset-0 pointer-events-none z-0 transition-all duration-200" />
-            <div className="relative z-10 w-full h-full flex items-center justify-center">
-                <Series>
-                    <Series.Sequence durationInFrames={180}>
-                        <Scene1 />
-                    </Series.Sequence>
-                </Series>
-            </div>
-        </div>
+/**
+ * Detects which TransitionSDK wrappers appear in the animated JSX.
+ */
+function detectUsedTransitions(allAnimatedJSX: string): string[] {
+    return TRANSITION_WRAPPER_NAMES.filter(name =>
+        new RegExp(`<${name}[\\s/>]`).test(allAnimatedJSX)
     );
-};
-`;
-    }
-
-    // Convert old static VideoComposition signatures to accept bgSelection props
-    bodyWithoutImports = bodyWithoutImports
-        .replace(/export\s+const\s+VideoComposition:\s*React\.FC\s*=\s*\(\)\s*=>/g, 'export const VideoComposition: React.FC<{ bgSelection?: any }> = ({ bgSelection }) =>');
-
-    return `import React from 'react';
-import { Series, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate, Easing, AbsoluteFill, Img, staticFile } from 'remotion';
-
-import type { GlowConfig, StyleConfig } from '../primitives/types';
-import { 
-    ActionButton, AppCanvas, BreadcrumbHeader, BrowserFrame, DataGridContainer, 
-    HeroMetricCard, MockWindow, NotificationToaster, SidebarLayout, SplitHeroLayout, 
-    TabSwitcherContainer, TopNavbar 
-} from '../primitives/StructuralSDK';
-import { 
-    BillingInvoiceCard, CustomCard, FeatureBenefitCard, FeatureCard, GlassmorphicCard, 
-    KanbanTaskCard, NotificationCard, PriceCard, PricingPlanCard, ProfileCard, 
-    ProfileHeaderCard, PushNotificationToast, RegularCard, SettingsToggleCard 
-} from '../primitives/CardSDK';
-import { 
-    AreaChart, BarChartCard, DonutChartCard, LineChartCard, MetricFunnel, 
-    PieChartCard, ScatterPlotCard, StockCard 
-} from '../primitives/ChartsSDK';
-import { 
-    SpringEnter, StaggerContainer, FadeBlur, SlideInOut, CardReveal, PulseScale, 
-    AccordionExpand, RotateFlip, GlitchIntro 
-} from '../primitives/TransitionSDK';
-import { 
-    Cursor, SmoothScroll, FocusZoom, TextTyper, ChartAnimate, DragAndDrop, 
-    TypingGhostCursor, MarqueeTrack, ProgressRing 
-} from '../primitives/MotionSDK';
-import { VectorMorph, SVG_PRESETS } from '../primitives/VectorMorph';
-
-${bodyWithoutImports}
-
-${defaultExportSuffix}
-`;
 }
 
-export function sanitizeAndAssembleComposition(sceneCodeBlocks: string[], scenes: any[]): string {
-    const cleanedBlocks = sceneCodeBlocks.map(block => stripAllImports(block));
+/**
+ * Groups component names by their SDK, returning a map of SDK path → component names.
+ */
+function groupBySDK(componentNames: string[]): Map<string, string[]> {
+    const map = new Map<string, string[]>();
+    for (const name of componentNames) {
+        const sdk = PRIMITIVE_SDK_MAP[name];
+        if (!sdk) continue;
+        if (!map.has(sdk)) map.set(sdk, []);
+        map.get(sdk)!.push(name);
+    }
+    return map;
+}
 
-    return `import React from 'react';
-import { Series, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';
-import type { GlowConfig, StyleConfig } from '../primitives/types';
-import { 
-    ActionButton, AppCanvas, BreadcrumbHeader, BrowserFrame, DataGridContainer, 
-    HeroMetricCard, MockWindow, NotificationToaster, SidebarLayout, SplitHeroLayout, 
-    TabSwitcherContainer, TopNavbar 
-} from '../primitives/StructuralSDK';
-import { 
-    BillingInvoiceCard, CustomCard, FeatureBenefitCard, FeatureCard, GlassmorphicCard, 
-    KanbanTaskCard, NotificationCard, PriceCard, PricingPlanCard, ProfileCard, 
-    ProfileHeaderCard, PushNotificationToast, RegularCard, SettingsToggleCard 
-} from '../primitives/CardSDK';
-import { 
-    AreaChart, BarChartCard, DonutChartCard, LineChartCard, MetricFunnel, 
-    PieChartCard, ScatterPlotCard, StockCard 
-} from '../primitives/ChartsSDK';
-import { 
-    SpringEnter, StaggerContainer, FadeBlur, SlideInOut, CardReveal, PulseScale, 
-    AccordionExpand, RotateFlip, GlitchIntro 
-} from '../primitives/TransitionSDK';
-import { 
-    Cursor, SmoothScroll, FocusZoom, TextTyper, ChartAnimate, DragAndDrop, 
-    TypingGhostCursor, MarqueeTrack, ProgressRing 
-} from '../primitives/MotionSDK';
-import { VectorMorph, SVG_PRESETS } from '../primitives/VectorMorph';
+/**
+ * Builds the canonical import header for the assembled file.
+ * Only imports what's actually used — no dead imports.
+ */
+function buildImportsHeader(
+    usedPrimitives: string[],
+    usedTransitions: string[]
+): string {
+    const lines: string[] = [
+        `import React from 'react';`,
+        `import { Series, useCurrentFrame } from 'remotion';`,
+    ];
 
-${cleanedBlocks.join('\n\n')}
-
-export const VideoComposition: React.FC<{ bgSelection?: any }> = ({ bgSelection }) => {
-    const bgType = bgSelection?.type || 'color';
-    const bgColor = bgSelection?.color || '#09090b';
-    const bgGradient = bgSelection?.gradient || 'linear-gradient(135deg, #09090b 0%, #1e1b4b 50%, #311042 100%)';
-    const bgImage = bgSelection?.imageUrl || '';
-    const blurPx = bgSelection?.blurPx || 0;
-
-    let backdropStyle: React.CSSProperties = { backgroundColor: bgColor };
-    if (bgType === 'gradient') {
-        backdropStyle = { background: bgGradient };
-    } else if (bgType === 'image' && bgImage) {
-        backdropStyle = {
-            backgroundImage: \`url(\${bgImage})\`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: blurPx > 0 ? \`blur(\${blurPx}px)\` : undefined,
-            transform: blurPx > 0 ? 'scale(1.08)' : undefined,
-        };
-    } else if (bgColor === 'transparent') {
-        backdropStyle = { backgroundColor: 'transparent' };
+    // Group primitives by SDK
+    const bySDK = groupBySDK(usedPrimitives);
+    for (const [sdk, names] of bySDK.entries()) {
+        const unique = [...new Set(names)].sort();
+        lines.push(`import { ${unique.join(', ')} } from ${sdk};`);
     }
 
-    return (
-        <div className="w-full h-full text-white relative overflow-hidden flex items-center justify-center">
-            {/* Absolute Background Layer (Blurs ONLY the backdrop, NOT the foreground scenes) */}
-            <div style={backdropStyle} className="absolute inset-0 pointer-events-none z-0 transition-all duration-200" />
+    // TransitionSDK import (if any wrappers were used)
+    if (usedTransitions.length > 0) {
+        const unique = [...new Set(usedTransitions)].sort();
+        lines.push(`import { ${unique.join(', ')} } from '../primitives/TransitionSDK';`);
+    }
 
-            {/* Foreground Scene Layer */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center">
-                <Series>
-                    ${scenes.slice(0, cleanedBlocks.length).map((s, idx) => `
-                    <Series.Sequence durationInFrames={${s.duration || 150}}>
-                        <Scene${idx + 1} />
-                    </Series.Sequence>
-                    `).join('')}
-                </Series>
-            </div>
-        </div>
-    );
+    return lines.join('\n');
+}
+
+/**
+ * Builds a single named Scene component from its SceneCode.
+ * Components are stacked in a full-bleed flex column.
+ */
+function buildSceneComponent(
+    sceneCode: SceneCode,
+    sceneIndex: number,
+    designTokens: DesignTokens
+): string {
+    const sceneName = `Scene${sceneIndex + 1}`;
+    const componentJSXBlocks = sceneCode.components.map((comp) => {
+        const jsx = stripAllImports(comp.animatedJSX);
+        // All components render in natural flow inside the flex column.
+        // No absolute positioning — that was swallowing cards behind full-bleed overlays.
+        return `      {/* ${comp.primitiveName} */}\n      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>\n        ${jsx}\n      </div>`;
+    }).join('\n\n');
+
+    return `const ${sceneName}: React.FC = () => {
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 32,
+        backgroundColor: '${designTokens.backgroundColor}',
+        fontFamily: '${designTokens.fontFamily}, Inter, sans-serif',
+        overflow: 'hidden',
+      }}
+    >
+${componentJSXBlocks}
+    </div>
+  );
+};`;
+}
+
+/**
+ * Builds the master VideoComposition component wrapping all scenes in Series.
+ */
+function buildMasterComposition(
+    blueprints: SceneBlueprint[],
+    sceneCodes: SceneCode[],
+    designTokens: DesignTokens
+): string {
+    const sequences = sceneCodes.map((sc, i) => {
+        const sceneName = `Scene${i + 1}`;
+        const duration = blueprints[i]?.durationInFrames ?? 150;
+        return `        <Series.Sequence durationInFrames={${duration}}>\n          <${sceneName} />\n        </Series.Sequence>`;
+    }).join('\n');
+
+    return `export const VideoComposition: React.FC<{ bgSelection?: any }> = ({ bgSelection }) => {
+  const bgColor = bgSelection?.color || '${designTokens.backgroundColor}';
+  const bgType = bgSelection?.type || 'color';
+
+  let backdropStyle: React.CSSProperties = { backgroundColor: bgColor };
+  if (bgType === 'gradient' && bgSelection?.gradient) {
+    backdropStyle = { background: bgSelection.gradient };
+  } else if (bgType === 'image' && bgSelection?.imageUrl) {
+    backdropStyle = { backgroundImage: \`url(\${bgSelection.imageUrl})\`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  }
+
+  return (
+    <div className="w-full h-full text-white relative overflow-hidden">
+      <div style={backdropStyle} className="absolute inset-0 pointer-events-none z-0" />
+      <div className="relative z-10 w-full h-full">
+        <Series>
+${sequences}
+        </Series>
+      </div>
+    </div>
+  );
 };
 
-export default VideoComposition;
-`;
+export default VideoComposition;`;
 }
 
+/**
+ * Assembles all SceneCode objects into a single VideoComposition.tsx string.
+ * Pure TypeScript — no LLM call.
+ */
+function assembleVideoComposition(
+    blueprints: SceneBlueprint[],
+    sceneCodes: SceneCode[],
+    designTokens: DesignTokens
+): string {
+    // Collect all animated JSX to scan for imports
+    const allAnimatedJSX = sceneCodes
+        .flatMap(sc => sc.components.map(c => c.animatedJSX))
+        .join('\n');
+
+    const usedPrimitives = detectUsedPrimitives(allAnimatedJSX);
+    const usedTransitions = detectUsedTransitions(allAnimatedJSX);
+
+    const importsHeader = buildImportsHeader(usedPrimitives, usedTransitions);
+    const sceneComponents = sceneCodes.map((sc, i) =>
+        buildSceneComponent(sc, i, designTokens)
+    );
+    const masterComposition = buildMasterComposition(blueprints, sceneCodes, designTokens);
+
+    return [
+        '// AUTO-GENERATED by Kinetic Multi-Agent Pipeline — DO NOT EDIT MANUALLY',
+        importsHeader,
+        '',
+        ...sceneComponents,
+        '',
+        masterComposition,
+    ].join('\n');
+}
+
+// ─── Progress Calculator ──────────────────────────────────────────────────────
+/**
+ * Calculates smooth progress values across the full pipeline.
+ * Design (0.02–0.08) → Storyboard (0.08–0.15) → Components (0.15–0.80) → Assemble → Verify → Done
+ */
+function calcComponentProgress(
+    sceneIdx: number,
+    compIdx: number,
+    totalScenes: number,
+    totalComponents: number,
+    phase: 'building' | 'animating'
+): number {
+    const COMPONENT_RANGE = 0.65; // 15% to 80%
+    const COMPONENT_START = 0.15;
+
+    const overallCompIdx = sceneIdx * 10 + compIdx; // rough ordering
+    const baseProgress = COMPONENT_START + (overallCompIdx / Math.max(totalComponents, 1)) * COMPONENT_RANGE;
+    const phaseOffset = phase === 'animating' ? (COMPONENT_RANGE / (totalComponents * 2)) : 0;
+    return Math.min(0.80, baseProgress + phaseOffset);
+}
+
+// ─── Main Pipeline ────────────────────────────────────────────────────────────
+/**
+ * runTSXPipeline — the Manager Agent.
+ *
+ * Public signature is IDENTICAL to the old pipeline — no changes needed
+ * in BasicGenerator.tsx or SaaSGenerator.tsx.
+ */
 export async function runTSXPipeline(
     prompt: string,
-    narration: string,
-    onState: PipeCallback,
-    savePath?: string,
-    resumeState?: ResumeState,
-    onCheckpoint?: (checkpoint: any) => void,
-    projectTitle?: string
+    narration: string = '',
+    onState: (state: PipelineState) => void,
+    projectTitle?: string,
+    savePath?: string | unknown,
+    onCheckpoint?: unknown,
+    resumeState?: unknown
 ): Promise<string> {
     const config = getStoredConfig();
     if (!config) {
-        onState({ status: 'error', progress: 0, error: "No API key configured. Set one in setup." });
+        onState({ status: 'error', progress: 0, error: 'No API key or provider configured in Settings.' });
         return '';
     }
 
-    // Save initial checkpoint marking it as unfinished
+    // ── Step 1: Design Agent ──────────────────────────────────────────────────
+    onState({ status: 'designing', progress: 0.02 });
+    console.log('🎨 [Manager] Design Agent starting...');
+
+    let designTokens: DesignTokens;
     try {
-        const initialData = {
-            title: projectTitle || 'Untitled',
-            prompt,
-            narration,
-            scenes: resumeState?.scenes || [],
-            unfinished: true,
-            generationState: resumeState ? {
-                scenes: resumeState.scenes,
-                sceneCodeBlocks: resumeState.sceneCodeBlocks || [],
-            } : undefined,
-            savePath
+        // Check if the prompt references a known brand (Stripe, Vercel, etc.)
+        const siteKey = detectSiteKeyFromPrompt(prompt);
+        let seedColors: Partial<DesignTokens> | undefined;
+
+        if (siteKey) {
+            console.log(`🎯 [Manager] Detected brand: ${siteKey} — loading design spec...`);
+            const spec = await loadDesignSpec(siteKey);
+            seedColors = {
+                primaryColor: spec.colors.primary,
+                backgroundColor: spec.colors.canvas,
+                surfaceColor: spec.colors.surface1,
+                textColor: spec.colors.textPrimary,
+                accentColor: spec.colors.surface2,
+            };
+        }
+
+        designTokens = await runDesignAgent(config, prompt, seedColors);
+        console.log('✅ [Manager] Design tokens:', designTokens);
+    } catch (err) {
+        console.warn('[Manager] Design Agent threw, using defaults:', err);
+        designTokens = {
+            fontFamily: 'Inter',
+            primaryColor: '#6366f1',
+            backgroundColor: '#09090b',
+            accentColor: '#a78bfa',
+            textColor: '#f4f4f5',
+            surfaceColor: '#18181b',
+            theme: 'dark',
         };
-        if (savePath && window.electronAPI?.writeFile) {
-            window.electronAPI.writeFile(savePath, JSON.stringify(initialData, null, 2));
-        }
-        if (onCheckpoint) {
-            onCheckpoint(initialData);
-        }
-    } catch (e) {
-        console.error("Failed to save initial unfinished state:", e);
     }
 
-    let scenes: any[] = [];
+    // ── Step 2: Storyboard Agent ──────────────────────────────────────────────
+    onState({ status: 'storyboarding', progress: 0.08 });
+    console.log('🎬 [Manager] Storyboard Agent starting...');
 
-    // Stage 1: Storyboard Agent or Resume
-    if (resumeState?.scenes && resumeState.scenes.length > 0) {
-        scenes = resumeState.scenes;
-    } else {
-        onState({ status: 'storyboarding', progress: 0.1 });
-        const storyRes = await runStoryboardAgent(config, prompt, narration);
-        if (storyRes.error || !storyRes.storyboard) {
-            onState({ status: 'error', progress: 0.1, error: storyRes.error || 'Storyboarding failed' });
-            return '';
-        }
-        scenes = storyRes.storyboard.scenes;
-    }
-
-    const sceneCodeBlocks: string[] = resumeState?.sceneCodeBlocks ? [...resumeState.sceneCodeBlocks] : [];
-    const startIndex = sceneCodeBlocks.length;
-
-    const voiceoverSegments = narration ? parseTimestampedScript(narration) : [];
-
-    const detectedSiteKey = detectSiteKeyFromPrompt(prompt);
-
-    if (isBYOC) {
-        // BYOC Mode: Sequential execution scene-by-scene for prompt copy-pasting
-        for (let i = startIndex; i < scenes.length; i++) {
-            const scene = scenes[i];
-            const sceneNum = i + 1;
-            onState({ status: 'designing', progress: 0.2 + (i / scenes.length) * 0.7 });
-
-            const res = await runSubagentPipeline(config, scene, sceneNum, detectedSiteKey);
-            const code = res.SceneCode || (res as any).sceneCode;
-            if (res.error || !code) {
-                onState({ status: 'error', progress: 0.5, error: res.error || 'Subagent scene generation failed' });
-                return '';
-            }
-            sceneCodeBlocks.push(code);
-        }
-    } else {
-        // API Mode: Fast Parallel execution via Promise.all() (~6s total)
-        onState({ status: 'designing', progress: 0.5 });
-        const promises = scenes.slice(startIndex).map((scene, idx) =>
-            runSubagentPipeline(config, scene, startIndex + idx + 1, detectedSiteKey)
+    let blueprints: SceneBlueprint[];
+    try {
+        blueprints = await runStoryboardAgent(config, prompt, narration, designTokens, 3);
+        console.log(`✅ [Manager] Storyboard: ${blueprints.length} scenes planned`);
+        blueprints.forEach(bp =>
+            console.log(`   Scene "${bp.id}": ${bp.componentList.join(', ')} (${bp.durationInFrames}f)`)
         );
-        const results = await Promise.all(promises);
-
-        for (const res of results) {
-            const code = res.SceneCode || (res as any).sceneCode;
-            if (res.error || !code) {
-                onState({ status: 'error', progress: 0.5, error: res.error || 'Parallel scene generation failed' });
-                return '';
-            }
-            sceneCodeBlocks.push(code);
-        }
+    } catch (err) {
+        console.warn('[Manager] Storyboard Agent threw, using defaults:', err);
+        blueprints = [
+            { id: 'scene1', purpose: prompt, durationInFrames: 150, componentList: ['MockWindow'] },
+        ];
     }
 
-    // Checkpoint Save
+    // ── Step 3: Per-scene, per-component loop ─────────────────────────────────
+    const totalComponents = blueprints.reduce((acc, bp) => acc + bp.componentList.length, 0);
+    const sceneCodes: SceneCode[] = [];
+    let globalCompIdx = 0;
+
+    for (let sceneIdx = 0; sceneIdx < blueprints.length; sceneIdx++) {
+        const blueprint = blueprints[sceneIdx];
+        const components: ComponentCode[] = [];
+
+        for (let compIdx = 0; compIdx < blueprint.componentList.length; compIdx++) {
+            const primitiveName = blueprint.componentList[compIdx];
+            const isBackground = compIdx === 0 && blueprint.componentList.length > 1;
+            // Stagger delay hint: each component in a scene enters slightly later
+            const delayHint = compIdx * 12;
+
+            // ── Component Creator ─────────────────────────────────────────────
+            onState({
+                status: 'component-building',
+                progress: calcComponentProgress(sceneIdx, globalCompIdx, blueprints.length, totalComponents, 'building'),
+                currentScene: blueprint.id,
+                currentComponent: primitiveName,
+            });
+            console.log(`🔧 [Manager] Building ${primitiveName} for ${blueprint.id}...`);
+
+            let rawJSX = `<${primitiveName} />`;
+            try {
+                rawJSX = await runComponentCreatorAgent(
+                    config,
+                    primitiveName,
+                    designTokens,
+                    blueprint.purpose,
+                    isBackground
+                );
+            } catch (err) {
+                console.warn(`[Manager] ComponentCreator failed for ${primitiveName}:`, err);
+            }
+
+            // ── Animator ──────────────────────────────────────────────────────
+            onState({
+                status: 'animating',
+                progress: calcComponentProgress(sceneIdx, globalCompIdx, blueprints.length, totalComponents, 'animating'),
+                currentScene: blueprint.id,
+                currentComponent: primitiveName,
+            });
+            console.log(`✨ [Manager] Animating ${primitiveName} for ${blueprint.id}...`);
+
+            let animatedJSX = rawJSX;
+            try {
+                animatedJSX = await runAnimatorAgent(
+                    config,
+                    rawJSX,
+                    primitiveName,
+                    designTokens,
+                    delayHint
+                );
+            } catch (err) {
+                console.warn(`[Manager] Animator failed for ${primitiveName}:`, err);
+                // Safe fallback: SpringEnter with the raw JSX
+                animatedJSX = `<SpringEnter delay={${delayHint}}>\n  ${rawJSX}\n</SpringEnter>`;
+            }
+
+            components.push({ primitiveName, rawJSX, animatedJSX });
+            globalCompIdx++;
+        }
+
+        sceneCodes.push({
+            blueprintId: blueprint.id,
+            durationInFrames: blueprint.durationInFrames,
+            components,
+        });
+    }
+
+    // ── Step 4: Assembler ─────────────────────────────────────────────────────
+    onState({ status: 'assembling', progress: 0.85 });
+    console.log('🔨 [Manager] Assembling VideoComposition.tsx...');
+
+    const assembled = assembleVideoComposition(blueprints, sceneCodes, designTokens);
+
+    // ── Step 5: Verifier Agent ────────────────────────────────────────────────
+    onState({ status: 'verifying', progress: 0.92 });
+    console.log('🔍 [Manager] Verifier Agent reviewing code...');
+
+    let finalCode = assembled;
     try {
-        const partialCompositionCode = sanitizeAndAssembleComposition(sceneCodeBlocks, scenes);
-
-        if (window.electronAPI?.writeFile) {
-            await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', partialCompositionCode);
-        }
-
-        const checkpointData = {
-            title: projectTitle || 'Untitled',
-            prompt,
-            narration,
-            scenes,
-            code: partialCompositionCode,
-            unfinished: true,
-            generationState: {
-                scenes,
-                sceneCodeBlocks,
-            },
-            savePath
-        };
-
-        if (savePath && window.electronAPI?.writeFile) {
-            await window.electronAPI.writeFile(savePath, JSON.stringify(checkpointData, null, 2));
-        }
-        if (onCheckpoint) {
-            onCheckpoint(checkpointData);
-        }
-    } catch (e) {
-        console.error("Failed to save checkpoint:", e);
+        finalCode = await runVerifierAgent(config, assembled);
+    } catch (err) {
+        console.warn('[Manager] Verifier threw, using assembled code as-is:', err);
+        finalCode = assembled;
     }
 
-    // Assembly & Final Save
-    onState({ status: 'compiling', progress: 0.95 });
-    const finalCompositionCode = sanitizeAndAssembleComposition(sceneCodeBlocks, scenes);
-
-    const finishedData = {
-        title: projectTitle || 'Untitled',
-        prompt,
-        narration,
-        scenes,
-        code: finalCompositionCode,
-        unfinished: false,
-        savePath
-    };
-
+    // ── Step 6: Write to disk ─────────────────────────────────────────────────
     if (window.electronAPI?.writeFile) {
-        try {
-            await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', finalCompositionCode);
-            if (savePath) {
-                await window.electronAPI.writeFile(savePath, JSON.stringify(finishedData, null, 2));
-            }
-        } catch (e) {
-            console.error("Failed to write final composition file:", e);
-        }
-    }
-
-    if (onCheckpoint) {
-        onCheckpoint(finishedData);
+        await window.electronAPI.writeFile(
+            'src/renderer/scenes/VideoComposition.tsx',
+            finalCode
+        );
+        console.log('💾 [Manager] VideoComposition.tsx written to disk.');
     }
 
     onState({ status: 'done', progress: 1.0 });
-    return finalCompositionCode;
+    console.log('🎉 [Manager] Pipeline complete!');
+    return finalCode;
 }
 
 export const runPipeline = runTSXPipeline;

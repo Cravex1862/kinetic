@@ -444,7 +444,7 @@ export async function runLogoPipeline(input: LogoPipelineInput): Promise<string>
   }
 
   // ── Prepare logo data ──
-  onState({ status: 'laying-out', progress: 0.05 });
+  onState({ status: 'storyboarding', progress: 0.05 });
   console.log(`[LogoPipeline] Starting logo pipeline — style: "${stylePreset.label}", file: "${logoFileName}"`);
 
   const isSvg = isSvgFile(logoFileName);
@@ -507,7 +507,7 @@ export async function runLogoPipeline(input: LogoPipelineInput): Promise<string>
   console.log(`[LogoPipeline] Stage 1 complete — generated ${animResult.tsxCode.length} chars of scene code`);
 
   // ── Stage 2: Logo Verifier Agent (syntax + motion check) ──
-  onState({ status: 'compiling', progress: 0.60 });
+  onState({ status: 'assembling', progress: 0.60 });
   console.log('[LogoPipeline] Stage 2: Running Logo Verifier Agent...');
 
   const verifyResult = await runLogoVerifierAgent(config, animResult.tsxCode);
@@ -516,7 +516,7 @@ export async function runLogoPipeline(input: LogoPipelineInput): Promise<string>
   console.log(`[LogoPipeline] Stage 2 complete — verified code: ${finalSceneCode.length} chars`);
 
   // ── Stage 3: Assembly & File Writing ──
-  onState({ status: 'compiling', progress: 0.85 });
+  onState({ status: 'assembling', progress: 0.85 });
   console.log('[LogoPipeline] Stage 3: Assembling final composition...');
 
   const cleanedCode = stripAllImports(finalSceneCode);

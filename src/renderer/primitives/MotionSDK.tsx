@@ -8,3 +8,4 @@ export * from './motion/DragAndDrop';
 export * from './motion/TypingGhostCursor';
 export * from './motion/MarqueeTrack';
 export * from './motion/ProgressRing';
+export * from './motion/SubtitlesTrack';

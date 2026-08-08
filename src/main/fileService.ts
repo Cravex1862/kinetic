@@ -1,11 +1,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { app } from 'electron';
+
+/**
+ * Resolves relative file paths to the project root.
+ * Uses app.getAppPath() which reliably points to the project root in dev mode,
+ * unlike process.cwd() which can vary depending on how Electron was launched.
+ */
+function resolveToProjectRoot(filePath: string): string {
+  if (path.isAbsolute(filePath)) return filePath;
+  return path.join(app.getAppPath(), filePath);
+}
 
 export function handleReadFile(filePath: string): string | null {
   try {
-    const resolvedPath = path.isAbsolute(filePath)
-      ? filePath
-      : path.join(process.cwd(), filePath);
+    const resolvedPath = resolveToProjectRoot(filePath);
 
     if (fs.existsSync(resolvedPath)) {
       return fs.readFileSync(resolvedPath, 'utf-8');
@@ -19,9 +28,7 @@ export function handleReadFile(filePath: string): string | null {
 
 export function handleWriteFile(filePath: string, content: string): boolean {
   try {
-    const resolvedPath = path.isAbsolute(filePath)
-      ? filePath
-      : path.join(process.cwd(), filePath);
+    const resolvedPath = resolveToProjectRoot(filePath);
 
     const dir = path.dirname(resolvedPath);
     if (!fs.existsSync(dir)) {
@@ -38,9 +45,7 @@ export function handleWriteFile(filePath: string, content: string): boolean {
 
 export function handleListProjects(dirPath: string): string[] {
   try {
-    const resolvedPath = path.isAbsolute(dirPath)
-      ? dirPath
-      : path.join(process.cwd(), dirPath);
+    const resolvedPath = resolveToProjectRoot(dirPath);
 
     if (!fs.existsSync(resolvedPath)) {
       return [];

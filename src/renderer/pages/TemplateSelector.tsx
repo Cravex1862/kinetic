@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Folder, PlugsConnected, FilmStrip, Browser, GameController, Star, Layout } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent.svg';
 
@@ -111,6 +111,16 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelect, onBack, i
       }
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onBack();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onBack]);
 
   return (
     <div className="flex h-screen flex-col bg-gray-950 text-white overflow-hidden font-sans page-enter">

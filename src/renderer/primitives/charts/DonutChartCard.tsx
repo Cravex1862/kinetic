@@ -1,3 +1,4 @@
+import { BaseMotionProps } from '../types';
 import React from "react";
 import { Easing } from 'remotion';
 import { useFrame } from "../useFrame";
@@ -9,7 +10,7 @@ export interface DonutChartDataPoints {
     color?: string;
 }
 
-export interface DonutChartCardProps {
+export interface DonutChartCardProps extends BaseMotionProps {
     width?: number;
     height?: number;
     titleText?: string;

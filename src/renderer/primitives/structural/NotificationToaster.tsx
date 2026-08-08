@@ -1,10 +1,10 @@
 import React from 'react';
-import { StyleConfig, configToStyle, GlowConfig } from '../types';
+import { StyleConfig, configToStyle, GlowConfig, BaseMotionProps } from '../types';
 import { buildGlowFilter } from '../utils/styleHelpers';
 
 type ToastPosition = 'top-right' | 'bottom-right' | 'top-left' | 'top-full' | 'bottom-full';
 
-interface NotificationToasterProps {
+interface NotificationToasterProps extends BaseMotionProps {
   notifications: React.ReactNode[];
   glowConfig: GlowConfig;
   position?: ToastPosition;

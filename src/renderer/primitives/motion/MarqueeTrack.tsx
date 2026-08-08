@@ -1,8 +1,8 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import { StyleConfig, configToStyle } from '../types';
+import { StyleConfig, configToStyle, BaseMotionProps } from '../types';
 
-interface MarqueeTrackProps {
+interface MarqueeTrackProps extends BaseMotionProps {
   children: React.ReactNode;
   direction?: 'left' | 'right';
   speedMultiplier?: number;

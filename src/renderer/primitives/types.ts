@@ -7,6 +7,19 @@ export type GlowConfig = {
   spread: number;
 };
 
+export interface BaseMotionProps {
+  rotateX?: number;
+  rotateY?: number;
+  rotateZ?: number;
+  translateX?: number;
+  translateY?: number;
+  translateZ?: number;
+  perspective?: number;
+  scale?: number;
+  opacity?: number;
+  [key: string]: any; // Allow dynamic AI props without TS errors
+}
+
 export type StyleConfig = {
   color?: string;
   backgroundColor?: string;

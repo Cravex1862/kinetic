@@ -89,7 +89,7 @@ export const VoiceoverAudioField: React.FC<VoiceoverAudioFieldProps> = ({
                             <span className="text-[10px] text-gray-500 mt-0.5">Supports .mp3, .wav, .m4a, .ogg</span>
                             <input
                                 type="file"
-                                accept="audio/*"
+                                accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.flac"
                                 onChange={handleFileSelect}
                                 className="hidden"
                             />

@@ -140,10 +140,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         </div>
 
                         {[
-                            { label: 'Rotate X', propKey: 'rotateX', min: -180, max: 180 },
-                            { label: 'Rotate Y', propKey: 'rotateY', min: -180, max: 180 },
-                            { label: 'Rotate Z', propKey: 'rotateZ', min: -180, max: 180 },
-                        ].map(({ label, propKey, min, max }) => (
+                            { label: 'Perspective', propKey: 'perspective', min: 0, max: 3000, unit: 'px' },
+                            { label: 'Rotate X', propKey: 'rotateX', min: -180, max: 180, unit: 'deg' },
+                            { label: 'Rotate Y', propKey: 'rotateY', min: -180, max: 180, unit: 'deg' },
+                            { label: 'Rotate Z', propKey: 'rotateZ', min: -180, max: 180, unit: 'deg' },
+                        ].map(({ label, propKey, min, max, unit }) => (
                             <div key={propKey} className="space-y-1">
                                 <div className="flex items-center justify-between text-gray-300">
                                     <span>{label}</span>
@@ -154,7 +155,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                             onChange={(e) => onUpdateProp(selectedNode.id, propKey, Number(e.target.value))}
                                             className="w-14 bg-gray-950 border border-gray-800 rounded px-1.5 py-0.5 text-right text-purple-400 font-mono text-xs outline-none focus:border-purple-500"
                                         />
-                                        <span className="text-gray-500 text-[10px] font-mono">deg</span>
+                                        <span className="text-gray-500 text-[10px] font-mono">{unit}</span>
                                         {renderKeyframeDiamond(propKey)}
                                     </div>
                                 </div>

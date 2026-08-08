@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleConfig, configToStyle, GlowConfig } from '../types';
+import { StyleConfig, configToStyle, GlowConfig, BaseMotionProps } from '../types';
 import { buildGlowFilter } from '../utils/styleHelpers';
 
-interface DataGridContainerProps {
+interface DataGridContainerProps extends BaseMotionProps {
   children: React.ReactNode;
   glowConfig: GlowConfig;
   columns?: number;

@@ -1,8 +1,9 @@
+import { BaseMotionProps } from './types';
 import React from 'react';
 import { interpolate, Easing } from 'remotion';
 import { useFrame } from './useFrame';
 
-interface WhipPanProps {
+interface WhipPanProps extends BaseMotionProps {
   children: React.ReactNode;
   frame?: number;
   duration?: number;
@@ -40,7 +41,7 @@ export function WhipPan({
   );
 }
 
-interface CrossfadeProps {
+interface CrossfadeProps extends BaseMotionProps {
   children: React.ReactNode;
   frame?: number;
   duration?: number;

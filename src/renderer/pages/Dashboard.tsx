@@ -275,8 +275,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         {/* Search Bar for Projects */}
         {projects.length > 0 && (
           <div className="w-full max-w-3xl mb-6 relative">
-            <div className={`absolute inset-y-0 left-3.5 flex items-center pointer-events-none transition-colors ${searchFocused || searchQuery ? 'text-purple-400' : 'text-gray-500'}`}>
-              <MagnifyingGlass size={16} />
+            <div className={`absolute z-10 inset-y-0 left-3.5 flex items-center pointer-events-none transition-colors ${searchFocused || searchQuery ? 'text-purple-400' : 'text-gray-400'}`}>
+              <MagnifyingGlass size={18} weight="bold" />
             </div>
             <input
               type="text"

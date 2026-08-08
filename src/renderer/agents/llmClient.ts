@@ -67,21 +67,25 @@ abstract class BaseLLMClient implements ILLMClient {
 
 class OpenAICompatibleClient extends BaseLLMClient {
   getUrl(): string {
-    if (this.config.baseUrl) {
-      const cleaned = this.config.baseUrl.replace(/\/+$/, '');
+    const isLocal = this.config.provider === 'ollama' || this.config.provider === 'lmstudio' || this.config.provider === 'local' || this.config.provider === 'byoc';
+    if (this.config.baseUrl && isLocal) {
+      let cleaned = this.config.baseUrl.replace(/\/+$/, '');
+      if (cleaned.includes('11434') && !cleaned.includes('/v1') && !cleaned.includes('/api')) {
+        cleaned = `${cleaned}/v1`;
+      }
       return cleaned.endsWith('/chat/completions') ? cleaned : `${cleaned}/chat/completions`;
     }
     if (this.config.provider === 'hackclub') {
       return 'https://ai.hackclub.com/proxy/v1/chat/completions';
     }
-    if (this.config.provider === 'ollama') {
+    if (this.config.provider === 'ollama' || this.config.provider === 'local') {
       return 'http://localhost:11434/v1/chat/completions';
     }
     if (this.config.provider === 'lmstudio') {
       return 'http://localhost:1234/v1/chat/completions';
     }
-    if (this.config.provider === 'local') {
-      return 'http://localhost:11434/v1/chat/completions';
+    if (this.config.provider === 'groq') {
+      return 'https://api.groq.com/openai/v1/chat/completions';
     }
     return 'https://api.openai.com/v1/chat/completions';
   }
@@ -103,7 +107,7 @@ class OpenAICompatibleClient extends BaseLLMClient {
       ],
       temperature: 0.3,
     };
-    if (systemPrompt.toLowerCase().includes('json')) {
+    if (systemPrompt.toLowerCase().includes('json') && !systemPrompt.toLowerCase().includes('tsx') && !systemPrompt.toLowerCase().includes('jsx')) {
       body.response_format = { type: 'json_object' };
     }
     return body;
@@ -178,6 +182,7 @@ export class LLMClientFactory {
       case 'ollama':
       case 'lmstudio':
       case 'local':
+      case 'groq':
         return new OpenAICompatibleClient(config);
       case 'anthropic':
         return new AnthropicClient(config);
@@ -280,6 +285,19 @@ export async function fetchAvailableModels(
       return { models: [], error: `Anthropic API returned status ${res.status}` };
     }
 
+    if (provider === 'groq') {
+      if (!apiKey) return { models: [], error: 'API key is required to fetch Groq models.' };
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { Authorization: `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const models = (data.data || []).map((m: any) => m.id);
+        return { models };
+      }
+      return { models: [], error: `Groq API returned status ${res.status}` };
+    }
+
     return { models: [], error: 'Provider model fetching not supported' };
   } catch (err: unknown) {
     return { models: [], error: err instanceof Error ? err.message : String(err) };
@@ -297,7 +315,7 @@ export async function callLLM(
   config: AgentConfig,
   systemPrompt: string,
   userPrompt: string,
-  bypassCache: boolean = false
+  bypassCache: boolean = true
 ): Promise<LLMResponse> {
 
   if (config.provider === 'byoc') {
@@ -314,14 +332,7 @@ export async function callLLM(
     };
   }
 
-
-
-  const cacheKey = `${config.provider}:${config.model || ''}:${systemPrompt}:${userPrompt}`;
-  if (!bypassCache && responseCache.has(cacheKey)) {
-    console.log("⚡ Returning cached LLM response (0ms)");
-    return { content: responseCache.get(cacheKey)! };
-  }
-
+  // Caching disabled for accurate model benchmarking
   const client = LLMClientFactory.create(config);
   let result = await client.call(systemPrompt, userPrompt);
 
@@ -341,9 +352,6 @@ export async function callLLM(
     }
   }
 
-  if (result.content && !result.error) {
-    responseCache.set(cacheKey, result.content);
-  }
   return result;
 }
 
@@ -371,6 +379,10 @@ export function safeParseJson<T>(content: string, defaultValue: T): T {
 
 export function sanitizeCompositionCode(code: string): string {
   if (!code) return '';
+  const blockMatch = code.match(/```(?:tsx|jsx|ts|js)?\s*([\s\S]*?)```/i);
+  if (blockMatch && blockMatch[1]) {
+    return blockMatch[1].trim();
+  }
   return code.replace(/^```[a-z]*\n?/gi, '').replace(/\n?```$/gi, '').trim();
 }
 

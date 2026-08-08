@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleConfig, configToStyle, GlowConfig } from '../types';
+import { StyleConfig, configToStyle, GlowConfig, BaseMotionProps } from '../types';
 import { buildGlowFilter } from '../utils/styleHelpers';
 
-interface TabSwitcherContainerProps {
+interface TabSwitcherContainerProps extends BaseMotionProps {
   tabs: string[];
   activeTab: number;
   glowConfig: GlowConfig;

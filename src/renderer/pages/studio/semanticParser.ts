@@ -61,33 +61,37 @@ export function parseSceneCodeToNodes(code: string): ComponentNode[] {
   const nodes: ComponentNode[] = [];
   if (!code) return nodes;
 
-  // Match explicit data-label or known primitive SDK components
-  const tagRegex = /(?:data-label=["']([^"']+)["']|<(BrowserFrame|AppCanvas|HeroMetricCard|GlassmorphicCard|PricingPlanCard|KanbanTaskCard|FeatureCard|BarChartCard|LineChartCard|PieChartCard|DonutChartCard|SidebarLayout|TopNavbar|TextTyper|VectorMorph))/g;
+  // Match explicit data-label, id attributes, scenes, or known primitive SDK components
+  const tagRegex = /(?:data-label=["']([^"']+)["']|id=["']([^"']+)["']|<(Scene_?\d+|Scene\w+|BrowserFrame|AppCanvas|MockWindow|HeroMetricCard|GlassmorphicCard|PricingPlanCard|KanbanTaskCard|FeatureCard|FeatureBenefitCard|BillingInvoiceCard|SettingsToggleCard|PushNotificationToast|ProfileCard|ProfileHeaderCard|PriceCard|RegularCard|NotificationCard|CustomCard|BarChartCard|BarChart|LineChartCard|LineChart|PieChartCard|PieChart|DonutChartCard|DonutChart|AreaChartCard|AreaChart|MetricFunnelCard|MetricFunnel|ScatterPlotCard|ScatterPlot|StockCard|SparklineTicker|SidebarLayout|TopNavbar|ActionButton|BreadcrumbHeader|DataGridContainer|NotificationToaster|SplitHeroLayout|TabSwitcherContainer|Cursor|SmoothScroll|FocusZoom|TextTyper|ChartAnimate|DragAndDrop|TypingGhostCursor|MarqueeTrack|ProgressRing|VectorMorph|SpringEnter|FadeBlur|SlideInOut|PulseScale|CardReveal|StaggerContainer|AccordionExpand|RotateFlip|GlitchIntro))/g;
   let match: RegExpExecArray | null;
 
   let index = 0;
   const seenLabels = new Set<string>();
 
   while ((match = tagRegex.exec(code)) !== null) {
-    const label = match[1] || match[2];
+    const label = match[1] || match[2] || match[3];
     if (!label || seenLabels.has(label + match.index)) continue;
     seenLabels.add(label + match.index);
 
     const id = `node-${index++}`;
     const matchPos = match.index;
 
-    const snippet = code.substring(Math.max(0, matchPos - 200), matchPos + 400);
+    let tagStart = code.lastIndexOf('<', matchPos);
+    if (tagStart === -1 || matchPos - tagStart > 200) tagStart = Math.max(0, matchPos - 50);
+    let tagEnd = code.indexOf('>', matchPos);
+    if (tagEnd === -1) tagEnd = matchPos + 400;
+    const snippet = code.substring(tagStart, tagEnd + 1);
 
-    const extractNumProp = (propName: string, defaultVal: number): number => {
+    const extractNumProp = (propName: string, defaultVal: number): number | undefined => {
       const rx = new RegExp(`${propName}=\\{?\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\}?`, 'i');
       const m = snippet.match(rx);
-      return m ? Number(m[1]) : defaultVal;
+      return m ? Number(m[1]) : undefined;
     };
 
-    const extractStrProp = (propName: string, defaultVal: string): string => {
+    const extractStrProp = (propName: string, defaultVal?: string): string | undefined => {
       const rx = new RegExp(`${propName}=["']([^"']+)["']`, 'i');
       const m = snippet.match(rx);
-      return m ? m[1] : defaultVal;
+      return m ? m[1] : undefined;
     };
 
     const is3D = label.toLowerCase().includes('browser') || label.toLowerCase().includes('frame') || label.toLowerCase().includes('card');
@@ -228,7 +232,7 @@ export function updateCodeWithNodeProps(originalCode: string, nodes: ComponentNo
 
   for (const node of nodes) {
     const labelEscaped = node.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const tagRegex = new RegExp(`(<[a-zA-Z0-9_]+[^>]*data-label=["']${labelEscaped}["'][^>]*>)`, 'g');
+    const tagRegex = new RegExp(`(<[a-zA-Z0-9_]+[^>]*(?:data-label=["']${labelEscaped}["']|id=["']${labelEscaped}["'])[^>]*>|<${labelEscaped}(?:\\s|\\/|>)[^>]*>)`, 'g');
 
     updatedCode = updatedCode.replace(tagRegex, (fullTag) => {
       let modifiedTag = fullTag;
@@ -269,9 +273,12 @@ export function updateCodeWithNodeProps(originalCode: string, nodes: ComponentNo
           }
         } else if (kfPoints && kfPoints.length === 1) {
           const varName = `${node.id.replace(/-/g, '_')}_${prop}`;
+          
+          const val = node.props[prop] !== undefined ? node.props[prop] : kfPoints[0].value;
+          kfPoints[0].value = val;
+          
           singleKfComments += `  // kf: ${varName}=${JSON.stringify(kfPoints)}\n`;
 
-          const val = kfPoints[0].value;
           const propRegex = new RegExp(`${prop}=\\{?[^\\}>\\s]+\\}?`, 'g');
           if (propRegex.test(modifiedTag)) {
             modifiedTag = modifiedTag.replace(propRegex, `${prop}={${val}}`);
