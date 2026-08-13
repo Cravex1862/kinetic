@@ -7,20 +7,21 @@ import Settings from './Settings';
 import SetupWizard from './SetupWizard';
 import YoutubeVideoCreator from '../templates/ytVideos/YoutubeVideoCreator';
 import { LogoGenerator } from '../templates/logoAnimator/LogoGenerator';
-import MinecraftStyleCreator from '../templates/minecraft/MinecraftStyleCreator';
 import SaaSGenerator from '../templates/saasVideoDemo/SaaSGenerator';
 import TourOverlay from '../components/TourOverlay';
 import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
 import { PrimitivesDemoOverlay } from '../components/PrimitivesDemoOverlay';
-import { MinecraftPrimitivesDemoOverlay } from '../components/MinecraftPrimitivesDemoOverlay';
 import { TiltConfigurer } from '../components/TiltConfigurer';
 import Studio from './studio/Studio';
 import { registerBYOXHandler } from '../agents/llmClient';
 import { BYOCModal } from '../components/BYOCModal';
 import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal';
 import { AudioTesterModal } from '../components/AudioTesterModal';
+import { RAGTesterModal } from '../components/RAGTesterModal';
+import { PipelineTesterModal } from '../components/PipelineTesterModal';
+import { VideoCompositionViewerModal } from '../components/VideoCompositionViewerModal';
+import PromptSandbox from './PromptSandbox';
 import { sanitizeCompositionCode } from '../agents/pipeline';
-
 
 export interface ProjectData {
   id?: string;
@@ -59,8 +60,33 @@ const AppRouter: React.FC = () => {
   const [previousPage, setPreviousPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'saas-generator' | 'youtube-creator' | 'logo-generator' | 'minecraft-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>('dashboard');
 
   const [showTiltConfigurer, setShowTiltConfigurer] = useState(false);
-  const [showMinecraftDemo, setShowMinecraftDemo] = useState(false);
+  const [showRAGTester, setShowRAGTester] = useState(false);
+  const [showPipelineTester, setShowPipelineTester] = useState(false);
+  const [showVideoCompositionViewer, setShowVideoCompositionViewer] = useState(false);
   const [byocPrompt, setByocPrompt] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+        e.preventDefault();
+        setShowRAGTester((prev) => !prev);
+      }
+      if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        setShowPipelineTester((prev) => !prev);
+      }
+      if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
+        e.preventDefault();
+        setShowVideoCompositionViewer((prev) => !prev);
+      }
+      if (e.ctrlKey && e.shiftKey && (e.key === 'U' || e.key === 'u')) {
+        e.preventDefault();
+        setPage('prompt-sandbox');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const [byocResolver, setByocResolver] = useState<{
     resolve: (val: string) => void;
     reject: (err?: any) => void;
@@ -136,7 +162,7 @@ const AppRouter: React.FC = () => {
     });
   };
 
-  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'saas-generator' | 'youtube-creator' | 'logo-generator' | 'minecraft-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>(() => {
+  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'saas-generator' | 'youtube-creator' | 'logo-generator' | 'minecraft-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo' | 'prompt-sandbox'>(() => {
     const completed = localStorage.getItem('kinetic-setup-completed') === 'true';
     return completed ? 'dashboard' : 'setup';
   });
@@ -218,16 +244,7 @@ const AppRouter: React.FC = () => {
     localStorage.setItem('kinetic-folders', JSON.stringify(folders));
   }, [folders]);
 
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
-        e.preventDefault();
-        setShowMinecraftDemo((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+
 
   React.useEffect(() => {
     const loadProjects = async () => {
@@ -691,12 +708,6 @@ const AppRouter: React.FC = () => {
           customConfirm={customConfirm}
         />
       )}
-      {(page as any) === 'minecraft-creator' && (
-        <MinecraftStyleCreator
-          onBack={() => setPage('template-selector')}
-          onGenerate={(data: any) => handleGenerate({ title: 'Minecraft Video', narration: data.scriptText, prompt: data.instructions, ...data })}
-        />
-      )}
       {page === 'logo-generator' && (
         <LogoGenerator
           project={project}
@@ -756,6 +767,9 @@ const AppRouter: React.FC = () => {
           customConfirm={customConfirm}
         />
       )}
+      {page === 'prompt-sandbox' && (
+        <PromptSandbox />
+      )}
       {page === 'setup' && (
         <SetupWizard
           onComplete={() => {
@@ -808,8 +822,15 @@ const AppRouter: React.FC = () => {
       {page === 'primitives-demo' && (
         <PrimitivesDemoOverlay onClose={() => setPage(previousPage)} />
       )}
-      {showMinecraftDemo && (
-        <MinecraftPrimitivesDemoOverlay onClose={() => setShowMinecraftDemo(false)} />
+
+      {showRAGTester && (
+        <RAGTesterModal onClose={() => setShowRAGTester(false)} />
+      )}
+      {showPipelineTester && (
+        <PipelineTesterModal onClose={() => setShowPipelineTester(false)} />
+      )}
+      {showVideoCompositionViewer && (
+        <VideoCompositionViewerModal onClose={() => setShowVideoCompositionViewer(false)} />
       )}
       {showTiltConfigurer && (
         <TiltConfigurer

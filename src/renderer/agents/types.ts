@@ -55,9 +55,14 @@ export interface SceneOutput {
 export interface DesignTokens {
   fontFamily: string;
   primaryColor: string;
-  backgroundColor: string;
+  secondaryColor?: string;
   accentColor: string;
+  semanticColor?: string;
+  errorColor?: string;
+  successColor?: string;
+  neutralColor?: string;
   textColor: string;
+  backgroundColor: string;
   surfaceColor: string;
   theme: 'dark' | 'light';
 }
@@ -103,10 +108,10 @@ export const DEFAULT_MODELS: Record<Provider, string> = {
   openai: 'gpt-4o',
   anthropic: 'claude-3-5-sonnet-latest',
   google: 'gemini-2.5-flash',
-  hackclub: 'gemini-2.5-flash',
+  hackclub: 'qwen/qwen-2.5-coder-32b-instruct',
   ollama: 'qwen2.5-coder',
   lmstudio: 'qwen2.5-coder-7b-instruct',
   local: 'qwen2.5-coder',
   byoc: 'byoc',
-  groq: 'llama-3.1-8b-instant',
+  groq: 'llama-3.3-70b-versatile',
 };

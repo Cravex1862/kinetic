@@ -76,7 +76,7 @@ class OpenAICompatibleClient extends BaseLLMClient {
       return cleaned.endsWith('/chat/completions') ? cleaned : `${cleaned}/chat/completions`;
     }
     if (this.config.provider === 'hackclub') {
-      return 'https://ai.hackclub.com/proxy/v1/chat/completions';
+      return 'https://openrouter.ai/api/v1/chat/completions';
     }
     if (this.config.provider === 'ollama' || this.config.provider === 'local') {
       return 'http://localhost:11434/v1/chat/completions';
@@ -106,8 +106,9 @@ class OpenAICompatibleClient extends BaseLLMClient {
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
+      max_tokens: 4096,
     };
-    if (systemPrompt.toLowerCase().includes('json') && !systemPrompt.toLowerCase().includes('tsx') && !systemPrompt.toLowerCase().includes('jsx')) {
+    if (this.config.provider !== 'hackclub' && systemPrompt.toLowerCase().includes('json') && !systemPrompt.toLowerCase().includes('tsx') && !systemPrompt.toLowerCase().includes('jsx')) {
       body.response_format = { type: 'json_object' };
     }
     return body;
@@ -285,6 +286,8 @@ export async function fetchAvailableModels(
       return { models: [], error: `Anthropic API returned status ${res.status}` };
     }
 
+
+
     if (provider === 'groq') {
       if (!apiKey) return { models: [], error: 'API key is required to fetch Groq models.' };
       const res = await fetch('https://api.groq.com/openai/v1/models', {
@@ -336,22 +339,6 @@ export async function callLLM(
   const client = LLMClientFactory.create(config);
   let result = await client.call(systemPrompt, userPrompt);
 
-  // Fallback handling for Google provider on 429 quota limit
-  if (result.error && result.error.includes('429') && config.provider === 'google') {
-    const fallbackModels = ['gemini-2.0-flash'];
-    for (const fallbackModel of fallbackModels) {
-      if (fallbackModel === config.model) continue;
-      console.warn(`⚠️ Primary model rate limited. Retrying with fallback model: [${fallbackModel}]...`);
-      const fallbackConfig = { ...config, model: fallbackModel };
-      const fallbackClient = LLMClientFactory.create(fallbackConfig);
-      result = await fallbackClient.call(systemPrompt, userPrompt);
-      if (!result.error && result.content) {
-        console.log(`✅ Fallback model [${fallbackModel}] succeeded!`);
-        break;
-      }
-    }
-  }
-
   return result;
 }
 
@@ -368,8 +355,13 @@ export function getStoredConfig(): AgentConfig | null {
 }
 
 export function safeParseJson<T>(content: string, defaultValue: T): T {
+  if (!content) return defaultValue;
   try {
     const cleaned = content.replace(/```json/gi, '').replace(/```/gi, '').trim();
+    const jsonMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+    if (jsonMatch && jsonMatch[0]) {
+      return JSON.parse(jsonMatch[0]) as T;
+    }
     return JSON.parse(cleaned) as T;
   } catch (err: unknown) {
     console.error('Failed to parse JSON content:', err instanceof Error ? err.message : err);
@@ -379,11 +371,30 @@ export function safeParseJson<T>(content: string, defaultValue: T): T {
 
 export function sanitizeCompositionCode(code: string): string {
   if (!code) return '';
+  let cleaned = code;
   const blockMatch = code.match(/```(?:tsx|jsx|ts|js)?\s*([\s\S]*?)```/i);
   if (blockMatch && blockMatch[1]) {
-    return blockMatch[1].trim();
+    cleaned = blockMatch[1].trim();
+  } else {
+    cleaned = code.replace(/^```[a-z]*\n?/gi, '').replace(/\n?```$/gi, '').trim();
   }
-  return code.replace(/^```[a-z]*\n?/gi, '').replace(/\n?```$/gi, '').trim();
+
+  // Rewrite LLM relative imports to standard primitive SDK package paths
+  cleaned = cleaned.replace(/from\s+['"]\.\/(BrowserFrame|MockWindow|TopNavbar|SidebarLayout|AppCanvas|BreadcrumbHeader|SplitHeroLayout|HeroMetricCard|ActionButton|DataGridContainer|NotificationToaster)['"]/g, "from '../primitives/StructuralSDK'");
+  cleaned = cleaned.replace(/from\s+['"]\.\/(FeatureCard|GlassmorphicCard|KanbanTaskCard|NotificationCard|PricingPlanCard|PriceCard|ProfileCard|SettingsToggleCard|CustomCard|FeatureBenefitCard|BillingInvoiceCard|PushNotificationToast|RegularCard|ProfileHeaderCard)['"]/g, "from '../primitives/CardSDK'");
+  cleaned = cleaned.replace(/from\s+['"]\.\/(BarChartCard|AreaChartCard|LineChartCard|PieChartCard|DonutChartCard|FunnelChartCard|ScatterChartCard|SparklineCard)['"]/g, "from '../primitives/ChartsSDK'");
+  cleaned = cleaned.replace(/from\s+['"]\.\/(SpringEnter|FadeBlur|SlideInOut|ScaleUp|StaggerContainer|FlipIn|RotateIn|PopIn|transitions)['"]/g, "from '../primitives/TransitionSDK'");
+  cleaned = cleaned.replace(/from\s+['"]\.\/(Cursor|TextTyper|FocusZoom|ChartAnimate|DragAndDrop|MarqueeTrack|ProgressRing|SubtitlesTrack|motion)['"]/g, "from '../primitives/MotionSDK'");
+  cleaned = cleaned.replace(/from\s+['"]\.\/primitives['"]/g, "from '../primitives/StructuralSDK'");
+  cleaned = cleaned.replace(/from\s+['"]\.\/components['"]/g, "from '../primitives/StructuralSDK'");
+  cleaned = cleaned.replace(/import\s+\{\s*TailwindCss\s*\}\s+from\s+['"]\.\/tailwind['"];?/g, '');
+
+  // Ensure default export exists
+  if (cleaned.includes('export const VideoComposition') && !cleaned.includes('export default VideoComposition')) {
+    cleaned += '\n\nexport default VideoComposition;\n';
+  }
+
+  return cleaned;
 }
 
 

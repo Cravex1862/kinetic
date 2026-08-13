@@ -31,7 +31,7 @@ export const Cursor: React.FC<CursorProps> = ({
   controlPointOffset = 120,
   longPressFrames,
   cursorColor = 'white',
-  cursorSize = 24,
+  cursorSize = 48,
   style,
   frame: propFrame,
 }) => {
@@ -54,15 +54,9 @@ export const Cursor: React.FC<CursorProps> = ({
 
   const ratio = videoWidth / videoHeight;
 
-  let designW = 1024;
-  let designH = 576;
-  if (Math.abs(ratio - 9 / 16) < 0.1) {
-    designW = 576;
-    designH = 1024;
-  } else if (Math.abs(ratio - 1.0) < 0.1) {
-    designW = 576;
-    designH = 576;
-  }
+  let designW = 1920;
+  let designH = 1080;
+ 
 
   const scaleX = videoWidth / designW;
   const scaleY = videoHeight / designH;
@@ -89,9 +83,13 @@ export const Cursor: React.FC<CursorProps> = ({
           const targetRect = actualEl.getBoundingClientRect();
 
           if (targetRect.width > 0 && targetRect.height > 0) {
+            // Calculate actual physical scaling of the preview window
+            const actualScaleX = canvasRect.width / designW;
+            const actualScaleY = canvasRect.height / designH;
+
             setResolvedEnd({
-              x: (targetRect.left - canvasRect.left + targetRect.width / 2) / (scaleX || 1),
-              y: (targetRect.top - canvasRect.top + targetRect.height / 2) / (scaleY || 1),
+              x: (targetRect.left - canvasRect.left + targetRect.width / 2) / (actualScaleX || 1),
+              y: (targetRect.top - canvasRect.top + targetRect.height / 2) / (actualScaleY || 1),
             });
           }
         }
@@ -140,6 +138,41 @@ export const Cursor: React.FC<CursorProps> = ({
       { extrapolateRight: 'clamp' },
     );
   }
+
+  // 3. Automatic Target Element Click Reaction Effect
+  React.useLayoutEffect(() => {
+    if (!targetId || clickFrame === undefined) return;
+
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl) return;
+
+    const actualEl = (targetEl.firstElementChild || targetEl) as HTMLElement;
+    if (!actualEl) return;
+
+    const clickDuration = longPressFrames !== undefined ? longPressFrames : 10;
+    const clickProgress = frame - clickFrame;
+    const clickEnd = Math.min(clickDuration, 10);
+
+    if (frame >= clickFrame && clickProgress <= clickEnd + 2) {
+      const targetScale = interpolate(
+        Math.min(Math.max(0, clickProgress), clickEnd),
+        [0, 3, clickEnd],
+        [1, 0.94, 1],
+        { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }
+      );
+      actualEl.style.transform = `scale(${targetScale})`;
+      actualEl.style.transition = 'transform 0.05s ease-out';
+      actualEl.style.filter = clickProgress <= 5 ? 'brightness(1.2)' : 'none';
+    } else {
+      actualEl.style.transform = '';
+      actualEl.style.filter = '';
+    }
+
+    return () => {
+      actualEl.style.transform = '';
+      actualEl.style.filter = '';
+    };
+  }, [targetId, clickFrame, frame, longPressFrames]);
 
   const isLongPress = longPressFrames !== undefined && isClickActive && frame - clickFrame >= longPressFrames;
 

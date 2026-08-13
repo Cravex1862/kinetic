@@ -17,12 +17,12 @@
  */
 
 import { getStoredConfig, sanitizeCompositionCode } from './llmClient';
-import type { PipelineState, SceneBlueprint, SceneCode, ComponentCode, DesignTokens } from './types';
+import type { PipelineState, SceneBlueprint, SceneCode, ComponentCode, DesignTokens, AgentConfig } from './types';
 import { detectSiteKeyFromPrompt, loadDesignSpec } from './designSpecLoader';
 import { PRIMITIVE_SDK_MAP, TRANSITION_WRAPPER_NAMES } from './primitiveRegistry';
 import { runDesignAgent } from './subagents/designAgent';
 import { runStoryboardAgent } from './subagents/storyboardAgent';
-import { runComponentCreatorAgent } from './subagents/componentCreatorAgent';
+import { runComponentCreatorAgent } from './subagents/sceneCreator';
 import { runAnimatorAgent } from './subagents/animatorAgent';
 import { runVerifierAgent } from './subagents/verifierAgent';
 
@@ -106,24 +106,43 @@ function buildImportsHeader(
     return lines.join('\n');
 }
 
+import { runLayoutAssemblerAgent } from './subagents/layoutAssemblerAgent';
+
 /**
- * Builds a single named Scene component from its SceneCode.
- * Components are stacked in a full-bleed flex column.
+ * Builds a single named Scene component by calling runLayoutAssemblerAgent.
  */
-function buildSceneComponent(
+async function buildSceneComponent(
+    config: AgentConfig,
     sceneCode: SceneCode,
+    blueprint: SceneBlueprint,
     sceneIndex: number,
     designTokens: DesignTokens
-): string {
+): Promise<string> {
     const sceneName = `Scene${sceneIndex + 1}`;
-    const componentJSXBlocks = sceneCode.components.map((comp) => {
-        const jsx = stripAllImports(comp.animatedJSX);
-        // All components render in natural flow inside the flex column.
-        // No absolute positioning — that was swallowing cards behind full-bleed overlays.
-        return `      {/* ${comp.primitiveName} */}\n      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>\n        ${jsx}\n      </div>`;
-    }).join('\n\n');
+
+    // Call the AI Layout Assembler Subagent to arrange components into a layout tree
+    let innerSceneTSX = await runLayoutAssemblerAgent(
+        config,
+        sceneCode.components,
+        blueprint.purpose,
+        designTokens
+    );
+
+    innerSceneTSX = stripAllImports(innerSceneTSX);
 
     return `const ${sceneName}: React.FC = () => {
+  const primaryColor = '${designTokens.primaryColor}';
+  const secondaryColor = '${designTokens.secondaryColor || '#a78bfa'}';
+  const accentColor = '${designTokens.accentColor}';
+  const semanticColor = '${designTokens.semanticColor || '#3b82f6'}';
+  const errorColor = '${designTokens.errorColor || '#ef4444'}';
+  const successColor = '${designTokens.successColor || '#22c55e'}';
+  const neutralColor = '${designTokens.neutralColor || '#64748b'}';
+  const surfaceColor = '${designTokens.surfaceColor}';
+  const backgroundColor = '${designTokens.backgroundColor}';
+  const textColor = '${designTokens.textColor}';
+  const fontFamily = '${designTokens.fontFamily}, Inter, sans-serif';
+
   return (
     <div
       style={{
@@ -134,13 +153,12 @@ function buildSceneComponent(
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 32,
-        backgroundColor: '${designTokens.backgroundColor}',
-        fontFamily: '${designTokens.fontFamily}, Inter, sans-serif',
+        backgroundColor: backgroundColor,
+        fontFamily: fontFamily,
         overflow: 'hidden',
       }}
     >
-${componentJSXBlocks}
+${innerSceneTSX}
     </div>
   );
 };`;
@@ -188,14 +206,13 @@ export default VideoComposition;`;
 
 /**
  * Assembles all SceneCode objects into a single VideoComposition.tsx string.
- * Pure TypeScript — no LLM call.
  */
-function assembleVideoComposition(
+async function assembleVideoComposition(
+    config: AgentConfig,
     blueprints: SceneBlueprint[],
     sceneCodes: SceneCode[],
     designTokens: DesignTokens
-): string {
-    // Collect all animated JSX to scan for imports
+): Promise<string> {
     const allAnimatedJSX = sceneCodes
         .flatMap(sc => sc.components.map(c => c.animatedJSX))
         .join('\n');
@@ -204,9 +221,14 @@ function assembleVideoComposition(
     const usedTransitions = detectUsedTransitions(allAnimatedJSX);
 
     const importsHeader = buildImportsHeader(usedPrimitives, usedTransitions);
-    const sceneComponents = sceneCodes.map((sc, i) =>
-        buildSceneComponent(sc, i, designTokens)
-    );
+
+    // Assemble each scene using runLayoutAssemblerAgent
+    const sceneComponents: string[] = [];
+    for (let i = 0; i < sceneCodes.length; i++) {
+        const comp = await buildSceneComponent(config, sceneCodes[i], blueprints[i], i, designTokens);
+        sceneComponents.push(comp);
+    }
+
     const masterComposition = buildMasterComposition(blueprints, sceneCodes, designTokens);
 
     return [
@@ -370,7 +392,8 @@ export async function runTSXPipeline(
                     rawJSX,
                     primitiveName,
                     designTokens,
-                    delayHint
+                    delayHint,
+                    blueprint.purpose
                 );
             } catch (err) {
                 console.warn(`[Manager] Animator failed for ${primitiveName}:`, err);
@@ -393,7 +416,7 @@ export async function runTSXPipeline(
     onState({ status: 'assembling', progress: 0.85 });
     console.log('🔨 [Manager] Assembling VideoComposition.tsx...');
 
-    const assembled = assembleVideoComposition(blueprints, sceneCodes, designTokens);
+    const assembled = await assembleVideoComposition(config, blueprints, sceneCodes, designTokens);
 
     // ── Step 5: Verifier Agent ────────────────────────────────────────────────
     onState({ status: 'verifying', progress: 0.92 });

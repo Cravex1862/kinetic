@@ -11,6 +11,21 @@ export interface PrimitiveMeta {
     props: string[];
 }
 
+export function getAllPrimitiveNames(): string[] {
+    return [
+        'BrowserFrame', 'AppCanvas', 'MockWindow', 'SidebarLayout', 'DataGridContainer',
+        'TopNavbar', 'HeroMetricCard', 'ActionButton', 'SplitHeroLayout', 'TabSwitcherContainer',
+        'BreadcrumbHeader', 'NotificationToaster', 'FeatureCard', 'GlassmorphicCard',
+        'KanbanTaskCard', 'NotificationCard', 'PricingPlanCard', 'PriceCard', 'ProfileCard',
+        'SettingsToggleCard', 'CustomCard', 'FeatureBenefitCard', 'BillingInvoiceCard',
+        'PushNotificationToast', 'RegularCard', 'ProfileHeaderCard', 'BarChartCard',
+        'AreaChartCard', 'LineChartCard', 'DonutChartCard', 'MetricFunnelCard',
+        'PieChartCard', 'ScatterPlotCard', 'StockCard',
+        'SpringEnter', 'FadeBlur', 'SlideInOut', 'ScaleUp', 'StaggerContainer',
+        'Cursor', 'TextTyper', 'FocusZoom', 'ChartAnimate', 'ProgressRing', 'MarqueeTrack', 'TypingGhostCursor'
+    ];
+}
+
 export const PRIMITIVE_MENU_SUMMARY = `
 
 =====================================================================
@@ -45,10 +60,9 @@ EXHAUSTIVE COMPONENT AND PROP REGISTRY (ALL SDKS)
     controlsPosition?: 'left'|'right', glowConfig?, rotateX?, rotateY?, rotateZ?, perspective?,
     translateZ?, children?
 -HeroMetricCard:
-    Props: title: string, value: string | number, change?: string | number,
-           trend?: 'up'| 'down' | 'neutral', chartType?: 'mini-line' | 'mini-bar',
-           sparklineData?: number[], backgroundColor?, borderRadius?, glowConfig?, 
-           rotateX?, rotateZ?, perpsective?, translate?
+    Props: label?: string, value?: string, primaryText?: string, captionText?: string,
+           trend?: 'up'| 'down' | 'neutral', trendPercent?: number, description?: string,
+           backgroundColor?, borderRadius?, glowConfig?, rotateX?, rotateZ?, perspective?, translateZ?
 -DataGridContainer:
     Props: headers: string[], rows: Array<Record<string,any>>, selectable?: boolean, 
            pageSize?: number, hoverHighlight?: boolean, backgroundColor?, borderColor?,
@@ -128,8 +142,8 @@ EXHAUSTIVE COMPONENT AND PROP REGISTRY (ALL SDKS)
 ------------------------------------------------------------------
 4. Charts SDK Components & Props:
 -BarChartCard:
-    Props: title? string, categories: string[], values: number[], barColor?: string, animated?: boolean, 
-           width?, height, showGrid?: boolean, showYAxis?: boolean, glowConfig?, rotateX?, rotateY?, rotateZ?,
+    Props: data?: Array<{ label: string, value: number, color?: string }>, titleText?: string, barColor?: string, 
+           width?: number, height?: number, showValues?: boolean, showGridLines?: boolean, glowConfig?, rotateX?, rotateY?, rotateZ?,
            perspective?, translateZ?
 -AreaChartCard:
     Props: title?: string, data: Array<{ x : string|number, y: number }>, gradientFrom?: string, gradientTo?: string,
@@ -152,6 +166,37 @@ EXHAUSTIVE COMPONENT AND PROP REGISTRY (ALL SDKS)
 -StockCard:
     Props: symbol: string, companyName?: stirng, price: number, history: number[], changePercent: number, currency?: string,
            glowConfig?, rotateX?, rotateY?, rotateZ?, perspective?, translateZ?
+
+------------------------------------------------------------------
+5. Transition SDK Wrappers & Props:
+-SpringEnter:
+    Props: children, delay?: number, mass?: number, damping?: number, stiffness?: number, style?: StyleConfig
+-FadeBlur:
+    Props: children, duration?: number, startBlur?: number, style?: StyleConfig
+-SlideInOut:
+    Props: children, direction?: "left"|"right"|"top"|"bottom", distance?: number, duration?: number, fade?: boolean, delay?: number, style?: StyleConfig
+-ScaleUp:
+    Props: children, delay?: number, initialScale?: number, style?: StyleConfig
+-StaggerContainer:
+    Props: children, staggerDelay?: number, style?: StyleConfig
+
+------------------------------------------------------------------
+6. Motion SDK Action Components & Props:
+-Cursor:
+    Props: startX?: number, startY?: number, endX?: number, endY?: number, targetId?: string, clickFrame?: number, duration?: number, cursorColor?: string, color?: string
+    Usage Note: To target & click a component automatically, give the target component an id="my-element-id" prop, then pass targetId="my-element-id", duration={30}, and clickFrame={35} to <Cursor>.
+-TextTyper:
+    Props: text: string, startFrame?: number, speed?: number, style?: React.CSSProperties
+-FocusZoom:
+    Props: children, zoomFrame?: number, zoomScale?: number, focusX?: number, focusY?: number
+-ChartAnimate:
+    Props: children, startFrame?: number, durationInFrames?: number
+-ProgressRing:
+    Props: progress: number, size?: number, strokeWidth?: number, color?: string
+-MarqueeTrack:
+    Props: children, speed?: number, direction?: "left"|"right"
+-TypingGhostCursor:
+    Props: targetText: string, startFrame?: number, style?: React.CSSProperties
 ===================================================================
 `;
 
@@ -261,6 +306,20 @@ export const PRIMITIVE_SDK_MAP: Record<string, string> = {
     PieChartCard:           "'../primitives/ChartsSDK'",
     ScatterPlotCard:        "'../primitives/ChartsSDK'",
     StockCard:              "'../primitives/ChartsSDK'",
+    // Transition SDK
+    SpringEnter:           "'../primitives/TransitionSDK'",
+    FadeBlur:              "'../primitives/TransitionSDK'",
+    SlideInOut:            "'../primitives/TransitionSDK'",
+    ScaleUp:               "'../primitives/TransitionSDK'",
+    StaggerContainer:      "'../primitives/TransitionSDK'",
+    // Motion SDK
+    Cursor:                "'../primitives/MotionSDK'",
+    TextTyper:             "'../primitives/MotionSDK'",
+    FocusZoom:             "'../primitives/MotionSDK'",
+    ChartAnimate:          "'../primitives/MotionSDK'",
+    ProgressRing:          "'../primitives/MotionSDK'",
+    MarqueeTrack:          "'../primitives/MotionSDK'",
+    TypingGhostCursor:     "'../primitives/MotionSDK'",
 };
 
 // All TransitionSDK wrapper names — used by assembler to detect which ones appear in animated JSX

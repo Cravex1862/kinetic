@@ -4,8 +4,8 @@ import { buildGlowFilter } from '../utils/styleHelpers';
 
 interface MockWindowProps extends BaseMotionProps {
   children: React.ReactNode;
-  glowConfig: GlowConfig;
-  visible: boolean;
+  glowConfig?: GlowConfig;
+  visible?: boolean;
   top?: number;
   left?: number;
   width?: number;
@@ -24,11 +24,11 @@ interface MockWindowProps extends BaseMotionProps {
 export const MockWindow: React.FC<MockWindowProps> = ({
   children,
   glowConfig,
-  visible,
-  top = 50,
-  left = 50,
-  width = 400,
-  height = 300,
+  visible = true,
+  top,
+  left,
+  width = 1400,
+  height = 800,
   windowStyle = 'mac',
   style,
   rotateX,
@@ -39,6 +39,8 @@ export const MockWindow: React.FC<MockWindowProps> = ({
   translateX,
   translateY,
 }) => {
+  const calcTop = top !== undefined ? top : Math.max(0, Math.round((1080 - height) / 2));
+  const calcLeft = left !== undefined ? left : Math.max(0, Math.round((1920 - width) / 2));
   const glow = buildGlowFilter(glowConfig);
   const us = configToStyle(style);
   const transformParts = [];
@@ -56,7 +58,7 @@ export const MockWindow: React.FC<MockWindowProps> = ({
   return (
     <div
       className="absolute z-50 overflow-hidden rounded-lg border border-gray-600 bg-gray-800 shadow-2xl"
-      style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px`, ...glow, ...us, ...transformStyle }}
+      style={{ top: `${calcTop}px`, left: `${calcLeft}px`, width: `${width}px`, height: `${height}px`, ...glow, ...us, ...transformStyle }}
     >
       <div className="flex items-center gap-1.5 border-b border-gray-700 bg-gray-800 px-3 py-2" style={us}>
         {windowStyle === 'mac' ? (

@@ -153,9 +153,14 @@ export const Studio: React.FC<StudioProps> = ({
             const cleanCode = sanitizeCompositionCode(project.code);
             if (!cleanCode) return;
 
+            // Reset cache if path changed
+            if (lastSyncedPathRef.current !== (project?.savePath || '')) {
+                lastSyncedCodeRef.current = '';
+                lastSyncedPathRef.current = project?.savePath || '';
+            }
+
             if (lastSyncedCodeRef.current === cleanCode) return;
             lastSyncedCodeRef.current = cleanCode;
-            lastSyncedPathRef.current = project?.savePath || '';
 
             await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
             setTimeout(() => {

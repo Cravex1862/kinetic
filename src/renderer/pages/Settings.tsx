@@ -350,7 +350,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 </div>
 
                 {/* Base URL Input (for local servers or custom proxies) */}
-                {(provider === 'ollama' || provider === 'lmstudio' || provider === 'local' || useCustomModel) && (
+                {(provider === 'ollama' || provider === 'lmstudio' || provider === 'local') && (
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Server Base URL</label>
                     <input
@@ -368,7 +368,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                 )}
 
                 {/* API Key Input */}
-                {provider !== 'hackclub' && provider !== 'ollama' && provider !== 'lmstudio' && provider !== 'byoc' && (
+                {provider !== 'ollama' && provider !== 'lmstudio' && provider !== 'byoc' && (
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">API Key Credentials</label>
                     <input
@@ -379,7 +379,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                           provider === 'anthropic' ? 'sk-ant-...' :
                             provider === 'google' ? 'AIzaSy...' :
                               provider === 'groq' ? 'gsk_...' :
-                                'hckc_...'
+                                provider === 'hackclub' ? 'hc..' : ''
                       }
                       type="password"
                       className="w-full premium-input px-4 py-2.5 text-sm rounded-xl"
@@ -407,8 +407,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                       <button
                         onClick={() => setUseCustomModel(!useCustomModel)}
                         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${useCustomModel
-                            ? 'border-2 border-purple-500 bg-transparent text-purple-300'
-                            : 'border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          : 'border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                           }`}
                         aria-label="Toggle custom model input"
                       >

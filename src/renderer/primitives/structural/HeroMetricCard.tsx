@@ -51,7 +51,7 @@ export const HeroMetricCard: React.FC<HeroMetricCardProps> = ({
         {displayPrimary}
       </span>
       <span className="mt-2 flex items-center gap-1 text-sm text-gray-400">
-        <span className={trendColors[trend]}>{trendArrows[trend]}</span>
+        <span className={trendColors[trend] || 'text-emerald-400'}>{trendArrows[trend] || ''}</span>
         <span style={us}>{displayCaption}</span>
       </span>
     </div>

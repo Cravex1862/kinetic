@@ -38,6 +38,11 @@ export const SpringEnter: React.FC<SpringEnterProps> = ({
   return (
     <div
       style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         opacity: springValue,
         transform: `scale(${0.8 + 0.2 * springValue}) translateY(${(1 - springValue) * 30}px)`,
         willChange: 'transform, opacity',
@@ -106,7 +111,19 @@ export const FadeBlur: React.FC<FadeBlurProps> = ({
   const blur = interpolate(progress, [0, 1], [startBlur, 0], { extrapolateRight: 'clamp' });
 
   return (
-    <div style={{ opacity, filter: `blur(${blur}px)`, willChange: 'opacity, filter', ...us }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity,
+        filter: `blur(${blur}px)`,
+        willChange: 'opacity, filter',
+        ...us,
+      }}
+    >
       {children}
     </div>
   );
@@ -135,7 +152,7 @@ const entryOffsets: Record<Direction, (dist: number) => { x: number; y: number }
 export const SlideInOut: React.FC<SlideInOutProps> = ({
   children,
   direction = 'left',
-  distance = 500,
+  distance = 80,
   duration = 30,
   fade = true,
   style,
@@ -153,7 +170,19 @@ export const SlideInOut: React.FC<SlideInOutProps> = ({
   const y = interpolate(eased, [0, 1], [offset.y, 0], { extrapolateRight: 'clamp' });
 
   return (
-    <div style={{ opacity: fade ? eased : 1, transform: `translateX(${x}px) translateY(${y}px)`, willChange: 'transform, opacity', ...us }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: fade ? eased : 1,
+        transform: `translate3d(${x}px, ${y}px, 0px)`,
+        willChange: 'transform, opacity',
+        ...us,
+      }}
+    >
       {children}
     </div>
   );
@@ -366,4 +395,50 @@ function GlitchIntroStatic({ children, duration = 5, frame }: GlitchIntroProps &
 export const GlitchIntro: React.FC<GlitchIntroProps> = (props) => {
   if (props.frame !== undefined) return <GlitchIntroStatic {...props} frame={props.frame} />;
   return <GlitchIntroInner {...props} />;
+};
+
+// ─── ScaleUp ──────────────────────────────────────────────────
+interface ScaleUpProps {
+  children: React.ReactNode;
+  delay?: number;
+  initialScale?: number;
+  style?: StyleConfig;
+  frame?: number;
+}
+
+export const ScaleUp: React.FC<ScaleUpProps> = ({
+  children,
+  delay = 0,
+  initialScale = 0.8,
+  style,
+  frame: propFrame,
+}) => {
+  const frame = useFrame(propFrame);
+  const speed = style?.speed ?? 1;
+  const adjustedFrame = Math.floor(frame * speed);
+  const springValue = spring({
+    frame: Math.max(0, adjustedFrame - delay),
+    fps: 30,
+    config: { mass: 0.5, damping: 12, stiffness: 100 },
+  });
+  const us = configToStyle(style);
+  const scale = initialScale + (1 - initialScale) * springValue;
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: springValue,
+        transform: `scale(${scale})`,
+        willChange: 'transform, opacity',
+        ...us,
+      }}
+    >
+      {children}
+    </div>
+  );
 };

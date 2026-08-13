@@ -1,0 +1,1 @@
+public/models/Xenova/all-mpnet-base-v2/onnx/model_quantized.onnx filter=lfs diff=lfs merge=lfs -text
