@@ -71,7 +71,7 @@ Compile all tagged scenes into a single master TSX file exporting VideoCompositi
   let cleaned = sanitizeCompositionCode(rawOutput);
 
   // Fallback spatial compiler
-  if (!cleaned || !cleaned.includes('VideoComposition') || cleaned.includes('<Scene') || cleaned.includes('textColor}}') || cleaned.includes('intensity:\n') || cleaned.includes('intensity:\n  ')) {
+  if (!cleaned || !cleaned.includes('VideoComposition') || /<Scene\d+/.test(cleaned) || cleaned.includes('textColor}}') || cleaned.includes('intensity:\n') || cleaned.includes('intensity:\n  ')) {
     const sceneComponents: string[] = [];
     const sequenceItems: string[] = [];
 

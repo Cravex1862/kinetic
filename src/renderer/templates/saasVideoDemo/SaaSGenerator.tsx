@@ -460,13 +460,13 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
             onCheckpoint,
             project?.title
         );
-        if (output && output.length > 0) {
+        if (output && output.assembled) {
             onGenerate({
                 ...project,
                 title: project?.title || 'Untitled',
                 prompt: instructions,
                 narration: narration,
-                code: output,
+                code: output.assembled,
                 scenes: project?.scenes || [],
                 showVisualizer,
                 fonts,
@@ -707,7 +707,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
                             <div className="w-full h-full flex items-center justify-center bg-gray-950/80 backdrop-blur-sm rounded-2xl border border-gray-900 z-20">
                                 <div className="w-full max-w-md flex flex-col gap-3 p-6 rounded-2xl border-2 border-purple-500 bg-gray-950/90 backdrop-blur-xl">
                                     <div className="flex justify-between text-xs font-bold text-purple-300">
-                                        <span className="capitalize">{pipelineState.status.replace('-', ' ')}</span>
+                                        <span className="capitalize">{pipelineState.status}</span>
                                         <span>{Math.round(pipelineState.progress * 100)}%</span>
                                     </div>
                                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-950">

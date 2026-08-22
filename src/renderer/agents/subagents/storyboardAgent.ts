@@ -1,21 +1,52 @@
-import { callLLM, safeParseJson } from '../llmClient';
-import type { AgentConfig, DesignTokens, SceneBlueprint } from '../types';
+import { callLLM, safeParseJson } from "../llmClient";
+import type { AgentConfig, DesignTokens, SceneBlueprint } from "../types";
 
 export const STORYBOARD_PRIMITIVE_NAMES = [
   // Structural
-  'BrowserFrame', 'SidebarLayout', 'TopNavbar', 'AppCanvas', 'MockWindow',
-  'HeroMetricCard', 'DataGridContainer', 'SplitHeroLayout',
-  'TabSwitcherContainer', 'ActionButton', 'BreadcrumbHeader', 'NotificationToaster',
+  "BrowserFrame",
+  "SidebarLayout",
+  "TopNavbar",
+  "AppCanvas",
+  "MockWindow",
+  "HeroMetricCard",
+  "DataGridContainer",
+  "SplitHeroLayout",
+  "TabSwitcherContainer",
+  "ActionButton",
+  "BreadcrumbHeader",
+  "NotificationToaster",
   // Cards
-  'GlassmorphicCard', 'KanbanTaskCard', 'NotificationCard', 'PricingPlanCard',
-  'PriceCard', 'ProfileCard', 'SettingsToggleCard', 'CustomCard', 'FeatureCard',
-  'FeatureBenefitCard', 'BillingInvoiceCard', 'PushNotificationToast', 'RegularCard',
-  'ProfileHeaderCard',
+  "GlassmorphicCard",
+  "KanbanTaskCard",
+  "NotificationCard",
+  "PricingPlanCard",
+  "PriceCard",
+  "ProfileCard",
+  "SettingsToggleCard",
+  "CustomCard",
+  "FeatureCard",
+  "FeatureBenefitCard",
+  "BillingInvoiceCard",
+  "PushNotificationToast",
+  "RegularCard",
+  "ProfileHeaderCard",
   // Charts
-  'BarChartCard', 'AreaChart', 'DonutChartCard', 'LineChartCard',
-  'MetricFunnelCard', 'PieChartCard', 'ScatterPlotCard', 'StockCard',
+  "BarChartCard",
+  "AreaChart",
+  "DonutChartCard",
+  "LineChartCard",
+  "MetricFunnelCard",
+  "PieChartCard",
+  "ScatterPlotCard",
+  "StockCard",
   // Motion & Transitions
-  'SpringEnter', 'FadeBlur', 'SlideInOut', 'ScaleUp', 'Cursor', 'TextTyper', 'ChartAnimate'
+  "SpringEnter",
+  "FadeBlur",
+  "SlideInOut",
+  "ScaleUp",
+  "Cursor",
+  "TextTyper",
+  "ChartAnimate",
 ];
 
 export interface SecondBySecondEvent {
@@ -64,8 +95,19 @@ export interface MasterStoryboardResult {
 export interface ClientInterviewQuestion {
   id: number;
   question: string;
-  category: 'target_audience' | 'key_metrics' | 'visual_vibe' | 'call_to_action' | 'pacing';
+  category:
+    | "target_audience"
+    | "key_metrics"
+    | "visual_vibe"
+    | "call_to_action"
+    | "pacing";
   suggestedAnswers: string[];
+}
+
+export interface ClientInterViewAnswers {
+  id: number;
+  question: string;
+  answer: string;
 }
 
 // ─── FREELANCE CLIENT CONSULTANT SYSTEM PROMPT ────────────────────────────────
@@ -106,38 +148,64 @@ Return ONLY a valid JSON object matching this exact structure:
 
 export async function runStoryboardClientInterview(
   config: AgentConfig,
-  userPrompt: string
-): Promise<{ questions: ClientInterviewQuestion[]; fullPrompt: string; rawOutput: string }> {
+  userPrompt: string,
+): Promise<{
+  questions: ClientInterviewQuestion[];
+  fullPrompt: string;
+  rawOutput: string;
+}> {
   const userPromptText = `Video prompt: "${userPrompt}"\n\nGenerate discovery interview questions now. Valid JSON ONLY.`;
-  const response = await callLLM(config, FREELANCE_INTERVIEW_SYSTEM, userPromptText, false);
+  const response = await callLLM(
+    config,
+    FREELANCE_INTERVIEW_SYSTEM,
+    userPromptText,
+    false,
+  );
 
-  const rawOutput = response.content || response.error || '';
-  const parsed = safeParseJson<{ questions?: ClientInterviewQuestion[] }>(rawOutput, {});
+  const rawOutput = response.content || response.error || "";
+  const parsed = safeParseJson<{ questions?: ClientInterviewQuestion[] }>(
+    rawOutput,
+    {},
+  );
 
   const fallbackQuestions: ClientInterviewQuestion[] = [
     {
       id: 1,
-      question: 'Who is the primary target audience for this SaaS video?',
-      category: 'target_audience',
-      suggestedAnswers: ['DevOps & Engineering Leads', 'CTOs & Tech Executives', 'Product Managers']
+      question: "Who is the primary target audience for this SaaS video?",
+      category: "target_audience",
+      suggestedAnswers: [
+        "DevOps & Engineering Leads",
+        "CTOs & Tech Executives",
+        "Product Managers",
+      ],
     },
     {
       id: 2,
-      question: 'What core performance metric should be featured on the hero card?',
-      category: 'key_metrics',
-      suggestedAnswers: ['99.99% Infrastructure Uptime', '120 Threats Blocked Live', '50% Faster Deployment']
+      question:
+        "What core performance metric should be featured on the hero card?",
+      category: "key_metrics",
+      suggestedAnswers: [
+        "99.99% Infrastructure Uptime",
+        "120 Threats Blocked Live",
+        "50% Faster Deployment",
+      ],
     },
     {
       id: 3,
-      question: 'What is the primary call to action for the ending scene?',
-      category: 'call_to_action',
-      suggestedAnswers: ['Start Free Trial Now', 'Schedule Security Audit', 'Deploy Cluster Today']
-    }
+      question: "What is the primary call to action for the ending scene?",
+      category: "call_to_action",
+      suggestedAnswers: [
+        "Start Free Trial Now",
+        "Schedule Security Audit",
+        "Deploy Cluster Today",
+      ],
+    },
   ];
 
-  const questions = Array.isArray(parsed.questions) && parsed.questions.length > 0
-    ? parsed.questions
-    : fallbackQuestions;
+  const questions =
+    Array.isArray(parsed.questions) && parsed.questions.length > 0
+      ? parsed.questions
+      : fallbackQuestions;
 
   return {
     questions,
@@ -151,13 +219,8 @@ export async function runStoryboardClientInterview(
 export const MASTER_DIRECTOR_SYSTEM = `You are a World-Class Motion Graphics Executive Creative Director.
 Your job is to inspect a video prompt and design tokens, and create an overarching master video storyboard plan.
 
-DEFAULT FREELANCE CRAFT SKILLS AVAILABLE TO YOU:
-- "motion-graphics-pro": 3D perspective tilts, staggered entrance timing, spring physics.
-- "saas-video-director": High-converting product walkthrough pacing, metric callouts, smooth transitions.
-- "layout-skills": Density math, single root container rule, zero container nesting.
-
 DIRECTIVES:
-1. It is preferrable if you plan 3 distinct, full-featured scenes (Scene 1: Hero Command Center Intro, Scene 2: Feature & Analytics Breakdown, Scene 3: Actionable Call To Action & Deployment).
+1. It is preferrable if you plan 3 distinct, full-featured scenes (Scene 1: Hero Command Center Intro, Scene 2: Feature & Analytics Breakdown, Scene 3: Actionable Call To Action & Deployment). BUT KEEP IN MIND YOU DONT HAVE TO MULTIPLE SCENES FOR BASIC COMPONENTS
 2. Plan global seamless transitions between scenes (e.g. 3D flip 90deg, camera zoom-out).
 3. Output ONLY a valid JSON object with this exact structure:
 
@@ -231,7 +294,7 @@ Return ONLY a valid JSON object matching this exact structure:
   "transitionToNextScene": "3D flip 90deg along Y-axis while opacity drops to 0, replacing UI with Scene 2."
 }`;
 
-import { RelevantSkill } from '../../utils/skillRAG';
+import { RelevantSkill } from "../../utils/skillRAG";
 
 /**
  * Runs Master Director Agent + Per-Scene Subagents
@@ -240,28 +303,55 @@ export async function runStoryboardAgentWithSubagents(
   config: AgentConfig,
   userPrompt: string,
   designTokens: DesignTokens,
+  interviewAnswers: ClientInterViewAnswers[],
   userFeedback?: string,
-  recommendedSkills?: RelevantSkill[]
+  recommendedSkills?: RelevantSkill[],
 ): Promise<MasterStoryboardResult> {
-  const ragSkillSummary = recommendedSkills && recommendedSkills.length > 0
-    ? `\n\nRECOMMENDED CRAFT SKILLS MATCHED VIA VECTOR RAG:\n` +
-    recommendedSkills.map(s => `- ${s.name} (${s.category.toUpperCase()}): ${s.description}`).join('\n')
-    : '';
+  const ragSkillSummary =
+    recommendedSkills && recommendedSkills.length > 0
+      ? `\n\nRECOMMENDED CRAFT SKILLS MATCHED VIA VECTOR RAG:\n` +
+        recommendedSkills
+          .map(
+            (s) =>
+              `- ${s.name} (${s.category.toUpperCase()}): ${s.description}`,
+          )
+          .join("\n")
+      : "";
 
-  const masterUserPrompt = `VIDEO PROMPT: "${userPrompt}"
-DESIGN TOKENS: ${JSON.stringify(designTokens, null, 2)}
-${ragSkillSummary}
-${userFeedback ? `USER FEEDBACK / EDITS: "${userFeedback}"` : ''}
+  const masterUserPrompt = `
+  VIDEO PROMPT: "${userPrompt}"
+  DESIGN TOKENS: ${JSON.stringify(designTokens, null, 2)}
+  ${ragSkillSummary}
+  The interviewer agent conducted an interview for some details. Given below are the questions and the answer from the human:
+  ${interviewAnswers?.map((question) => {
+    return `Question ${question.id}: ${question.question}\n Answer: ${question.answer}`;
+  }).join('\n') || ''}
+
+  ${userFeedback ? `USER FEEDBACK / EDITS: "${userFeedback}"` : ""}
 
 Create the overarching master video plan now. Valid JSON ONLY.`;
 
   // Step 1: Master Director Agent
-  const masterRes = await callLLM(config, MASTER_DIRECTOR_SYSTEM, masterUserPrompt, false);
-  const masterParsed = safeParseJson<any>(masterRes.content || '', {});
+  const masterRes = await callLLM(
+    config,
+    MASTER_DIRECTOR_SYSTEM,
+    masterUserPrompt,
+    false,
+  );
+  const masterParsed = safeParseJson<any>(masterRes.content || "", {});
 
-  const sceneSummaries = Array.isArray(masterParsed.sceneSummaries) && masterParsed.sceneSummaries.length > 0
-    ? masterParsed.sceneSummaries
-    : [{ sceneId: 'scene1', title: 'Hero Overview', durationInFrames: 150, purpose: `Hero scene for ${userPrompt}` }];
+  const sceneSummaries =
+    Array.isArray(masterParsed.sceneSummaries) &&
+    masterParsed.sceneSummaries.length > 0
+      ? masterParsed.sceneSummaries
+      : [
+          {
+            sceneId: "scene1",
+            title: "Hero Overview",
+            durationInFrames: 150,
+            purpose: `Hero scene for ${userPrompt}`,
+          },
+        ];
 
   const perScenePrompts: string[] = [];
   const detailedScenes: DetailedPerSceneStoryboard[] = [];
@@ -286,78 +376,123 @@ TARGET SCENE OVERVIEW:
 
 Detail EVERYTHING for this specific scene now. Valid JSON ONLY.`;
 
+    perScenePrompts.push(
+      `=== SCENE ${i + 1} SUBAGENT SYSTEM PROMPT ===\n${PER_SCENE_SUBAGENT_SYSTEM}\n\n=== SCENE ${i + 1} SUBAGENT USER PROMPT ===\n${subagentUserPrompt}`,
+    );
 
-    perScenePrompts.push(`=== SCENE ${i + 1} SUBAGENT SYSTEM PROMPT ===\n${PER_SCENE_SUBAGENT_SYSTEM}\n\n=== SCENE ${i + 1} SUBAGENT USER PROMPT ===\n${subagentUserPrompt}`);
-
-    const subRes = await callLLM(config, PER_SCENE_SUBAGENT_SYSTEM, subagentUserPrompt, false);
-    const subParsed = safeParseJson<DetailedPerSceneStoryboard>(subRes.content || '', {
-      sceneId: sSummary.sceneId || `scene${i + 1}`,
-      title: sSummary.title || `Scene ${i + 1}`,
-      durationInFrames: sSummary.durationInFrames || 150,
-      durationInSeconds: Math.round((sSummary.durationInFrames || 150) / 30),
-      layoutStructure: `MockWindow wrapping ${userPrompt}`,
-      perspective3D: { rotateX: '10deg', rotateY: '-6deg', perspective: '1200px', transformOrigin: 'center center' },
-      componentList: ['MockWindow', 'HeroMetricCard', 'BarChartCard'],
-      howEachComponentIsAnimated: 'SpringEnter entrance + Staggered SlideInOut',
-      exactDataToDisplay: {
-        heading: sSummary.title || 'GuardRail Security',
-        subheading: sSummary.purpose || 'Real-time threat monitoring',
-        metrics: [{ label: 'System Uptime', value: '99.99%', trend: '+0.01%' }],
-        chartData: { title: 'Detections', categories: ['SQLi', 'XSS'], values: [120, 85] }
+    const subRes = await callLLM(
+      config,
+      PER_SCENE_SUBAGENT_SYSTEM,
+      subagentUserPrompt,
+      false,
+    );
+    const subParsed = safeParseJson<DetailedPerSceneStoryboard>(
+      subRes.content || "",
+      {
+        sceneId: sSummary.sceneId || `scene${i + 1}`,
+        title: sSummary.title || `Scene ${i + 1}`,
+        durationInFrames: sSummary.durationInFrames || 150,
+        durationInSeconds: Math.round((sSummary.durationInFrames || 150) / 30),
+        layoutStructure: `MockWindow wrapping ${userPrompt}`,
+        perspective3D: {
+          rotateX: "10deg",
+          rotateY: "-6deg",
+          perspective: "1200px",
+          transformOrigin: "center center",
+        },
+        componentList: ["MockWindow", "HeroMetricCard", "BarChartCard"],
+        howEachComponentIsAnimated:
+          "SpringEnter entrance + Staggered SlideInOut",
+        exactDataToDisplay: {
+          heading: sSummary.title || "GuardRail Security",
+          subheading: sSummary.purpose || "Real-time threat monitoring",
+          metrics: [
+            { label: "System Uptime", value: "99.99%", trend: "+0.01%" },
+          ],
+          chartData: {
+            title: "Detections",
+            categories: ["SQLi", "XSS"],
+            values: [120, 85],
+          },
+        },
+        secondBySecondTimeline: [
+          {
+            second: 1,
+            timestamp: "0:00-0:01",
+            action: "Window enters with 3D tilt",
+            targetComponent: "MockWindow",
+            motionEffect: "SpringEnter",
+          },
+        ],
+        transitionToNextScene: "3D flip 90deg",
       },
-      secondBySecondTimeline: [
-        { second: 1, timestamp: '0:00-0:01', action: 'Window enters with 3D tilt', targetComponent: 'MockWindow', motionEffect: 'SpringEnter' }
-      ],
-      transitionToNextScene: '3D flip 90deg'
-    });
+    );
 
     detailedScenes.push(subParsed);
   }
 
   const fullMasterPrompt = `=== MASTER DIRECTOR SYSTEM PROMPT ===\n${MASTER_DIRECTOR_SYSTEM}\n\n=== MASTER DIRECTOR USER PROMPT ===\n${masterUserPrompt}`;
 
-  const totalFrames = detailedScenes.reduce((sum, sc) => sum + sc.durationInFrames, 0);
+  const totalFrames = detailedScenes.reduce(
+    (sum, sc) => sum + sc.durationInFrames,
+    0,
+  );
 
   return {
     totalDurationInFrames: totalFrames,
     totalDurationInSeconds: Math.round(totalFrames / 30),
-    globalTransitionPlan: masterParsed.globalTransitionPlan || 'Sequential scene transitions with 3D flips and camera zooms.',
-    freelanceSkillsApplied: masterParsed.freelanceSkillsApplied || ['motion-graphics-pro', 'saas-video-director', 'layout-skills'],
+    globalTransitionPlan:
+      masterParsed.globalTransitionPlan ||
+      "Sequential scene transitions with 3D flips and camera zooms.",
+    freelanceSkillsApplied: masterParsed.freelanceSkillsApplied || [
+      "motion-graphics-pro",
+      "saas-video-director",
+      "layout-skills",
+    ],
     scenes: detailedScenes,
     fullMasterPrompt,
     perScenePrompts,
-    rawOutput: JSON.stringify({ masterPlan: masterParsed, detailedScenes }, null, 2),
+    rawOutput: JSON.stringify(
+      { masterPlan: masterParsed, detailedScenes },
+      null,
+      2,
+    ),
   };
 }
 
 export async function runStoryboardAgent(
   config: AgentConfig,
   userPrompt: string,
-  narrationText: string = '',
+  narrationText: string = "",
+  interviewAnswers: ClientInterViewAnswers[],
   designTokens?: DesignTokens,
-  sceneCountHint: number = 3
+  sceneCountHint: number = 3,
 ): Promise<SceneBlueprint[]> {
   const fallbackTokens: DesignTokens = designTokens || {
-    fontFamily: 'Inter',
-    primaryColor: '#6366f1',
-    backgroundColor: '#09090b',
-    surfaceColor: '#18181b',
-    textColor: '#f4f4f5',
-    accentColor: '#f59e0b',
-    secondaryColor: '#a78bfa',
-    semanticColor: '#3b82f6',
-    errorColor: '#ef4444',
-    successColor: '#22c55e',
-    neutralColor: '#64748b',
-    theme: 'dark',
+    fontFamily: "Inter",
+    primaryColor: "#6366f1",
+    backgroundColor: "#09090b",
+    surfaceColor: "#18181b",
+    textColor: "#f4f4f5",
+    accentColor: "#f59e0b",
+    secondaryColor: "#a78bfa",
+    semanticColor: "#3b82f6",
+    errorColor: "#ef4444",
+    successColor: "#22c55e",
+    neutralColor: "#64748b",
+    theme: "dark",
   };
 
-  const res = await runStoryboardAgentWithSubagents(config, userPrompt, fallbackTokens);
-  return res.scenes.map(sc => ({
+  const res = await runStoryboardAgentWithSubagents(
+    config,
+    userPrompt,
+    fallbackTokens,
+    interviewAnswers,
+  );
+  return res.scenes.map((sc) => ({
     id: sc.sceneId,
-    purpose: sc.layoutStructure + ' ' + sc.howEachComponentIsAnimated,
+    purpose: sc.layoutStructure + " " + sc.howEachComponentIsAnimated,
     durationInFrames: sc.durationInFrames,
-    componentList: sc.componentList
+    componentList: sc.componentList,
   }));
 }
-

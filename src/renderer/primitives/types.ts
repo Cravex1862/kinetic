@@ -1,10 +1,10 @@
-import React from 'react';
+import React from "react";
 
 export type GlowConfig = {
   enabled: boolean;
-  color: string;
-  intensity: number;
-  spread: number;
+  color?: string;
+  intensity?: number;
+  spread?: number;
 };
 
 export interface BaseMotionProps {
@@ -25,9 +25,10 @@ export type StyleConfig = {
   backgroundColor?: string;
   fontSize?: number;
   fontFamily?: string;
-  fontWeight?: 'normal' | 'bold' | 'lighter' | number;
+  fontWeight?: "normal" | "bold" | "lighter" | number;
   rotation?: number;
   speed?: number;
+  boxShadow?: string;
 };
 
 export function configToStyle(cfg?: StyleConfig): React.CSSProperties {
@@ -58,7 +59,7 @@ export function getTransform3DStyle(
   perspective?: number,
   translateZ?: number,
   translateX?: number,
-  translateY?: number
+  translateY?: number,
 ): React.CSSProperties {
   const transforms: string[] = [];
 
@@ -87,7 +88,7 @@ export function getTransform3DStyle(
   if (transforms.length === 0) return {};
 
   return {
-    transform: transforms.join(' '),
-    transformStyle: 'preserve-3d',
+    transform: transforms.join(" "),
+    transformStyle: "preserve-3d",
   };
 }

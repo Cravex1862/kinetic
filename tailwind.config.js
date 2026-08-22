@@ -17,6 +17,9 @@ module.exports = {
           600: '#8b5cf6',
           700: '#7c3aed',
         },
+      animations: {
+        'spin-slow': 'spin 3s linear infinite',
+      }
       },
     },
   },

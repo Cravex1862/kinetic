@@ -29,7 +29,7 @@ export function getGlowFilter(glow?: glowConfigProps): string | undefined {
 // Glow filter for Structural SDK
 export function buildGlowFilter(glow?: GlowConfig): React.CSSProperties {
     if (!glow || !glow.enabled) return {};
-    const blurPx = glow.intensity * 6;
+    const blurPx = (glow.intensity ?? 0) * 6;
     return {
         filter: `drop-shadow(0 0 ${glow.spread}px ${glow.color}) drop-shadow(0 0 ${blurPx}px ${glow.color})`,
         willChange: 'filter',

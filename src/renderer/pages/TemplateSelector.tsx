@@ -28,7 +28,7 @@ const templates = [
     key: 'youtube-videos',
     title: 'Youtube Videos',
     description: 'Use this for creating full length youtube videos.',
-    comingSoon: false,
+    comingSoon: true,
     hoverBorder: 'border-gray-800 group-hover:border-red-500',
     thumbnail: (
       <svg className="w-full h-full text-red-500/80" fill="none" viewBox="0 0 100 60">
@@ -58,7 +58,7 @@ const templates = [
     key: 'minecraft-style',
     title: 'Minecraft Style',
     description: 'Use this for creating any minecraft styled explainer',
-    comingSoon: false,
+    comingSoon: true,
     hoverBorder: 'border-gray-800 group-hover:border-amber-500',
     thumbnail: (
       <svg className="w-full h-full text-amber-500/80" fill="none" viewBox="0 0 100 60">

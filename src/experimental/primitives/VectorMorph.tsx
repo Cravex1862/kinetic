@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useCurrentFrame, interpolate, Easing } from 'remotion';
-import flubber from 'flubber';
+import * as flubber from 'flubber';
 import type { StyleConfig, GlowConfig } from "./types";
 import { configToStyle } from "./types";
 

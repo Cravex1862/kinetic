@@ -49,7 +49,7 @@ function createWindow(): void { // creates a desktop window
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html')); //load the html file
   }
 
-  mainWindow.on('closed', () => { // when closed
+  mainWindow.on('destroyed', () => { // when closed
     mainWindow = null; // close the window
   });
 }
@@ -87,8 +87,6 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('export-video', async (_event: Electron.IpcMainInvokeEvent, options: ExportVideoOptions): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { exec } = require('child_process');
-
       // Write a temporary props file so that Remotion gets all the layout and keyframe data
       const tempPropsPath = path.join(app.getPath('temp'), `kinetic_render_props_${Date.now()}.json`);
       fs.writeFileSync(tempPropsPath, JSON.stringify(options.props || {}));

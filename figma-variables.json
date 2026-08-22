@@ -1,0 +1,50 @@
+{
+  "Kinetic Theme": {
+    "colors": {
+      "theme": {
+        "background": { "value": "#030712", "type": "color" },
+        "card": { "value": "#18181b", "type": "color" },
+        "cardHover": { "value": "#27272a", "type": "color" },
+        "border": { "value": "#27272a", "type": "color" },
+        "borderFocus": { "value": "#8b5cf6", "type": "color" },
+        "textPrimary": { "value": "#f9fafb", "type": "color" },
+        "textSecondary": { "value": "#9ca3af", "type": "color" },
+        "accent": { "value": "#8b5cf6", "type": "color" },
+        "accentHover": { "value": "#a78bfa", "type": "color" },
+        "shadowGlow": { "value": "rgba(139, 92, 246, 0.15)", "type": "color" }
+      },
+      "guidelines": {
+        "baseCanvas": { "value": "#030712", "type": "color" },
+        "sidebarPanels": { "value": "#0f172a", "type": "color" },
+        "primaryAccent": { "value": "#6366f1", "type": "color" },
+        "primaryHover": { "value": "#8b5cf6", "type": "color" },
+        "subtleBorders": { "value": "#1e293b", "type": "color" },
+        "cardBox": { "value": "#090d16", "type": "color" },
+        "normalText": { "value": "#ffffff", "type": "color" },
+        "mutedText": { "value": "#94a3b8", "type": "color" }
+      },
+      "tailwind": {
+        "gray": {
+          "950": { "value": "#121212", "type": "color" },
+          "900": { "value": "#1f1f1f", "type": "color" },
+          "800": { "value": "#2a2a2a", "type": "color" },
+          "700": { "value": "#333333", "type": "color" }
+        },
+        "indigo": {
+          "300": { "value": "#c4b5fd", "type": "color" },
+          "400": { "value": "#a78bfa", "type": "color" },
+          "500": { "value": "#8b5cf6", "type": "color" },
+          "600": { "value": "#8b5cf6", "type": "color" },
+          "700": { "value": "#7c3aed", "type": "color" }
+        }
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": { "value": "Inter", "type": "fontFamilies" },
+        "secondary": { "value": "Outfit", "type": "fontFamilies" },
+        "tertiary": { "value": "Poppins", "type": "fontFamilies" }
+      }
+    }
+  }
+}

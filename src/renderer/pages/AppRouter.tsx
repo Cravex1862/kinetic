@@ -1,27 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import Dashboard from './Dashboard';
-import type { SceneOutput } from '../agents/types';
-import BasicGenerator from '../templates/basicAnimation/BasicGenerator';
-import TemplateSelector from './TemplateSelector';
-import Settings from './Settings';
-import SetupWizard from './SetupWizard';
-import YoutubeVideoCreator from '../templates/ytVideos/YoutubeVideoCreator';
-import { LogoGenerator } from '../templates/logoAnimator/LogoGenerator';
-import SaaSGenerator from '../templates/saasVideoDemo/SaaSGenerator';
-import TourOverlay from '../components/TourOverlay';
-import { TOUR_STEPS, MOCK_TOUR_PROJECT } from '../constants';
-import { PrimitivesDemoOverlay } from '../components/PrimitivesDemoOverlay';
-import { TiltConfigurer } from '../components/TiltConfigurer';
-import Studio from './studio/Studio';
-import { registerBYOXHandler } from '../agents/llmClient';
-import { BYOCModal } from '../components/BYOCModal';
-import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal';
-import { AudioTesterModal } from '../components/AudioTesterModal';
-import { RAGTesterModal } from '../components/RAGTesterModal';
-import { PipelineTesterModal } from '../components/PipelineTesterModal';
-import { VideoCompositionViewerModal } from '../components/VideoCompositionViewerModal';
-import PromptSandbox from './PromptSandbox';
-import { sanitizeCompositionCode } from '../agents/pipeline';
+import React, { useState, useEffect } from "react";
+import Dashboard from "./Dashboard";
+import type { SceneOutput } from "../agents/types";
+import BasicGenerator from "../templates/basicAnimation/BasicGenerator";
+import TemplateSelector from "./TemplateSelector";
+import Settings from "./Settings";
+import SetupWizard from "./SetupWizard";
+import { LogoGenerator } from "../templates/logoAnimator/LogoGenerator";
+import SaaSGenerator from "../templates/saasVideoDemo/SaaSGenerator";
+import TourOverlay from "../components/TourOverlay";
+import { TOUR_STEPS, MOCK_TOUR_PROJECT } from "../constants";
+import { PrimitivesDemoOverlay } from "../components/PrimitivesDemoOverlay";
+
+import { registerBYOXHandler } from "../agents/llmClient";
+import { BYOCModal } from "../components/BYOCModal";
+import { KeyboardShortcutsModal } from "../components/KeyboardShortcutsModal";
+
+import { VideoCompositionViewerModal } from "../components/VideoCompositionViewerModal";
+
+import { sanitizeCompositionCode } from "../agents/pipeline";
 
 export interface ProjectData {
   id?: string;
@@ -32,7 +28,7 @@ export interface ProjectData {
   scenes?: any;
   code?: string;
   showVisualizer?: boolean;
-  visualizerVariant?: 'wave' | 'bars' | 'circle';
+  visualizerVariant?: "wave" | "bars" | "circle";
   fonts?: any;
   colors?: any;
   bgSelection?: any;
@@ -57,35 +53,31 @@ export interface CustomAlertState {
 
 const AppRouter: React.FC = () => {
   const [alertState, setAlertState] = useState<CustomAlertState | null>(null);
-  const [previousPage, setPreviousPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'saas-generator' | 'youtube-creator' | 'logo-generator' | 'minecraft-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo'>('dashboard');
+  const [previousPage, setPreviousPage] = useState<
+    | "dashboard"
+    | "template-selector"
+    | "basic-generator"
+    | "saas-generator"
+    | "logo-generator"
+    | "basic-studio"
+    | "settings"
+    | "setup"
+    | "primitives-demo"
+  >("dashboard");
 
-  const [showTiltConfigurer, setShowTiltConfigurer] = useState(false);
-  const [showRAGTester, setShowRAGTester] = useState(false);
-  const [showPipelineTester, setShowPipelineTester] = useState(false);
-  const [showVideoCompositionViewer, setShowVideoCompositionViewer] = useState(false);
+  const [showVideoCompositionViewer, setShowVideoCompositionViewer] =
+    useState(false);
   const [byocPrompt, setByocPrompt] = useState<string | null>(null);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
-        e.preventDefault();
-        setShowRAGTester((prev) => !prev);
-      }
-      if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
-        e.preventDefault();
-        setShowPipelineTester((prev) => !prev);
-      }
-      if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
+      if (e.ctrlKey && e.shiftKey && (e.key === "V" || e.key === "v")) {
         e.preventDefault();
         setShowVideoCompositionViewer((prev) => !prev);
       }
-      if (e.ctrlKey && e.shiftKey && (e.key === 'U' || e.key === 'u')) {
-        e.preventDefault();
-        setPage('prompt-sandbox');
-      }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
   const [byocResolver, setByocResolver] = useState<{
     resolve: (val: string) => void;
@@ -104,39 +96,33 @@ const AppRouter: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
-        setPage(prev => {
-          if (prev === 'primitives-demo') {
+        setPage((prev) => {
+          if (prev === "primitives-demo") {
             return previousPage;
           } else {
             setPreviousPage(prev);
-            return 'primitives-demo';
+            return "primitives-demo";
           }
         });
       }
 
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 't') {
-        e.preventDefault();
-        setShowTiltConfigurer(prev => !prev);
-      }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [previousPage]);
-
-
 
   const customAlert = (title: string, message: string): Promise<void> => {
     return new Promise((resolve) => {
       setAlertState({
         title,
         message,
-        buttons: [{ label: 'Ok', value: true, isPrimary: true }],
+        buttons: [{ label: "Ok", value: true, isPrimary: true }],
         resolve: () => {
           setAlertState(null);
           resolve();
-        }
+        },
       });
     });
   };
@@ -144,33 +130,48 @@ const AppRouter: React.FC = () => {
   const customConfirm = (
     title: string,
     message: string,
-    buttons?: AlertButton[]
+    buttons?: AlertButton[],
   ): Promise<any> => {
     return new Promise((resolve) => {
       setAlertState({
         title,
         message,
         buttons: buttons || [
-          { label: 'Cancel', value: false },
-          { label: 'Ok', value: true, isPrimary: true }
+          { label: "Cancel", value: false },
+          { label: "Ok", value: true, isPrimary: true },
         ],
         resolve: (val) => {
           setAlertState(null);
           resolve(val);
-        }
+        },
       });
     });
   };
 
-  const [page, setPage] = useState<'dashboard' | 'template-selector' | 'basic-generator' | 'saas-generator' | 'youtube-creator' | 'logo-generator' | 'minecraft-creator' | 'basic-studio' | 'settings' | 'setup' | 'primitives-demo' | 'prompt-sandbox'>(() => {
-    const completed = localStorage.getItem('kinetic-setup-completed') === 'true';
-    return completed ? 'dashboard' : 'setup';
+  const [page, setPage] = useState<
+    | "dashboard"
+    | "template-selector"
+    | "basic-generator"
+    | "saas-generator"
+    | "logo-generator"
+    | "basic-studio"
+    | "settings"
+    | "setup"
+    | "primitives-demo"
+  >(() => {
+    const completed =
+      localStorage.getItem("kinetic-setup-completed") === "true";
+    return completed ? "dashboard" : "setup";
   });
   const [project, setProject] = useState<ProjectData | null>(null);
   const [projects, setProjects] = useState<ProjectData[]>([]);
-  const [workspaceDir, setWorkSpaceDir] = useState<string>(localStorage.getItem('kinetic-workspace-dir') || '');
-  const [folders, setFolders] = useState<{ path: string; name: string; color: string; collapsed?: boolean }[]>(() => {
-    const saved = localStorage.getItem('kinetic-folders');
+  const [workspaceDir, setWorkSpaceDir] = useState<string>(
+    localStorage.getItem("kinetic-workspace-dir") || "",
+  );
+  const [folders, setFolders] = useState<
+    { path: string; name: string; color: string; collapsed?: boolean }[]
+  >(() => {
+    const saved = localStorage.getItem("kinetic-folders");
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -181,7 +182,7 @@ const AppRouter: React.FC = () => {
   const startTour = () => {
     setTourStep(0);
     setTourActive(true);
-    setPage('dashboard');
+    setPage("dashboard");
   };
 
   const handleTourNext = () => {
@@ -198,7 +199,7 @@ const AppRouter: React.FC = () => {
       handleNewProject();
     } else if (nextStep === 2) {
       // Moving to prompt step — select Basic Animation template automatically
-      handleSelectTemplate('basic-animation', workspaceDir);
+      handleSelectTemplate("basic-animation", workspaceDir);
     } else if (nextStep === 4) {
       // Moving to result step — load mockup project instantly for preview
       handleGenerate(MOCK_TOUR_PROJECT as ProjectData);
@@ -211,28 +212,32 @@ const AppRouter: React.FC = () => {
     setTourStep(0);
   };
 
-  const handleSelectTemplate = async (templateKey: string, selectedDir: string) => {
+  const handleSelectTemplate = async (
+    templateKey: string,
+    selectedDir: string,
+  ) => {
     const newProject: ProjectData = {
-      title: 'Draft Project',
-      prompt: '',
-      narration: '',
-      savePath: '', // In-memory draft (only saved to disk upon first generation run)
+      title: "Draft Project",
+      prompt: "",
+      narration: "",
+      savePath: "", // In-memory draft (only saved to disk upon first generation run)
       scenes: [],
-      unfinished: true
+      unfinished: true,
     };
 
     setProject(newProject);
 
-    if (templateKey === 'youtube-videos') {
-      setPage('youtube-creator');
-    } else if (templateKey === 'logo-animator') {
-      setPage('logo-generator');
-    } else if (templateKey === 'minecraft-style') {
-      setPage('minecraft-creator');
-    } else if (templateKey === 'saas-demo-videos' || templateKey === 'ui-ux-walkthrough') {
-      setPage('saas-generator');
+    if (templateKey === "youtube-videos") {
+      setPage("basic-generator");
+    } else if (templateKey === "logo-animator") {
+      setPage("logo-generator");
+    } else if (
+      templateKey === "saas-demo-videos" ||
+      templateKey === "ui-ux-walkthrough"
+    ) {
+      setPage("saas-generator");
     } else {
-      setPage('basic-generator');
+      setPage("basic-generator");
     }
 
     if (tourActive && tourStep === 1) {
@@ -241,16 +246,14 @@ const AppRouter: React.FC = () => {
   };
 
   React.useEffect(() => {
-    localStorage.setItem('kinetic-folders', JSON.stringify(folders));
+    localStorage.setItem("kinetic-folders", JSON.stringify(folders));
   }, [folders]);
-
-
 
   React.useEffect(() => {
     const loadProjects = async () => {
       if (!window.electronAPI) return;
       try {
-        const savedPaths = localStorage.getItem('kinetic-project-paths');
+        const savedPaths = localStorage.getItem("kinetic-project-paths");
         const paths: string[] = savedPaths ? JSON.parse(savedPaths) : [];
         const loadedProjects: ProjectData[] = [];
         const validPaths: string[] = [];
@@ -269,7 +272,10 @@ const AppRouter: React.FC = () => {
           }
         }
         setProjects(loadedProjects);
-        localStorage.setItem('kinetic-project-paths', JSON.stringify(validPaths));
+        localStorage.setItem(
+          "kinetic-project-paths",
+          JSON.stringify(validPaths),
+        );
       } catch (e) {
         console.error(`Failed to load project files:`, e);
       }
@@ -282,32 +288,39 @@ const AppRouter: React.FC = () => {
   React.useEffect(() => {
     const handleGlobalShortcuts = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      const isInput =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
 
       // Ctrl + , or Cmd + , -> Open Settings
-      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+      if ((e.ctrlKey || e.metaKey) && e.key === ",") {
         e.preventDefault();
-        setPage('settings');
+        setPage("settings");
         return;
       }
 
       // Toggle Keyboard Shortcuts Modal on ? or Ctrl + / (ignore when typing in input/textarea)
-      if (!isInput && (e.key === '?' || (e.key === '/' && (e.ctrlKey || e.metaKey)))) {
+      if (
+        !isInput &&
+        (e.key === "?" || (e.key === "/" && (e.ctrlKey || e.metaKey)))
+      ) {
         e.preventDefault();
-        setShowShortcutsModal(prev => !prev);
+        setShowShortcutsModal((prev) => !prev);
       }
     };
-    window.addEventListener('keydown', handleGlobalShortcuts);
-    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+    window.addEventListener("keydown", handleGlobalShortcuts);
+    return () => window.removeEventListener("keydown", handleGlobalShortcuts);
   }, []);
 
   React.useEffect(() => {
     const paths = projects.map((p) => p.savePath).filter(Boolean) as string[];
-    localStorage.setItem('kinetic-project-paths', JSON.stringify(paths));
+    localStorage.setItem("kinetic-project-paths", JSON.stringify(paths));
   }, [projects]);
 
   const handleNewProject = async () => {
-    setPage('template-selector');
+    setPage("template-selector");
     if (tourActive && tourStep === 0) {
       setTourStep(1);
     }
@@ -329,11 +342,11 @@ const AppRouter: React.FC = () => {
           n++;
         }
         const filename = `untitled_${n}.json`;
-        const separator = finalDir.includes('\\') ? '\\' : '/';
+        const separator = finalDir.includes("\\") ? "\\" : "/";
         const savePath = `${finalDir}${separator}${filename}`;
 
         finalProject.savePath = savePath;
-        if (!finalProject.title || finalProject.title === 'Draft Project') {
+        if (!finalProject.title || finalProject.title === "Draft Project") {
           finalProject.title = `untitled_${n}`;
         }
       }
@@ -341,19 +354,25 @@ const AppRouter: React.FC = () => {
 
     if (finalProject.savePath && window.electronAPI?.writeFile) {
       try {
-        await window.electronAPI.writeFile(finalProject.savePath, JSON.stringify(finalProject, null, 2));
+        await window.electronAPI.writeFile(
+          finalProject.savePath,
+          JSON.stringify(finalProject, null, 2),
+        );
       } catch (e) {
-        console.warn('[AppRouter] Save project failed:', e);
+        console.warn("[AppRouter] Save project failed:", e);
       }
     }
     if (finalProject.code && window.electronAPI?.writeFile) {
       try {
         const sanitized = sanitizeCompositionCode(finalProject.code);
         if (sanitized) {
-          await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', sanitized);
+          await window.electronAPI.writeFile(
+            "src/renderer/scenes/VideoComposition.tsx",
+            sanitized,
+          );
         }
       } catch (e) {
-        console.warn('[AppRouter] Write composition failed:', e);
+        console.warn("[AppRouter] Write composition failed:", e);
       }
     }
 
@@ -361,12 +380,14 @@ const AppRouter: React.FC = () => {
     setProjects((prev) => {
       const exists = prev.some((p) => p.savePath === finalProject.savePath);
       if (exists) {
-        return prev.map((p) => (p.savePath === finalProject.savePath ? finalProject : p));
+        return prev.map((p) =>
+          p.savePath === finalProject.savePath ? finalProject : p,
+        );
       }
       return [...prev, finalProject];
     });
 
-    setPage('basic-studio');
+    setPage("basic-studio");
     if (tourActive) {
       setTourStep(4);
     }
@@ -374,10 +395,12 @@ const AppRouter: React.FC = () => {
 
   const handleImportProject = async () => {
     if (!window.electronAPI?.selectFile) {
-      await customAlert("Feature Unavailable", "Importing files is only supported inside the desktop app");
+      await customAlert(
+        "Feature Unavailable",
+        "Importing files is only supported inside the desktop app",
+      );
       return;
     }
-
 
     const filePath = await window.electronAPI.selectFile();
     if (!filePath) return;
@@ -389,7 +412,7 @@ const AppRouter: React.FC = () => {
     }
     try {
       const parsed = JSON.parse(content);
-      if (typeof parsed !== 'object' || !parsed.title) {
+      if (typeof parsed !== "object" || !parsed.title) {
         await customAlert("Invalid Format", "Invalid project format.");
         return;
       }
@@ -399,20 +422,19 @@ const AppRouter: React.FC = () => {
         return;
       }
       setProjects((prev) => [...prev, parsed]);
-    }
-    catch {
+    } catch {
       await customAlert("File Error", "Invalid JSON file");
     }
   };
 
-  const handleDeletProject = async (pToDelete: ProjectData) => {
+  const handleDeleteProject = async (pToDelete: ProjectData) => {
     const confirmDelete = await customConfirm(
       "Delete Project",
       `Are you sure you want to permanently delete ${pToDelete.title} from your computer? This cannot be undone.`,
       [
-        { label: 'Cancel', value: false },
-        { label: 'Delete', value: true, isPrimary: true, isDanger: true }
-      ]
+        { label: "Cancel", value: false },
+        { label: "Delete", value: true, isPrimary: true, isDanger: true },
+      ],
     );
     if (confirmDelete) {
       if (window.electronAPI?.deleteFile && pToDelete.savePath) {
@@ -420,12 +442,17 @@ const AppRouter: React.FC = () => {
         if (!deleted) {
           const content = await window.electronAPI.readFile(pToDelete.savePath);
           if (content) {
-            await customAlert("Delete Error", "Failed to delete the file from your computer. Please check folder permissions.");
+            await customAlert(
+              "Delete Error",
+              "Failed to delete the file from your computer. Please check folder permissions.",
+            );
             return;
           }
         }
       }
-      setProjects((prev) => prev.filter((p) => p.savePath !== pToDelete.savePath));
+      setProjects((prev) =>
+        prev.filter((p) => p.savePath !== pToDelete.savePath),
+      );
     }
   };
 
@@ -433,7 +460,7 @@ const AppRouter: React.FC = () => {
     if (p.savePath && window.electronAPI?.showItemInFolder) {
       await window.electronAPI.showItemInFolder(p.savePath);
     }
-  }
+  };
 
   const handleCreateFolder = async (name: string, color: string) => {
     try {
@@ -442,52 +469,63 @@ const AppRouter: React.FC = () => {
         if (!window.electronAPI?.selectDirectory) {
           // No electron API fallback
           const folderPath = `virtual://${name}`;
-          setFolders(prev => [...(Array.isArray(prev) ? prev : []), { path: folderPath, name, color, collapsed: false }]);
+          setFolders((prev) => [
+            ...(Array.isArray(prev) ? prev : []),
+            { path: folderPath, name, color, collapsed: false },
+          ]);
           return;
         }
         const selected = await window.electronAPI.selectDirectory();
         if (!selected) return;
         currentWorkspace = selected;
         setWorkSpaceDir(selected);
-        localStorage.setItem('kinetic-workspace-dir', selected);
+        localStorage.setItem("kinetic-workspace-dir", selected);
       }
 
-      const seperator = currentWorkspace.includes('\\') ? '\\' : '/';
+      const seperator = currentWorkspace.includes("\\") ? "\\" : "/";
       const folderPath = `${currentWorkspace}${seperator}${name}`;
 
       if (window.electronAPI?.createDirectory) {
         const ok = await window.electronAPI.createDirectory(folderPath);
         if (ok) {
-          setFolders(prev => [...(Array.isArray(prev) ? prev : []), { path: folderPath, name, color, collapsed: false }]);
+          setFolders((prev) => [
+            ...(Array.isArray(prev) ? prev : []),
+            { path: folderPath, name, color, collapsed: false },
+          ]);
+        } else {
+          await customAlert(
+            "Folder Error",
+            "Failed to create the physical folder",
+          );
         }
-        else {
-          await customAlert("Folder Error", "Failed to create the physical folder");
-        }
-      }
-      else {
+      } else {
         // Safe fallback for web preview
-        setFolders(prev => [...(Array.isArray(prev) ? prev : []), { path: folderPath, name, color, collapsed: false }]);
+        setFolders((prev) => [
+          ...(Array.isArray(prev) ? prev : []),
+          { path: folderPath, name, color, collapsed: false },
+        ]);
       }
-    }
-    catch (err: any) {
-      console.error('Folder creation failed:', err);
+    } catch (err: any) {
+      console.error("Folder creation failed:", err);
       await customAlert("Folder Creation Error", err.message || String(err));
     }
   };
 
-  const handleMoveProject = async (projectPath: string, targetFolderPath: string | null) => {
+  const handleMoveProject = async (
+    projectPath: string,
+    targetFolderPath: string | null,
+  ) => {
     if (!window.electronAPI?.moveFile) return;
 
-    const separator = projectPath.includes('\\') ? '\\' : '/';
+    const separator = projectPath.includes("\\") ? "\\" : "/";
     const parts = projectPath.split(separator);
     const filename = parts[parts.length - 1];
 
-    let newPath = '';
+    let newPath = "";
     if (targetFolderPath === null) {
       if (!workspaceDir) return;
       newPath = `${workspaceDir}${separator}${filename}`;
-    }
-    else {
+    } else {
       newPath = `${targetFolderPath}${separator}${filename}`;
     }
 
@@ -495,52 +533,61 @@ const AppRouter: React.FC = () => {
 
     const ok = await window.electronAPI.moveFile(projectPath, newPath);
     if (ok) {
-      setProjects(prev => prev.map(p => {
-        if (p.savePath === projectPath) {
-          const updated = { ...p, savePath: newPath };
-          if (window.electronAPI?.writeFile) {
-            window.electronAPI.writeFile(newPath, JSON.stringify(updated, null, 2));
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.savePath === projectPath) {
+            const updated = { ...p, savePath: newPath };
+            if (window.electronAPI?.writeFile) {
+              window.electronAPI.writeFile(
+                newPath,
+                JSON.stringify(updated, null, 2),
+              );
+            }
+            return updated;
           }
-          return updated;
-        }
-        return p;
-      }));
-    }
-    else {
+          return p;
+        }),
+      );
+    } else {
       await customAlert("File Move Error", "Failed to move project file");
     }
   };
 
   const handleDeleteFolder = async (folderPath: string) => {
-    const separator = folderPath.includes('\\') ? '\\' : '/';
-    const folderProjects = projects.filter(p => p.savePath.startsWith(folderPath + separator));
+    const separator = folderPath.includes("\\") ? "\\" : "/";
+    const folderProjects = projects.filter((p) =>
+      p.savePath.startsWith(folderPath + separator),
+    );
 
-    let action: 'move' | 'delete' | 'cancel' = 'move';
+    let action: "move" | "delete" | "cancel" = "move";
     if (folderProjects.length > 0) {
       const choice = await customConfirm(
         "Delete Folder",
         `This folder contains ${folderProjects.length} projects. What would you like to do with them?`,
         [
-          { label: 'Cancel', value: 'cancel' },
-          { label: 'Delete Permanently', value: 'delete', isDanger: true },
-          { label: 'Move to Root', value: 'move', isPrimary: true }
-        ]
+          { label: "Cancel", value: "cancel" },
+          { label: "Delete Permanently", value: "delete", isDanger: true },
+          { label: "Move to Root", value: "move", isPrimary: true },
+        ],
       );
-      if (!choice || choice === 'cancel') return;
+      if (!choice || choice === "cancel") return;
       action = choice;
     }
 
-    if (action === 'move') {
+    if (action === "move") {
       for (const p of folderProjects) {
         await handleMoveProject(p.savePath, null);
       }
-    }
-    else if (action === 'delete') {
+    } else if (action === "delete") {
       if (window.electronAPI?.deleteFile) {
         for (const p of folderProjects) {
           await window.electronAPI.deleteFile(p.savePath);
         }
-        setProjects(prev => prev.filter(p => !folderProjects.some(fp => fp.savePath === p.savePath)));
+        setProjects((prev) =>
+          prev.filter(
+            (p) => !folderProjects.some((fp) => fp.savePath === p.savePath),
+          ),
+        );
       }
     }
 
@@ -548,13 +595,13 @@ const AppRouter: React.FC = () => {
       await window.electronAPI.deleteDirectory(folderPath);
     }
 
-    setFolders(prev => prev.filter(f => f.path !== folderPath));
+    setFolders((prev) => prev.filter((f) => f.path !== folderPath));
   };
 
   const handleRenameFolder = async (folderPath: string, newName: string) => {
     if (!window.electronAPI?.moveFile) return;
 
-    const separator = folderPath.includes('\\') ? '\\' : '/';
+    const separator = folderPath.includes("\\") ? "\\" : "/";
     const parts = folderPath.split(separator);
     parts[parts.length - 1] = newName;
 
@@ -564,42 +611,52 @@ const AppRouter: React.FC = () => {
 
     const ok = await window.electronAPI.moveFile(folderPath, newPath);
     if (ok) {
-      setProjects(prev => prev.map(p => {
-        if (p.savePath.startsWith(folderPath + separator)) {
-          const relative = p.savePath.slice(folderPath.length);
-          const updatedPath = newPath + relative;
-          const updated = { ...p, savePath: updatedPath };
-          if (window.electronAPI?.writeFile) {
-            window.electronAPI.writeFile(updatedPath, JSON.stringify(updated, null, 2));
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.savePath.startsWith(folderPath + separator)) {
+            const relative = p.savePath.slice(folderPath.length);
+            const updatedPath = newPath + relative;
+            const updated = { ...p, savePath: updatedPath };
+            if (window.electronAPI?.writeFile) {
+              window.electronAPI.writeFile(
+                updatedPath,
+                JSON.stringify(updated, null, 2),
+              );
+            }
+            return updated;
           }
-          return updated;
-        }
-        return p;
-      }))
+          return p;
+        }),
+      );
 
-      setFolders(prev => prev.map(f => {
-        if (f.path === folderPath) {
-          return {
-            ...f, path: newPath, name: newName
+      setFolders((prev) =>
+        prev.map((f) => {
+          if (f.path === folderPath) {
+            return {
+              ...f,
+              path: newPath,
+              name: newName,
+            };
           }
-        }
-        return f;
-      }));
-    }
-    else {
+          return f;
+        }),
+      );
+    } else {
       await customAlert("Rename Error", "Failed to rename physical folder");
     }
   };
 
   return (
-    <div className='h-screen w-full bg-gray-950 font-sans text-white selection:bg-purple-600/30'>
-      {page === 'dashboard' && (
+    <div className="h-screen w-full bg-gray-950 font-sans text-white selection:bg-purple-600/30">
+      {page === "dashboard" && (
         <Dashboard
           onNewProject={handleNewProject}
           onOpenProject={async (p) => {
             let projectToOpen = p;
             if (p.savePath && window.electronAPI?.readFile) {
-              const freshContent = await window.electronAPI.readFile(p.savePath);
+              const freshContent = await window.electronAPI.readFile(
+                p.savePath,
+              );
               if (freshContent) {
                 try {
                   const parsed = JSON.parse(freshContent);
@@ -613,17 +670,20 @@ const AppRouter: React.FC = () => {
             if (projectToOpen.code && window.electronAPI?.writeFile) {
               const cleanCode = sanitizeCompositionCode(projectToOpen.code);
               if (cleanCode) {
-                await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
+                await window.electronAPI.writeFile(
+                  "src/renderer/scenes/VideoComposition.tsx",
+                  cleanCode,
+                );
               }
             }
             setProject(projectToOpen);
             if (projectToOpen.unfinished) {
-              setPage('basic-generator');
+              setPage("basic-generator");
             } else {
-              setPage('basic-studio');
+              setPage("basic-studio");
             }
           }}
-          onDeleteProject={handleDeletProject}
+          onDeleteProject={handleDeleteProject}
           onShowFolder={handleShowFolder}
           onImportProject={handleImportProject}
           projects={projects}
@@ -633,23 +693,27 @@ const AppRouter: React.FC = () => {
           onDeleteFolder={handleDeleteFolder}
           onRenameFolder={handleRenameFolder}
           onToggleFolderCollapse={(path: string) => {
-            setFolders(prev => prev.map(f => f.path === path ? { ...f, collapsed: !f.collapsed } : f));
+            setFolders((prev) =>
+              prev.map((f) =>
+                f.path === path ? { ...f, collapsed: !f.collapsed } : f,
+              ),
+            );
           }}
-          onOpenSettings={() => setPage('settings')}
+          onOpenSettings={() => setPage("settings")}
         />
       )}
-      {page === 'template-selector' && (
+      {page === "template-selector" && (
         <TemplateSelector
-          onBack={() => setPage('dashboard')}
+          onBack={() => setPage("dashboard")}
           initialDirectory={workspaceDir}
           onSelectDirectory={(dir: string) => {
             setWorkSpaceDir(dir);
-            localStorage.setItem('kinetic-workspace-dir', dir);
+            localStorage.setItem("kinetic-workspace-dir", dir);
           }}
           onSelect={handleSelectTemplate}
         />
       )}
-      {page === 'basic-generator' && (
+      {page === "basic-generator" && (
         <BasicGenerator
           project={project}
           onGenerate={handleGenerate}
@@ -657,18 +721,23 @@ const AppRouter: React.FC = () => {
             if (updatedProject) {
               setProject(updatedProject);
               setProjects((prev) =>
-                prev.map((p) => (p.savePath === updatedProject.savePath ? updatedProject : p))
+                prev.map((p) =>
+                  p.savePath === updatedProject.savePath ? updatedProject : p,
+                ),
               );
               if (updatedProject.savePath && window.electronAPI?.writeFile) {
-                window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
+                window.electronAPI.writeFile(
+                  updatedProject.savePath,
+                  JSON.stringify(updatedProject, null, 2),
+                );
               }
             }
-            setPage('template-selector');
+            setPage("template-selector");
           }}
           onUpdateProject={(updated) => {
             setProject(updated);
             setProjects((prev) =>
-              prev.map((p) => (p.savePath === updated.savePath ? updated : p))
+              prev.map((p) => (p.savePath === updated.savePath ? updated : p)),
             );
           }}
           customAlert={customAlert}
@@ -677,12 +746,8 @@ const AppRouter: React.FC = () => {
           tourStep={tourStep}
         />
       )}
-      {page === 'youtube-creator' && (
-        <YoutubeVideoCreator
-          onBack={() => setPage('template-selector')}
-        />
-      )}
-      {page === 'saas-generator' && (
+      {/* YoutubeVideoCreator moved to src/experimental/templates/ */}
+      {page === "saas-generator" && (
         <SaaSGenerator
           project={project}
           onGenerate={handleGenerate}
@@ -690,25 +755,30 @@ const AppRouter: React.FC = () => {
             if (updatedProject) {
               setProject(updatedProject);
               setProjects((prev) =>
-                prev.map((p) => (p.savePath === updatedProject.savePath ? updatedProject : p))
+                prev.map((p) =>
+                  p.savePath === updatedProject.savePath ? updatedProject : p,
+                ),
               );
               if (updatedProject.savePath && window.electronAPI?.writeFile) {
-                window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
+                window.electronAPI.writeFile(
+                  updatedProject.savePath,
+                  JSON.stringify(updatedProject, null, 2),
+                );
               }
             }
-            setPage('template-selector');
+            setPage("template-selector");
           }}
           onUpdateProject={(updated) => {
             setProject(updated);
             setProjects((prev) =>
-              prev.map((p) => (p.savePath === updated.savePath ? updated : p))
+              prev.map((p) => (p.savePath === updated.savePath ? updated : p)),
             );
           }}
           customAlert={customAlert}
           customConfirm={customConfirm}
         />
       )}
-      {page === 'logo-generator' && (
+      {page === "logo-generator" && (
         <LogoGenerator
           project={project}
           onGenerate={handleGenerate}
@@ -716,64 +786,41 @@ const AppRouter: React.FC = () => {
             if (updatedProject) {
               setProject(updatedProject);
               setProjects((prev) =>
-                prev.map((p) => (p.savePath === updatedProject.savePath ? updatedProject : p))
+                prev.map((p) =>
+                  p.savePath === updatedProject.savePath ? updatedProject : p,
+                ),
               );
               if (updatedProject.savePath && window.electronAPI?.writeFile) {
-                window.electronAPI.writeFile(updatedProject.savePath, JSON.stringify(updatedProject, null, 2));
+                window.electronAPI.writeFile(
+                  updatedProject.savePath,
+                  JSON.stringify(updatedProject, null, 2),
+                );
               }
             }
-            setPage('template-selector');
+            setPage("template-selector");
           }}
           onUpdateProject={(updated) => {
             setProject(updated);
             setProjects((prev) =>
-              prev.map((p) => (p.savePath === updated.savePath ? updated : p))
+              prev.map((p) => (p.savePath === updated.savePath ? updated : p)),
             );
           }}
           customAlert={customAlert}
           customConfirm={customConfirm}
         />
       )}
-      {page === 'basic-studio' && project && (
-        <Studio
-          project={project}
-          onBack={() => setPage('dashboard')}
-          onUpdateProject={async (updated) => {
-            setProject(updated);
-            setProjects((prev) =>
-              prev.map((p) => (p.savePath === updated.savePath ? updated : p))
-            );
-            if (updated.savePath && window.electronAPI?.writeFile) {
-              await window.electronAPI.writeFile(updated.savePath, JSON.stringify(updated, null, 2));
-            }
-          }}
-          onRename={async (newTitle) => {
-            const updated = { ...project, title: newTitle };
-            setProject(updated);
-            setProjects((prev) =>
-              prev.map((p) => (p.savePath === project.savePath ? updated : p))
-            );
-            if (project.savePath && window.electronAPI?.writeFile) {
-              await window.electronAPI.writeFile(project.savePath, JSON.stringify(updated, null, 2));
-            }
-          }}
-          customAlert={customAlert}
-        />
-      )}
-      {page === 'settings' && (
+      {/* Studio moved to src/experimental/studio/ — new implementation pending */}
+      {page === "settings" && (
         <Settings
-          onBack={() => setPage('dashboard')}
+          onBack={() => setPage("dashboard")}
           customAlert={customAlert}
           customConfirm={customConfirm}
         />
       )}
-      {page === 'prompt-sandbox' && (
-        <PromptSandbox />
-      )}
-      {page === 'setup' && (
+      {page === "setup" && (
         <SetupWizard
           onComplete={() => {
-            setPage('dashboard');
+            setPage("dashboard");
             startTour();
           }}
           customAlert={customAlert}
@@ -799,17 +846,18 @@ const AppRouter: React.FC = () => {
             </div>
             <div className="flex justify-end gap-3">
               {alertState.buttons.map((btn, index) => {
-                const isCancel = btn.label.toLowerCase() === 'cancel';
+                const isCancel = btn.label.toLowerCase() === "cancel";
                 return (
                   <button
                     key={index}
                     onClick={() => alertState.resolve(btn.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${isCancel
-                      ? 'border border-gray-700 bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white'
-                      : btn.isDanger
-                        ? 'bg-red-600 hover:bg-red-500 text-white'
-                        : 'bg-purple-600 hover:bg-purple-500 text-white'
-                      }`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
+                      isCancel
+                        ? "border border-gray-700 bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white"
+                        : btn.isDanger
+                          ? "bg-red-600 hover:bg-red-500 text-white"
+                          : "bg-purple-600 hover:bg-purple-500 text-white"
+                    }`}
                   >
                     {btn.label}
                   </button>
@@ -819,23 +867,13 @@ const AppRouter: React.FC = () => {
           </div>
         </div>
       )}
-      {page === 'primitives-demo' && (
+      {page === "primitives-demo" && (
         <PrimitivesDemoOverlay onClose={() => setPage(previousPage)} />
       )}
 
-      {showRAGTester && (
-        <RAGTesterModal onClose={() => setShowRAGTester(false)} />
-      )}
-      {showPipelineTester && (
-        <PipelineTesterModal onClose={() => setShowPipelineTester(false)} />
-      )}
       {showVideoCompositionViewer && (
-        <VideoCompositionViewerModal onClose={() => setShowVideoCompositionViewer(false)} />
-      )}
-      {showTiltConfigurer && (
-        <TiltConfigurer
-          onClose={() => setShowTiltConfigurer(false)}
-          customAlert={customAlert}
+        <VideoCompositionViewerModal
+          onClose={() => setShowVideoCompositionViewer(false)}
         />
       )}
       {byocPrompt && (
@@ -847,12 +885,12 @@ const AppRouter: React.FC = () => {
             setByocResolver(null);
           }}
           onCancel={() => {
-            byocResolver?.reject(new Error('User cancelled BYOC prompt'));
+            byocResolver?.reject(new Error("User cancelled BYOC prompt"));
             setByocPrompt(null);
             setByocResolver(null);
           }}
           onSkip={() => {
-            byocResolver?.resolve('SKIP');
+            byocResolver?.resolve("SKIP");
             setByocPrompt(null);
             setByocResolver(null);
           }}
@@ -862,7 +900,6 @@ const AppRouter: React.FC = () => {
         isOpen={showShortcutsModal}
         onClose={() => setShowShortcutsModal(false)}
       />
-      <AudioTesterModal />
     </div>
   );
 };

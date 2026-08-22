@@ -108,7 +108,7 @@ class OpenAICompatibleClient extends BaseLLMClient {
       temperature: 0.3,
       max_tokens: 4096,
     };
-    if (this.config.provider !== 'hackclub' && systemPrompt.toLowerCase().includes('json') && !systemPrompt.toLowerCase().includes('tsx') && !systemPrompt.toLowerCase().includes('jsx')) {
+    if (this.config.provider !== 'hackclub' && systemPrompt.toLowerCase().includes('json only') && !systemPrompt.toLowerCase().includes('tsx') && !systemPrompt.toLowerCase().includes('jsx')) {
       body.response_format = { type: 'json_object' };
     }
     return body;
@@ -193,13 +193,6 @@ export class LLMClientFactory {
         throw new Error(`Unsupported provider: ${config.provider}`);
     }
   }
-}
-
-const responseCache = new Map<string, string>();
-
-export function clearLLMCache(): void {
-  responseCache.clear();
-  console.log("🧹 LLM Response cache cleared.");
 }
 
 export async function fetchAvailableModels(
@@ -348,7 +341,7 @@ export function getStoredConfig(): AgentConfig | null {
   const model = localStorage.getItem('kinetic-model') || undefined;
   const baseUrl = localStorage.getItem('kinetic-base-url') || undefined;
   if (!provider) return null;
-  if (!apiKey && provider !== 'hackclub' && provider !== 'ollama' && provider !== 'lmstudio' && provider !== 'local') {
+  if (!apiKey && provider !== 'hackclub' && provider !== 'ollama' && provider !== 'lmstudio' && provider !== 'local' && provider !== 'byoc') {
     return null;
   }
   return { apiKey: apiKey || 'local_key', provider, model, baseUrl };

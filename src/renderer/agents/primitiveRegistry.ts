@@ -1,7 +1,5 @@
-import { Browser } from "@phosphor-icons/react";
 import { ActionButton, AppCanvas, BreadcrumbHeader, BrowserFrame, DataGridContainer, HeroMetricCard, MockWindow, NotificationToaster, SidebarLayout, SplitHeroLayout, TabSwitcherContainer, TopNavbar } from "../primitives/StructuralSDK";
 import { BillingInvoiceCard, CustomCard, FeatureBenefitCard, FeatureCard, GlassmorphicCard, KanbanTaskCard, NotificationCard, PriceCard, PricingPlanCard, ProfileCard, ProfileHeaderCard, PushNotificationToast, RegularCard, SettingsToggleCard } from "../primitives/CardSDK";
-import Settings from "../pages/Settings";
 import { AreaChart, BarChartCard, DonutChartCard, LineChartCard, MetricFunnel, PieChartCard, ScatterPlotCard, StockCard } from "../primitives/ChartsSDK";
 
 export interface PrimitiveMeta {
@@ -164,7 +162,7 @@ EXHAUSTIVE COMPONENT AND PROP REGISTRY (ALL SDKS)
     Props: title?: string, points: Array<{ x: number, y: number, label?: string, size?: number}>, xAxisLabel?: string,
            yAxisLabel?: string, dotColor?: string, glowConfig?, rotateX?, rotateY?, rotateZ?, perspective?, translateZ?
 -StockCard:
-    Props: symbol: string, companyName?: stirng, price: number, history: number[], changePercent: number, currency?: string,
+    Props: symbol: string, companyName?: string, price: number, history: number[], changePercent: number, currency?: string,
            glowConfig?, rotateX?, rotateY?, rotateZ?, perspective?, translateZ?
 
 ------------------------------------------------------------------
@@ -328,9 +326,7 @@ export const TRANSITION_WRAPPER_NAMES = [
     'PulseScale', 'RotateFlip', 'GlitchIntro', 'StaggerContainer', 'AccordionExpand',
 ];
 
-// ─── getPrimitiveSpec ────────────────────────────────────────────────────────────
-// Extracts ONLY the named component's section from PRIMITIVE_MENU_SUMMARY.
-// This is the core optimization for small models: they only see one component's spec.
+
 export function getPrimitiveSpec(name: string): string {
     // Match the component entry: starts with optional spaces + dash + name + colon
     // Ends before the next component entry (dash + word) or a section separator (===)
