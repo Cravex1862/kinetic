@@ -19,6 +19,8 @@ import { VideoCompositionViewerModal } from "../components/VideoCompositionViewe
 
 import { sanitizeCompositionCode } from "../agents/pipeline";
 
+import { Studio } from "../../experimental/studio/Studio";
+
 export interface ProjectData {
   id?: string;
   title: string;
@@ -809,7 +811,24 @@ const AppRouter: React.FC = () => {
           customConfirm={customConfirm}
         />
       )}
-      {/* Studio moved to src/experimental/studio/ — new implementation pending */}
+      {page === "basic-studio" && project && (
+        <Studio
+          project={project}
+          onBack={() => setPage("dashboard")}
+          onRename={(newTitle: string) => {
+            setProject((prev) =>
+              prev ? { ...prev, title: newTitle } : prev,
+            );
+          }}
+          onUpdateProject={(updated) => {
+            setProject(updated);
+            setProjects((prev) =>
+              prev.map((p) => (p.savePath === updated.savePath ? updated : p)),
+            );
+          }}
+          customAlert={customAlert}
+        />
+      )}
       {page === "settings" && (
         <Settings
           onBack={() => setPage("dashboard")}

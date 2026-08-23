@@ -6,18 +6,15 @@ interface DoneStageProps {
 }
 
 export const DoneStage: React.FC<DoneStageProps> = ({ sceneCount }) => (
-  <>
-    <div className="flex justify-between items-center">
-      <h4 className="text-xs text-green-400 p-3">Complete</h4>
+  <div className="p-1">
+    <div className="flex items-center gap-2 text-xs text-green-400">
       <Check size={14} color="#22c55e" />
+      <span>Video Composition generated successfully.</span>
     </div>
-    <div className="p-3">
-      <p className="text-xs text-gray-400">
-        Video Composition generated Successfully.
-      </p>
-      <p className="text-xs text-gray-500 mt-1">
-        {sceneCount} scenes. Open Studio to preview
-      </p>
-    </div>
-  </>
+    <p className="text-xs text-gray-500 mt-1.5">
+      {sceneCount} scenes. Opening Studio...
+    </p>
+  </div>
 );
+
+export default DoneStage;

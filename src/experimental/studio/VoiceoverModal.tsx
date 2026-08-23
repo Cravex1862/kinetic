@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Microphone, CircleNotch, CheckCircle, UploadSimple, Subtitles } from '@phosphor-icons/react';
-import { extractAudioFeatures } from '../../utils/audioUtils';
+import { extractAudioFeatures } from '../../renderer/utils/audioUtils';
 
 interface VoiceoverModalProps {
     isOpen: boolean;

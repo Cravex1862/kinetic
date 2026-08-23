@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { ComponentNode, EasingType } from "./semanticParser";
 import { Sliders, TextAa, Palette, Crosshair, Diamond, FrameCorners, Eye } from '@phosphor-icons/react';
-import { BackgroundSelectorPanel, BackgroundSelection } from '../../components/BackgroundSelectorPanel';
+import { BackgroundSelectorPanel, BackgroundSelection } from '../../renderer/components/BackgroundSelectorPanel';
 
 interface InspectorPanelProps {
     selectedNode: ComponentNode | null;

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import type { ComponentNode } from "./semanticParser";
-import type { BeatNetPrediction } from "../../utils/beatDetector";
+import type { BeatNetPrediction } from "../../renderer/utils/beatDetector";
 import { Play, Pause, Diamond, CaretRight, CaretDown, SkipBack, SkipForward, Rewind, FastForward, MusicNotes } from '@phosphor-icons/react';
 
 interface MultiTrackTimelineProps {

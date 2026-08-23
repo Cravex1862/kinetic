@@ -1,6 +1,5 @@
 import React from "react";
 import { Check } from "@phosphor-icons/react";
-import { StageHeader } from "./StageHeader";
 import {
   ClientInterViewAnswers,
   ClientInterviewQuestion,
@@ -80,56 +79,51 @@ export const InterviewingStage: React.FC<InterviewingStageProps> = ({
   customAlert,
   onSubmitAnswers,
 }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
   const [isDone, setIsDone] = React.useState(false);
   const currentAnswers: ClientInterViewAnswers[] = [];
 
-  return (
-    <>
-      <StageHeader
-        label="interviewing"
-        isOpen={isOpen}
-        onToggle={() => setIsOpen(!isOpen)}
-      />
-      {isOpen &&
-        (isDone ? (
-          <div className="">
-            {answers?.map((a) => (
-              <div key={a.id}>
-                <h4 className="text-gray-400 text-xs">
-                  Question {a.id}: {a.question}
-                </h4>
-                <h4 className="text-white text-xs bg-gray-800 p-2 rounded-md m-1">
-                  Answer: {a.answer}
-                </h4>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col max-w-md mx-auto w-full">
-            <div>
-              {questions.map((q) => (
-                <QuestionCard
-                  key={q.id}
-                  question={q}
-                  customAlert={customAlert}
-                  onAnswer={(id, question, answer) => {
-                    currentAnswers.push({ id, question, answer });
-                  }}
-                />
-              ))}
-            </div>
-            <button
-              className="premium-button-primary p-1 rounded-md w-full max-w-md mx-auto"
-              onClick={() => {
-                setIsDone(true);
-                onSubmitAnswers(currentAnswers);
-              }}
-            >
-              Submit
-            </button>
+  if (isDone) {
+    return (
+      <div>
+        {answers?.map((a) => (
+          <div key={a.id}>
+            <h4 className="text-gray-400 text-xs">
+              Question {a.id}: {a.question}
+            </h4>
+            <h4 className="text-white text-xs bg-gray-800 p-2 rounded-md m-1">
+              Answer: {a.answer}
+            </h4>
           </div>
         ))}
-    </>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col max-w-md mx-auto w-full">
+      <div>
+        {questions.map((q) => (
+          <QuestionCard
+            key={q.id}
+            question={q}
+            customAlert={customAlert}
+            onAnswer={(id, question, answer) => {
+              currentAnswers.push({ id, question, answer });
+            }}
+          />
+        ))}
+      </div>
+      <button
+        className="premium-button-primary p-1 rounded-md w-full max-w-md mx-auto"
+        onClick={() => {
+          setIsDone(true);
+          onSubmitAnswers(currentAnswers);
+        }}
+      >
+        Submit
+      </button>
+    </div>
   );
 };
+
+export default InterviewingStage;

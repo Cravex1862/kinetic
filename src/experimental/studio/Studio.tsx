@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ProjectData } from '../AppRouter';
+import type { ProjectData } from '../../renderer/pages/AppRouter';
 import { ArrowLeft, DownloadSimple, CheckCircle, XCircle, CircleNotch, FolderOpen, X, Video, Microphone } from '@phosphor-icons/react';
 import { VoiceoverModal } from './VoiceoverModal';
 import { parseSceneCodeToNodes, updateCodeWithNodeProps, ComponentNode, EasingType } from './semanticParser';
-import { generateFCPXML } from '../../utils/fcpxmlExporter';
+import { generateFCPXML } from '../../renderer/utils/fcpxmlExporter';
 import { InspectorPanel } from './InspectorPanel';
 import { MultiTrackTimeline } from './MultiTrackTimeline';
 import { SceneHierarchyPanel } from './SceneHierarchyPanel';
 import VideoComposition from '@/renderer/scenes/VideoComposition';
 import { Player, PlayerRef } from '@remotion/player';
-import { sanitizeCompositionCode } from '../../agents/pipeline';
-import { getStoredConfig, callLLM } from '../../agents/llmClient';
+import { sanitizeCompositionCode } from '../../renderer/agents/pipeline';
+import { getStoredConfig, callLLM } from '../../renderer/agents/llmClient';
 import { TimelineCommentPins } from './TimelineCommentPins';
 import { buildTargetedCommentPrompt } from './scopedAiEdit';
 import { TimelineCommentPin } from './semanticParser';
@@ -23,7 +23,7 @@ interface StudioProps {
     customAlert: (title: string, message: string) => Promise<void>;
 }
 
-import { BackgroundSelection } from '../../components/BackgroundSelectorPanel';
+import { BackgroundSelection } from '../../renderer/components/BackgroundSelectorPanel';
 
 export const Studio: React.FC<StudioProps> = ({
     project,
