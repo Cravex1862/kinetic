@@ -18,6 +18,7 @@ import {
 } from "@phosphor-icons/react";
 import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
 import { runPipeline, approveCurrentStage } from "@/renderer/agents/pipeline";
+import { pipelineHistory } from "@/renderer/utils/pipelineHistoryStore";
 import { callLLM, getStoredConfig } from "@/renderer/agents/llmClient";
 import { ProjectData } from "../../pages/AppRouter";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
@@ -302,9 +303,16 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     project,
   ]);
 
+  const capturePipelineState = (s: PipelineState) => {
+    setPipelineState(s);
+    pipelineHistory.record(s);
+  };
+
   const handleResume = async () => {
     if (!project || !project.generationState) return;
     setPipelineState({ status: "storyboarding", progress: 0.1 });
+    pipelineHistory.reset();
+    pipelineHistory.record({ status: "storyboarding", progress: 0.1 });
     const resumeState = {
       scenes: project.generationState.scenes,
       componentTrees: project.generationState.componentTrees,
@@ -326,7 +334,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     const output = await runPipeline(
       instructions,
       useNarration ? narration : "",
-      setPipelineState,
+      capturePipelineState,
       { skipRepoGate: true },
     );
     if (output && output.assembled) {
@@ -353,6 +361,8 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     }
     if (!instructions.trim() && !narration.trim()) return;
     setPipelineState({ status: "storyboarding", progress: 0 });
+    pipelineHistory.reset();
+    pipelineHistory.record({ status: "storyboarding", progress: 0 });
     const onCheckpoint = (checkpoint: any) => {
       if (onUpdateProject && project) {
         onUpdateProject({
@@ -368,7 +378,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     const output = await runPipeline(
       instructions,
       useNarration ? narration : "",
-      setPipelineState,
+      capturePipelineState,
       { skipRepoGate: true },
     );
     if (output && output.assembled) {

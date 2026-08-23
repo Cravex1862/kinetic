@@ -19,7 +19,7 @@ import { VideoCompositionViewerModal } from "../components/VideoCompositionViewe
 
 import { sanitizeCompositionCode } from "../agents/pipeline";
 
-import { Studio } from "../../experimental/studio/Studio";
+import { StudioPage } from "./StudioPage";
 
 export interface ProjectData {
   id?: string;
@@ -812,7 +812,7 @@ const AppRouter: React.FC = () => {
         />
       )}
       {page === "basic-studio" && project && (
-        <Studio
+        <StudioPage
           project={project}
           onBack={() => setPage("dashboard")}
           onRename={(newTitle: string) => {

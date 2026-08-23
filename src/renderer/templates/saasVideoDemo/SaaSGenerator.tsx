@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TextB, TextItalic, TextUnderline, Folder, ArrowLeft, Sparkle, UploadSimple, GithubLogo, Palette, X, House, ChartBar, Users, FolderSimple, Gear, SquaresFour, Bell, CaretDown, CheckCircle, DotsThree, MagnifyingGlass, Plus, TrendUp } from '@phosphor-icons/react';
 import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
 import { runPipeline, approveCurrentStage } from '../../agents/pipeline';
+import { pipelineHistory } from '../../utils/pipelineHistoryStore';
 import type { PipelineState } from '../../agents/types';
 import { callLLM, getStoredConfig } from '../../agents/llmClient';
 import type { ProjectData, AlertButton } from '../../pages/AppRouter';
@@ -457,18 +458,24 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
         }));
     };
 
+    const capturePipelineState = (s: PipelineState) => {
+        setPipelineState(s);
+        pipelineHistory.record(s);
+    };
+
     const handleGenerate = async () => {
         if (isGenerating) return;
         if (!instructions.trim() && !narration.trim()) return;
         setRepoPack(null);
         setScannedExports(null);
         setPipelineState(null);
+        pipelineHistory.reset();
         setIsGenerating(true);
         try {
             const output = await runPipeline(
                 instructions,
                 narration,
-                setPipelineState,
+                capturePipelineState,
                 {}
             );
             if (output && output.assembled) {

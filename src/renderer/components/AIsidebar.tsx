@@ -38,6 +38,7 @@ interface InstructionProps {
   handleRefinePrompt?: () => void;
   placeholder?: string;
   StatusProps: StatusRendererProps;
+  initialStates?: PipelineState[];
 }
 
 interface StageSectionProps {
@@ -201,10 +202,16 @@ export const AIsidebar: React.FC<InstructionProps> = ({
   handleRefinePrompt,
   placeholder = "Describe custom layout or animation instructions...",
   StatusProps,
+  initialStates,
 }) => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   let submitedAnswers: ClientInterViewAnswers[] = [];
-  const [states, setStates] = React.useState<PipelineState[]>([]);
+  const [states, setStates] = React.useState<PipelineState[]>(
+    () =>
+      (initialStates || []).filter(
+        (s) => s.status !== "idle" && s.status !== "repoScan",
+      ),
+  );
 
   React.useEffect(() => {
     if (StatusProps.state) {
