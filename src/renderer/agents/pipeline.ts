@@ -17,6 +17,7 @@ import type {
   PipelineState,
   SceneBlueprint,
   SceneCode,
+  SceneOutput,
   DesignTokens,
   AgentConfig,
 } from "./types";
@@ -43,6 +44,24 @@ export interface resultProps {
   assembled: string;
   finalCode: string;
 }
+
+export interface RepoStageApproval {
+  confirmed: boolean;
+  repoContext?: string;
+}
+
+export interface RunPipelineOptions {
+  interviewAnswers?: ClientInterViewAnswers[];
+  skipRepoGate?: boolean;
+}
+
+const REPO_CONTEXT_MAX_CHARS = 150_000;
+const REPO_SCENE_CONTEXT_CHARS = 6_000;
+
+const truncate = (text: string, maxChars: number): string => {
+  if (text.length <= maxChars) return text;
+  return `${text.slice(0, maxChars)}\n\n[...context truncated to fit model window...]`;
+};
 
 let resumeResolver: ((data?: any) => void) | null = null;
 
@@ -228,11 +247,7 @@ export async function runTSXPipeline(
   prompt: string,
   narration: string = "",
   onState: (state: PipelineState) => void,
-  projectTitle?: string,
-  savePath?: string | unknown,
-  onCheckpoint?: unknown,
-  resumeState?: unknown,
-  interviewAnswers?: ClientInterViewAnswers[],
+  options: RunPipelineOptions = {},
 ): Promise<resultProps | null | ""> {
   const config = getStoredConfig();
   if (!config) {
@@ -244,8 +259,31 @@ export async function runTSXPipeline(
     return "";
   }
 
+  // ── Step 0: Repo Scan Gate (SaaS flow) ───────────────────────────────────
+  let repoContext = "";
+  if (!options.skipRepoGate) {
+    onState({ status: "repoScan", progress: 0 });
+    console.log("[Manager] Repo Scan stage — waiting for scan or skip...");
+    const repoApproval: RepoStageApproval | undefined = await waitForApproval();
+    if (repoApproval?.confirmed && repoApproval.repoContext) {
+      repoContext = truncate(repoApproval.repoContext, REPO_CONTEXT_MAX_CHARS);
+      console.log(
+        `[Manager] Repo context approved (${repoContext.length} chars).`,
+      );
+    } else {
+      console.log("[Manager] Repo scan skipped — continuing without context.");
+    }
+  }
+
+  const enrichedPrompt = repoContext
+    ? `${prompt}\n\n[Scanned Product Codebase Context]\n${repoContext}`
+    : prompt;
+  const sceneLevelContext = repoContext
+    ? `\n\n[Scanned Codebase Context]\n${truncate(repoContext, REPO_SCENE_CONTEXT_CHARS)}`
+    : "";
+
   // ── Step 1: Design Agent ──────────────────────────────────────────────────
-  onState({ status: "designing", progress: 0.02 });
+  onState({ status: "designing", progress: repoContext ? 0.02 : 0.03 });
   console.log("[Manager] Design Agent starting...");
 
   let designTokens: DesignTokens;
@@ -300,7 +338,7 @@ export async function runTSXPipeline(
   try {
     blueprints = await runStoryboardAgent(
       config,
-      prompt,
+      enrichedPrompt,
       narration,
       approvedInterviewAnswers,
       designTokens,
@@ -329,7 +367,7 @@ export async function runTSXPipeline(
   console.log("[Manager] Creating scenes...");
 
   const scenePromise = blueprints.map(async (bp) => {
-    const prompt = `${bp.purpose}\n It should be ${bp.durationInFrames} long in frames`;
+    const prompt = `${bp.purpose}\n It should be ${bp.durationInFrames} long in frames${sceneLevelContext}`;
     const result = await runSceneCreatorAgent(
       config,
       bp.componentList,
@@ -380,7 +418,26 @@ export async function runTSXPipeline(
     console.log("[Manager] VideoComposition.tsx written to disk.");
   }
 
-  onState({ status: "done", progress: 1.0, sceneCodes, assembled, finalCode });
+  const sceneOutputs: SceneOutput[] = blueprints.map((bp) => {
+    return {
+      sceneId: bp.id,
+      description: bp.purpose,
+      duration: bp.durationInFrames,
+      components: [],
+      keyframes: [],
+      narration: narration || "",
+      captions: [],
+    };
+  });
+
+  onState({
+    status: "done",
+    progress: 1.0,
+    output: sceneOutputs,
+    sceneCodes,
+    assembled,
+    finalCode,
+  });
   console.log("[Manager] Pipeline complete!");
   const finalOutput: resultProps = {
     designTokens,

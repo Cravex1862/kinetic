@@ -3,7 +3,7 @@ import * as path from 'path'; // Imports node path utility to find system folder
 import * as fs from 'fs'; // Imports node file system utility to interact with files on the disk.
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { ExportVideoOptions } from './preload';
+import { ExportVideoOptions, RepoPackResult } from './preload';
 
 const execPromise = promisify(exec);
 
@@ -370,6 +370,64 @@ function registerIpcHandlers(): void {
       return results;
     } catch (e: unknown) {
       console.error('Failed to clone and scan git repo:', e instanceof Error ? e.message : e);
+      return null;
+    }
+  });
+
+  const GIT_URL_PATTERN = /^(?:https?:\/\/|git@|ssh:\/\/)/i;
+
+  const runRepomixOnDirectory = async (targetDir: string): Promise<RepoPackResult> => {
+    const workDir = path.join(app.getPath('temp'), `kinetic_repomix_${Date.now()}`);
+    fs.mkdirSync(workDir, { recursive: true });
+    const outputFile = path.join(workDir, 'repomix-output.xml');
+
+    try {
+      await execPromise(
+        `npx -y repomix@latest --style xml --output "${outputFile}" "${targetDir}"`,
+        { timeout: 300000, maxBuffer: 10 * 1024 * 1024 }
+      );
+      if (!fs.existsSync(outputFile)) {
+        throw new Error('repomix did not produce an output file');
+      }
+      const content = fs.readFileSync(outputFile, 'utf-8');
+      const totalFiles = (content.match(/<file path=/g) ?? []).length;
+      return {
+        content,
+        filePath: outputFile,
+        totalFiles,
+        totalCharacters: content.length
+      };
+    } finally {
+      fs.rmSync(workDir, { recursive: true, force: true });
+    }
+  };
+
+  ipcMain.handle('pack-repo', async (_event: Electron.IpcMainInvokeEvent, source: string): Promise<RepoPackResult | null> => {
+    try {
+      let targetDir = source.trim();
+      let clonedTempDir: string | null = null;
+
+      if (GIT_URL_PATTERN.test(targetDir)) {
+        clonedTempDir = path.join(app.getPath('temp'), `kinetic_pack_clone_${Date.now()}`);
+        fs.mkdirSync(clonedTempDir, { recursive: true });
+        await execPromise(`git clone --depth 1 "${targetDir}" "${clonedTempDir}"`);
+        targetDir = clonedTempDir;
+      }
+
+      if (!fs.existsSync(targetDir)) {
+        console.error(`pack-repo: target directory not found: ${targetDir}`);
+        return null;
+      }
+
+      try {
+        return await runRepomixOnDirectory(targetDir);
+      } finally {
+        if (clonedTempDir) {
+          fs.rmSync(clonedTempDir, { recursive: true, force: true });
+        }
+      }
+    } catch (e: unknown) {
+      console.error('Failed to pack repo with repomix:', e instanceof Error ? e.message : e);
       return null;
     }
   });

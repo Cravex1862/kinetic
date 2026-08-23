@@ -92,6 +92,7 @@ export interface SceneCode {
 export interface PipelineState {
   status:
     | "idle"
+    | "repoScan"
     | "designing"
     | "interviewing"
     | "storyboarding"

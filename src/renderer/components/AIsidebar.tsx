@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
-import { Sparkle } from "@phosphor-icons/react";
-import { BrandStylingPanel, StylingProps } from "./BrandStylingPanel";
-import { BackgroundSelection } from "./BackgroundSelectorPanel";
-import { PipelineState, SceneBlueprint, SceneCode } from "../agents/types";
+import React from "react";
+import { Sparkle, CaretDown, CaretLeft } from "@phosphor-icons/react";
+import { StylingProps } from "./BrandStylingPanel";
+import type { PipelineState, SceneBlueprint, SceneCode } from "../agents/types";
 import {
   ClientInterViewAnswers,
   ClientInterviewQuestion,
@@ -15,16 +14,20 @@ import { AssemblingStage } from "./sidebar-components/AssemblingStage";
 import { VerifyingStage } from "./sidebar-components/VerifyingStage";
 import { DoneStage } from "./sidebar-components/DoneStage";
 import { ErrorStage } from "./sidebar-components/ErrorStage";
+import { RepoScanStage } from "./sidebar-components/RepoScanStage";
+import type { RepoScanStageProps } from "./sidebar-components/RepoScanStage";
 
 interface StatusRendererProps extends StylingProps {
   state: PipelineState;
-  questions: ClientInterviewQuestion[];
+  questions?: ClientInterviewQuestion[];
   customAlert: (title: string, message: string) => Promise<void>;
   onSubmitAnswers: (id: number, question: string, answer: string) => void;
   onApproveStage?: (data?: any) => void;
   answers?: ClientInterViewAnswers[];
   blueprints?: SceneBlueprint[];
   sceneCodes?: SceneCode[];
+  repoScan?: RepoScanStageProps;
+  isActive?: boolean;
 }
 
 interface InstructionProps {
@@ -36,6 +39,48 @@ interface InstructionProps {
   placeholder?: string;
   StatusProps: StatusRendererProps;
 }
+
+interface StageSectionProps {
+  label: string;
+  isActive: boolean;
+  accentClass?: string;
+  children: React.ReactNode;
+}
+
+const StageSection: React.FC<StageSectionProps> = ({
+  label,
+  isActive,
+  accentClass = "text-gray-400",
+  children,
+}) => {
+  const [override, setOverride] = React.useState<boolean | null>(null);
+  const isOpen = override ?? isActive;
+
+  return (
+    <div className="stage-enter mb-1 rounded-lg">
+      <div
+        className="flex items-center justify-between px-1 py-1 cursor-pointer select-none group"
+        onClick={() => setOverride(!isOpen)}
+      >
+        <h4
+          className={`text-[11px] font-bold tracking-wide ${accentClass} ${
+            isActive ? "" : "opacity-70"
+          }`}
+        >
+          {label}
+        </h4>
+        <span className="text-gray-500 group-hover:text-gray-300 transition-colors">
+          {isOpen ? (
+            <CaretDown size={11} weight="bold" />
+          ) : (
+            <CaretLeft size={11} weight="bold" />
+          )}
+        </span>
+      </div>
+      {isOpen && <div className="px-1 pb-2">{children}</div>}
+    </div>
+  );
+};
 
 function StatusRenderer({
   fonts,
@@ -53,63 +98,104 @@ function StatusRenderer({
   answers,
   blueprints,
   sceneCodes,
+  repoScan,
+  isActive = false,
 }: StatusRendererProps) {
   switch (state.status) {
+    case "repoScan":
+      return (
+        <StageSection label="Repo Scan" isActive={isActive}>
+          <RepoScanStage {...repoScan} onApprove={onApproveStage} />
+        </StageSection>
+      );
     case "designing":
       return (
-        <DesigningStage
-          fonts={fonts}
-          setFonts={setFonts}
-          swatches={swatches}
-          setSwatches={setSwatches}
-          availableFonts={availableFonts}
-          bgSelection={bgSelection}
-          onSelectBackground={onSelectBackground}
-          onApprove={onApproveStage}
-        />
+        <StageSection label="Designing" isActive={isActive}>
+          <DesigningStage
+            fonts={fonts}
+            setFonts={setFonts}
+            swatches={swatches}
+            setSwatches={setSwatches}
+            availableFonts={availableFonts}
+            bgSelection={bgSelection}
+            onSelectBackground={onSelectBackground}
+            onApprove={onApproveStage}
+          />
+        </StageSection>
       );
     case "interviewing":
       return (
-        <InterviewingStage
-          questions={questions}
-          answers={answers}
-          customAlert={customAlert}
-          onSubmitAnswers={(submittedAnswers) => {
-            submittedAnswers.forEach((a) =>
-              onSubmitAnswers(a.id, a.question, a.answer),
-            );
-            onApproveStage?.(submittedAnswers);
-          }}
-        />
+        <StageSection label="Interview" isActive={isActive}>
+          <InterviewingStage
+            questions={questions || []}
+            answers={answers}
+            customAlert={customAlert}
+            onSubmitAnswers={(submittedAnswers) => {
+              submittedAnswers.forEach((a) =>
+                onSubmitAnswers(a.id, a.question, a.answer),
+              );
+              onApproveStage?.(submittedAnswers);
+            }}
+          />
+        </StageSection>
       );
     case "storyboarding":
-      return <StoryboardingStage blueprints={blueprints || []} />;
+      return (
+        <StageSection label="Storyboarding" isActive={isActive}>
+          <StoryboardingStage blueprints={blueprints || []} />
+        </StageSection>
+      );
     case "sceneCreation":
-      return <SceneCreationStage sceneCodes={sceneCodes || []} />;
+      return (
+        <StageSection label="Creating Scenes" isActive={isActive}>
+          <SceneCreationStage sceneCodes={sceneCodes || []} />
+        </StageSection>
+      );
     case "assembling":
       return (
-        <AssemblingStage
-          sceneCodes={sceneCodes || []}
-          progress={state.progress}
-        />
+        <StageSection label="Assembling" isActive={isActive}>
+          <AssemblingStage
+            sceneCodes={sceneCodes || []}
+            progress={state.progress}
+          />
+        </StageSection>
       );
     case "verifying":
       return (
-        <VerifyingStage
-          assembled={state.assembled}
-          finalCode={state.finalCode}
-        />
+        <StageSection label="Verifying" isActive={isActive}>
+          <VerifyingStage
+            assembled={state.assembled}
+            finalCode={state.finalCode}
+          />
+        </StageSection>
       );
     case "done":
-      return <DoneStage sceneCount={sceneCodes?.length || 0} />;
+      return (
+        <StageSection
+          label="Complete"
+          isActive={isActive}
+          accentClass="text-green-400"
+        >
+          <DoneStage sceneCount={sceneCodes?.length || 0} />
+        </StageSection>
+      );
     case "error":
-      return <ErrorStage error={state.error} />;
+      return (
+        <StageSection
+          label="Error"
+          isActive={isActive}
+          accentClass="text-red-400"
+        >
+          <ErrorStage error={state.error} />
+        </StageSection>
+      );
     default:
       return null;
   }
 }
 
 export const AIsidebar: React.FC<InstructionProps> = ({
+  instructions,
   setInstructions,
   isRefining = false,
   handleRefinePrompt,
@@ -124,10 +210,20 @@ export const AIsidebar: React.FC<InstructionProps> = ({
     if (StatusProps.state) {
       setStates((prevStates) => {
         const laststate = prevStates[prevStates.length - 1];
-        if (!laststate || laststate.status !== StatusProps.state.status) {
+        if (!laststate) {
+          if (StatusProps.state.status === "idle") return prevStates;
           return [...prevStates, StatusProps.state];
         }
-        return prevStates;
+        if (laststate.status !== StatusProps.state.status) {
+          return [...prevStates, StatusProps.state];
+        }
+        if (laststate === StatusProps.state) {
+          return prevStates;
+        }
+        return [
+          ...prevStates.slice(0, -1),
+          { ...laststate, ...StatusProps.state },
+        ];
       });
     }
   }, [StatusProps.state]);
@@ -139,6 +235,9 @@ export const AIsidebar: React.FC<InstructionProps> = ({
     }
   }, [StatusProps.state]);
 
+  const activeStatus =
+    states.length > 0 ? states[states.length - 1].status : null;
+
   return (
     <section
       className="bg-gray-900/40 border border-gray-900 rounded-xl p-4 flex flex-col w-full h-full"
@@ -149,10 +248,15 @@ export const AIsidebar: React.FC<InstructionProps> = ({
           Generate your animations
         </h4>
       </div>
-      <div className="grow m-2">
+      <div className="grow m-2 overflow-y-auto">
+        {states.length === 0 && (
+          <p className="text-[10px] text-gray-600 leading-relaxed mt-1 mb-2">
+            Describe your video below and hit Generate to start the pipeline.
+          </p>
+        )}
         {states.map((state, idx) => (
           <StatusRenderer
-            key={idx}
+            key={`${idx}-${state.status}`}
             {...StatusProps}
             state={state}
             questions={state.questions || []}
@@ -166,6 +270,7 @@ export const AIsidebar: React.FC<InstructionProps> = ({
             }}
             blueprints={state.blueprints || []}
             sceneCodes={state.sceneCodes || []}
+            isActive={state.status === activeStatus}
           />
         ))}
       </div>
@@ -174,6 +279,7 @@ export const AIsidebar: React.FC<InstructionProps> = ({
           ref={textareaRef}
           onChange={(e) => setInstructions(e.target.value)}
           placeholder={placeholder}
+          value={instructions}
           className={`w-full min-h-[80px] resize-none premium input p-2  text-xs rounded-lg bg-gray-950/60 font-sans transition-all overflow-hidden duration-500 ${
             isRefining
               ? "border-blue-500 animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.3)]"
@@ -216,3 +322,5 @@ export const AIsidebar: React.FC<InstructionProps> = ({
     </section>
   );
 };
+
+export default AIsidebar;

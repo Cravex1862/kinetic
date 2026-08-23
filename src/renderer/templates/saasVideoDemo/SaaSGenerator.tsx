@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TextB, TextItalic, TextUnderline, Folder, ArrowLeft, Sparkle, UploadSimple, GithubLogo, Palette, X, House, ChartBar, Users, FolderSimple, Gear, SquaresFour } from '@phosphor-icons/react';
+import { TextB, TextItalic, TextUnderline, Folder, ArrowLeft, Sparkle, UploadSimple, GithubLogo, Palette, X, House, ChartBar, Users, FolderSimple, Gear, SquaresFour, Bell, CaretDown, CheckCircle, DotsThree, MagnifyingGlass, Plus, TrendUp } from '@phosphor-icons/react';
 import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
-import { BrowserFrame, SidebarLayout } from '../../primitives/StructuralSDK';
 import { runPipeline } from '../../agents/pipeline';
 import type { PipelineState } from '../../agents/types';
 import { callLLM, getStoredConfig } from '../../agents/llmClient';
@@ -438,27 +437,12 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
 
     const handleGenerate = async () => {
         if (!instructions.trim() && !narration.trim()) return;
-        setPipelineState({ status: 'storyboarding', progress: 0 });
-        const onCheckpoint = (checkpoint: any) => {
-            if (onUpdateProject && project) {
-                onUpdateProject({
-                    ...project,
-                    ...checkpoint,
-                    fonts,
-                    colors: { ...swatches, backgroundImage },
-                    bgDescription,
-                    showVisualizer
-                });
-            }
-        };
+        setPipelineState(null);
         const output = await runPipeline(
             instructions,
             narration,
             setPipelineState,
-            project?.savePath,
-            project?.generationState,
-            onCheckpoint,
-            project?.title
+            {}
         );
         if (output && output.assembled) {
             onGenerate({
@@ -721,180 +705,261 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({ onBack, onGenerate, 
                         ) : (
                             /* 3D Tilted Interactive Mockup Canvas with Sharp Subpixel Text & Crisp GPU Rasterization */
                             <div className="w-full h-full flex items-center justify-center transition-transform duration-500 ease-out [transform-style:preserve-3d] [backface-visibility:hidden] [will-change:transform] antialiased [transform:rotateX(6deg)_rotateY(-4deg)_scale(0.98)] hover:[transform:rotateX(0deg)_rotateY(0deg)_scale(1)] shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_40px_rgba(139,92,246,0.15)] rounded-xl border border-purple-500/20 overflow-hidden">
-                                <BrowserFrame
-                                    glowConfig={{ enabled: false, color: '', intensity: 0, spread: 0 }}
-                                    url="app.kinetic.dev/dashboard"
-                                    osType="mac"
-                                    style={{
-                                        backgroundColor: swatches['Background'] || '#0f172a',
-                                        fontFamily: fonts['Paragraph'].fontFamily,
-                                    }}
-                                >
-                                    <SidebarLayout
-                                        sidebarWidth={175}
-                                        style={{
-                                            backgroundColor: '#090d16'
-                                        }}
-                                        sidebarContent={
-                                            <div className="flex flex-col h-full justify-between p-3 text-[9.5px] font-medium tracking-wide">
-                                                <div className="space-y-4">
-                                                    {/* Brand Logo & Name */}
-                                                    <div className="flex items-center gap-2.5 px-1 pb-2 border-b border-gray-800/80">
-                                                        <div style={{ backgroundColor: swatches['Primary'] || '#8b5cf6' }} className="h-5 w-5 rounded-md flex items-center justify-center font-black text-[10px] text-white shadow-sm">K</div>
-                                                        <span className="font-extrabold text-xs text-white tracking-tight">Kinetic App</span>
-                                                    </div>
+                                <div className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: swatches['Background'] || '#0f172a', fontFamily: fonts['Paragraph'].fontFamily }}>
+                                    <div className="h-8 shrink-0 flex items-center gap-3 px-3.5 bg-black/40 border-b border-white/[0.06] select-none">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                                            <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                                            <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                                        </div>
+                                        <div className="flex items-center ml-1 text-gray-600">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="ml-1 opacity-40"><path d="M9 18l6-6-6-6" /></svg>
+                                        </div>
+                                        <div className="flex-1 max-w-[320px] mx-auto h-[22px] rounded-md bg-white/[0.05] border border-white/[0.04] flex items-center justify-center gap-1.5 overflow-hidden">
+                                            <svg width="8" height="8" viewBox="0 0 24 24" fill="#34d399" className="shrink-0"><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 018 0v3" fill="none" stroke="#34d399" strokeWidth="2.4" /></svg>
+                                            <span className="text-[9px] text-gray-400 tracking-wide truncate">app.kinetic.dev/dashboard</span>
+                                        </div>
+                                        <Plus size={11} className="text-gray-600 shrink-0" />
+                                    </div>
 
-                                                    {/* Navigation Menu with Phosphor Icons */}
-                                                    <div className="space-y-1.5">
-                                                        <div style={{ backgroundColor: `${swatches['Primary'] || '#8b5cf6'}25`, color: swatches['Primary'] || '#8b5cf6' }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold">
-                                                            <House size={14} weight="fill" className="text-purple-400" />
-                                                            <span>Dashboard</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
-                                                            <ChartBar size={14} />
-                                                            <span>Analytics</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
-                                                            <Users size={14} />
-                                                            <span>Customers</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
-                                                            <FolderSimple size={14} />
-                                                            <span>Projects</span>
-                                                        </div>
+                                    <div className="flex-1 min-h-0 flex">
+                                        <aside className="w-[164px] shrink-0 min-h-0 overflow-hidden flex flex-col justify-between py-3 px-2.5 text-[9px] font-medium tracking-wide border-r border-white/[0.05]" style={{ backgroundColor: '#080b12' }}>
+                                            <div className="space-y-3 min-h-0">
+                                                <div className="flex items-center gap-2 px-1 pb-2 border-b border-white/[0.05]">
+                                                    <img src={logoIcon} alt="Kinetic" className="h-4 w-4 object-contain shrink-0" style={{ filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.5)) brightness(1.15)' }} />
+                                                    <span className="flex-1 font-extrabold text-[10.5px] text-white tracking-tight truncate">Kinetic App</span>
+                                                    <CaretDown size={9} className="text-gray-600 shrink-0" />
+                                                </div>
+                                                <div className="flex items-center gap-1.5 h-6 px-2 rounded-md bg-white/[0.03] border border-white/[0.05]">
+                                                    <MagnifyingGlass size={9} className="text-gray-600 shrink-0" />
+                                                    <span className="text-[8px] text-gray-600 truncate">Quick find...</span>
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <span className="block px-1 pb-1 text-[6.5px] font-bold uppercase tracking-[0.18em] text-gray-600">Main</span>
+                                                    <div style={{ backgroundColor: `${swatches['Primary'] || '#8b5cf6'}25`, color: swatches['Primary'] || '#8b5cf6' }} className="flex items-center gap-2 px-2 py-1.5 rounded-lg font-semibold">
+                                                        <House size={12} weight="fill" />
+                                                        <span>Dashboard</span>
+                                                        <span style={{ backgroundColor: swatches['Primary'] || '#8b5cf6' }} className="ml-auto w-3.5 h-3 rounded-sm flex items-center justify-center text-[6px] font-bold text-white">8</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
+                                                        <ChartBar size={12} />
+                                                        <span>Analytics</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
+                                                        <Users size={12} />
+                                                        <span>Customers</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
+                                                        <FolderSimple size={12} />
+                                                        <span>Projects</span>
                                                     </div>
                                                 </div>
-
-                                                {/* Bottom User Profile Badge & Settings */}
-                                                <div className="space-y-2 border-t border-gray-800/80 pt-2.5">
-                                                    <div className="flex items-center gap-2.5 px-2 py-1 text-gray-400 hover:text-gray-200 rounded-lg">
-                                                        <Gear size={14} />
-                                                        <span>Settings</span>
+                                                <div className="space-y-0.5">
+                                                    <span className="block px-1 pb-1 text-[6.5px] font-bold uppercase tracking-[0.18em] text-gray-600">Workspace</span>
+                                                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
+                                                        <SquaresFour size={12} />
+                                                        <span>Integrations</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2 bg-gray-900/90 p-1.5 rounded-lg border border-gray-800">
-                                                        <div className="h-6 w-6 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-[9px] border border-purple-400">
-                                                            AK
-                                                        </div>
-                                                        <div className="flex flex-col truncate">
-                                                            <span className="text-white text-[9px] font-bold truncate">Ashwin K.</span>
-                                                            <span className="text-gray-500 text-[7.5px] truncate">Pro Workspace</span>
-                                                        </div>
+                                                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-400 hover:text-gray-200 rounded-lg transition-colors">
+                                                        <Gear size={12} />
+                                                        <span>Settings</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                        }
-                                    >
+
+                                            <div className="space-y-2 shrink-0 border-t border-white/[0.05] pt-2.5">
+                                                <div className="px-1">
+                                                    <div className="flex justify-between text-[6.5px] text-gray-500 mb-1">
+                                                        <span>Storage</span>
+                                                        <span className="font-bold text-gray-400">68%</span>
+                                                    </div>
+                                                    <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
+                                                        <div className="h-full rounded-full" style={{ width: '68%', backgroundColor: swatches['Primary'] || '#8b5cf6' }} />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 bg-white/[0.04] p-1.5 rounded-lg border border-white/[0.06]">
+                                                    <div style={{ background: `linear-gradient(135deg, ${swatches['Primary'] || '#8b5cf6'}, ${swatches['Accent'] || '#f59e0b'})` }} className="h-6 w-6 rounded-full text-white font-bold flex items-center justify-center text-[8px] shrink-0">
+                                                        DU
+                                                    </div>
+                                                    <div className="flex flex-col truncate">
+                                                        <span className="text-white text-[9px] font-bold truncate">Demo User</span>
+                                                        <span className="text-gray-500 text-[7.5px] truncate">Pro Workspace</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </aside>
+
                                         <div
+                                            className="flex-1 min-w-0 min-h-0 relative flex flex-col"
                                             style={{
                                                 backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
                                                 backgroundSize: 'cover',
                                                 backgroundPosition: 'center',
                                             }}
-                                            className="p-3.5 flex flex-col gap-3 h-full min-h-0 w-full justify-between bg-slate-900/95"
                                         >
-                                            {/* Header Bar */}
-                                            <div className="flex justify-between items-center border-b border-gray-800/80 pb-2.5">
-                                                <div className="flex items-center gap-2 bg-gray-950/80 px-2.5 py-1 rounded-lg border border-gray-800 text-[8.5px] text-gray-400 w-52">
-                                                    <span className="text-gray-500">🔍</span>
-                                                    <span className="truncate">Search metrics, customers, routes...</span>
+                                            <header className="h-9 shrink-0 px-3 flex items-center justify-between border-b border-white/[0.06] bg-slate-950/70 backdrop-blur-sm">
+                                                <div className="flex items-center gap-1.5 text-[8.5px]">
+                                                    <span className="text-gray-500">Dashboard</span>
+                                                    <span className="text-gray-700">/</span>
+                                                    <span className="text-gray-200 font-semibold">Overview</span>
                                                 </div>
-
-                                                <div className="flex items-center gap-2">
-                                                    <div style={{ backgroundColor: swatches['Primary'] || '#8b5cf6' }} className="px-2.5 py-1 rounded-lg text-[8px] font-bold text-white shadow-md shadow-purple-500/20 whitespace-nowrap cursor-pointer">
-                                                        + New Campaign
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="hidden md:flex items-center gap-1.5 h-6 w-36 px-2 rounded-md bg-white/[0.04] border border-white/[0.06]">
+                                                        <MagnifyingGlass size={9} className="text-gray-500 shrink-0" />
+                                                        <span className="text-[8px] text-gray-500 truncate">Search metrics...</span>
                                                     </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Page Title & Subtitle */}
-                                            <div className="space-y-0.5">
-                                                <h1
-                                                    style={{
-                                                        fontFamily: fonts['Title Font'].fontFamily,
-                                                        color: fonts['Title Font'].color,
-                                                        fontWeight: fonts['Title Font'].bold ? 'bold' : 'normal',
-                                                        fontStyle: fonts['Title Font'].italic ? 'italic' : 'normal',
-                                                        textDecoration: fonts['Title Font'].underline ? 'underline' : 'none',
-                                                        fontSize: `${Math.min(18, fonts['Title Font'].size / 2.3)}px`
-                                                    }}
-                                                    className="tracking-tight font-bold"
-                                                >
-                                                    {instructions.trim() ? instructions.slice(0, 42) : 'SaaS Product Analytics'}
-                                                </h1>
-                                                <p
-                                                    style={{
-                                                        fontFamily: fonts['Paragraph'].fontFamily,
-                                                        color: fonts['Paragraph'].color,
-                                                        fontWeight: fonts['Paragraph'].bold ? 'bold' : 'normal',
-                                                        fontStyle: fonts['Paragraph'].italic ? 'italic' : 'normal',
-                                                        textDecoration: fonts['Paragraph'].underline ? 'underline' : 'none',
-                                                        fontSize: `${Math.min(9, fonts['Paragraph'].size / 1.4)}px`
-                                                    }}
-                                                    className="opacity-70 truncate max-w-lg"
-                                                >
-                                                    {narration.trim() ? narration.slice(0, 75) + '...' : 'Live product walkthrough metrics, ARR growth, and customer engagement.'}
-                                                </p>
-                                            </div>
-
-                                            {/* 3 Real-time Metric Glass Cards */}
-                                            <div className="grid grid-cols-3 gap-2.5">
-                                                <div className="bg-gray-950/80 border border-gray-800 rounded-xl p-2 space-y-1 shadow-sm">
-                                                    <span className="text-[7px] uppercase tracking-wider text-gray-400 block font-bold">ARR Revenue</span>
-                                                    <span style={{ fontFamily: fonts['Heading'].fontFamily, color: swatches['Secondary'] || '#a78bfa' }} className="text-sm font-extrabold block">$184,200</span>
-                                                    <span className="text-[6.5px] text-emerald-400 font-bold block">↑ +28.4% this month</span>
-                                                </div>
-                                                <div className="bg-gray-950/80 border border-gray-800 rounded-xl p-2 space-y-1 shadow-sm">
-                                                    <span className="text-[7px] uppercase tracking-wider text-gray-400 block font-bold">Active Customers</span>
-                                                    <span style={{ fontFamily: fonts['Heading'].fontFamily, color: swatches['Secondary'] || '#a78bfa' }} className="text-sm font-extrabold block">4,892</span>
-                                                    <span className="text-[6.5px] text-purple-400 font-bold block">99.9% Platform Uptime</span>
-                                                </div>
-                                                <div className="bg-gray-950/80 border border-gray-800 rounded-xl p-2 space-y-1 shadow-sm">
-                                                    <span className="text-[7px] uppercase tracking-wider text-gray-400 block font-bold">Conversion Rate</span>
-                                                    <span style={{ fontFamily: fonts['Heading'].fontFamily, color: swatches['Secondary'] || '#a78bfa' }} className="text-sm font-extrabold block">5.14%</span>
-                                                    <span className="text-[6.5px] text-emerald-400 font-bold block">↑ +1.8% vs benchmark</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Main Content Area: Usage Analytics Bar Chart + Live Stream */}
-                                            <div className="grid grid-cols-5 gap-2.5 flex-1 min-h-0">
-                                                {/* Bar Chart Container */}
-                                                <div className="col-span-3 bg-gray-950/90 border border-gray-800 rounded-xl p-2.5 flex flex-col justify-between">
-                                                    <div className="flex justify-between items-center text-[7.5px] text-gray-400 border-b border-gray-800/60 pb-1.5">
-                                                        <span className="font-bold text-gray-200 uppercase tracking-wider text-[7px]">Monthly Active Usage</span>
-                                                        <span className="text-purple-400 font-bold">6-Month Velocity</span>
+                                                    <div className="relative text-gray-400">
+                                                        <Bell size={12} />
+                                                        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-red-500 ring-2 ring-slate-900" />
                                                     </div>
-                                                    <div className="flex-1 flex items-end gap-2.5 justify-center px-3 pt-2">
-                                                        <div style={{ backgroundColor: swatches['Primary'] || '#8b5cf6', height: '45%' }} className="w-4 rounded-t-md opacity-80" />
-                                                        <div style={{ backgroundColor: swatches['Primary'] || '#8b5cf6', height: '65%' }} className="w-4 rounded-t-md opacity-85" />
-                                                        <div style={{ backgroundColor: swatches['Primary'] || '#8b5cf6', height: '80%' }} className="w-4 rounded-t-md opacity-90" />
-                                                        <div style={{ backgroundColor: swatches['Primary'] || '#8b5cf6', height: '55%' }} className="w-4 rounded-t-md opacity-80" />
-                                                        <div style={{ backgroundColor: swatches['Primary'] || '#8b5cf6', height: '90%' }} className="w-4 rounded-t-md opacity-95" />
-                                                        <div style={{ backgroundColor: swatches['Accent'] || '#f59e0b', height: '100%' }} className="w-4 rounded-t-md animate-pulse shadow-lg" />
+                                                    <button style={{ backgroundColor: swatches['Primary'] || '#8b5cf6' }} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[8px] font-bold text-white shadow-md shadow-purple-900/30 whitespace-nowrap cursor-pointer">
+                                                        <Plus size={8} weight="bold" />
+                                                        New Campaign
+                                                    </button>
+                                                </div>
+                                            </header>
+
+                                            <div className="flex-1 min-h-0 p-3 flex flex-col gap-2.5 justify-between overflow-hidden">
+                                                <div className="space-y-0.5 shrink-0">
+                                                    <div className="flex items-end justify-between gap-2">
+                                                        <h1
+                                                            style={{
+                                                                fontFamily: fonts['Title Font'].fontFamily,
+                                                                color: fonts['Title Font'].color,
+                                                                fontWeight: fonts['Title Font'].bold ? 'bold' : 'normal',
+                                                                fontStyle: fonts['Title Font'].italic ? 'italic' : 'normal',
+                                                                textDecoration: fonts['Title Font'].underline ? 'underline' : 'none',
+                                                                fontSize: `${Math.min(17, fonts['Title Font'].size / 2.5)}px`
+                                                            }}
+                                                            className="tracking-tight font-bold"
+                                                        >
+                                                            {instructions.trim() ? instructions.slice(0, 42) : 'SaaS Product Analytics'}
+                                                        </h1>
+                                                        <span className="shrink-0 mb-0.5 px-1.5 py-px rounded-md bg-emerald-400/10 border border-emerald-400/20 text-[6.5px] font-bold text-emerald-400 uppercase tracking-wider">Live</span>
                                                     </div>
+                                                    <p
+                                                        style={{
+                                                            fontFamily: fonts['Paragraph'].fontFamily,
+                                                            color: fonts['Paragraph'].color,
+                                                            fontWeight: fonts['Paragraph'].bold ? 'bold' : 'normal',
+                                                            fontStyle: fonts['Paragraph'].italic ? 'italic' : 'normal',
+                                                            textDecoration: fonts['Paragraph'].underline ? 'underline' : 'none',
+                                                            fontSize: `${Math.min(9, fonts['Paragraph'].size / 1.4)}px`
+                                                        }}
+                                                        className="opacity-70 truncate max-w-lg"
+                                                    >
+                                                        {narration.trim() ? narration.slice(0, 75) + '...' : 'Live product walkthrough metrics, ARR growth, and customer engagement.'}
+                                                    </p>
                                                 </div>
 
-                                                {/* Live Stream Audit List */}
-                                                <div className="col-span-2 bg-gray-950/90 border border-gray-800 rounded-xl p-2 flex flex-col gap-1.5 text-[7px]">
-                                                    <span className="font-bold text-gray-200 uppercase tracking-wider text-[6.5px] border-b border-gray-800 pb-1 block">Live Audit Stream</span>
-                                                    <div className="space-y-1.5 overflow-hidden">
-                                                        <div className="flex justify-between items-center bg-gray-900/90 p-1.5 rounded-lg border border-gray-800">
-                                                            <span className="text-gray-200 font-medium truncate">Enterprise License</span>
-                                                            <span className="text-emerald-400 font-bold text-[6.5px]">+$2,400</span>
+                                                <div className="grid grid-cols-4 gap-2 shrink-0">
+                                                    {[
+                                                        { label: 'ARR Revenue', value: '$184,200', delta: '+28.4%', tone: 'text-emerald-400' },
+                                                        { label: 'Active Customers', value: '4,892', delta: '+6.2%', tone: 'text-emerald-400' },
+                                                        { label: 'Conversion Rate', value: '5.14%', delta: '+1.8pt', tone: 'text-purple-400' },
+                                                        { label: 'Net Churn', value: '0.42%', delta: '-0.3pt', tone: 'text-sky-400' },
+                                                    ].map((kpi) => (
+                                                        <div key={kpi.label} className="bg-gray-950/80 border border-gray-800 rounded-xl p-2 shadow-sm min-w-0">
+                                                            <span className="text-[6.5px] uppercase tracking-wider text-gray-400 block font-bold truncate">{kpi.label}</span>
+                                                            <span style={{ fontFamily: fonts['Heading'].fontFamily, color: swatches['Secondary'] || '#a78bfa' }} className="text-[13px] font-extrabold block leading-tight">{kpi.value}</span>
+                                                            <div className="flex items-center justify-between mt-0.5 gap-1">
+                                                                <span className={`text-[6.5px] font-bold whitespace-nowrap ${kpi.tone}`}>{kpi.delta}</span>
+                                                                <div className="flex items-end gap-px h-2.5 shrink-0">
+                                                                    {[35, 55, 45, 75, 95].map((h, i) => (
+                                                                        <div key={i} className="w-[2.5px] rounded-sm" style={{ height: `${h}%`, backgroundColor: swatches['Primary'] || '#8b5cf6', opacity: 0.3 + i * 0.15 }} />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex justify-between items-center bg-gray-900/90 p-1.5 rounded-lg border border-gray-800">
-                                                            <span className="text-gray-200 font-medium truncate">Webhook #849</span>
-                                                            <span className="text-purple-400 font-bold text-[6.5px]">200 OK</span>
+                                                    ))}
+                                                </div>
+
+                                                <div className="grid grid-cols-[1.6fr_1fr] gap-2.5 flex-1 min-h-[80px]">
+                                                    <div className="bg-gray-950/90 border border-gray-800 rounded-xl p-2.5 flex flex-col min-h-0">
+                                                        <div className="flex justify-between items-center text-[7.5px] text-gray-400 border-b border-gray-800/60 pb-1.5 shrink-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-gray-200 uppercase tracking-wider text-[7px]">Revenue Overview</span>
+                                                                <span className="hidden sm:flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: swatches['Secondary'] || '#a78bfa' }} /><span className="text-[6.5px]">MRR</span></span>
+                                                                <span className="hidden sm:flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: swatches['Accent'] || '#f59e0b' }} /><span className="text-[6.5px]">Goal</span></span>
+                                                            </div>
+                                                            <div className="flex gap-1">
+                                                                {['6M', '1Y', 'All'].map((t, i) => (
+                                                                    <span key={t} className={`px-1.5 py-px rounded ${i === 0 ? 'bg-white/10 text-gray-200 font-bold' : 'text-gray-500'}`}>{t}</span>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                        <div className="flex justify-between items-center bg-gray-900/90 p-1.5 rounded-lg border border-gray-800">
-                                                            <span className="text-gray-200 font-medium truncate">New Team Member</span>
-                                                            <span className="text-amber-400 font-bold text-[6.5px]">Joined</span>
+                                                        <svg viewBox="0 0 320 100" preserveAspectRatio="none" className="flex-1 min-h-0 w-full mt-1.5">
+                                                            <defs>
+                                                                <linearGradient id="saasAreaFill" x1="0" y1="0" x2="0" y2="1">
+                                                                    <stop offset="0%" stopColor={swatches['Secondary'] || '#a78bfa'} stopOpacity="0.35" />
+                                                                    <stop offset="100%" stopColor={swatches['Secondary'] || '#a78bfa'} stopOpacity="0" />
+                                                                </linearGradient>
+                                                            </defs>
+                                                            {[25, 55, 85].map((y) => (
+                                                                <line key={y} x1="0" y1={y} x2="320" y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" strokeWidth="1" />
+                                                            ))}
+                                                            <path d="M0 78 C24 70 40 82 60 72 C80 62 96 74 116 64 C136 54 152 62 172 50 C192 38 208 44 228 34 C248 26 264 32 284 22 L314 14 L314 100 L0 100 Z" fill="url(#saasAreaFill)" />
+                                                            <path d="M0 88 C24 84 40 90 60 84 C80 78 96 86 116 80 C136 74 152 80 172 72 C192 66 208 70 228 62 C248 56 264 58 284 52 L314 48" fill="none" stroke={swatches['Accent'] || '#f59e0b'} strokeWidth="1.5" strokeDasharray="4 3" opacity="0.55" strokeLinecap="round" />
+                                                            <path d="M0 78 C24 70 40 82 60 72 C80 62 96 74 116 64 C136 54 152 62 172 50 C192 38 208 44 228 34 C248 26 264 32 284 22 L314 14" fill="none" stroke={swatches['Secondary'] || '#a78bfa'} strokeWidth="2" strokeLinecap="round" />
+                                                            <circle cx="314" cy="14" r="5" fill={swatches['Accent'] || '#f59e0b'} opacity="0.25" />
+                                                            <circle cx="314" cy="14" r="2.2" fill={swatches['Accent'] || '#f59e0b'} />
+                                                        </svg>
+                                                        <div className="flex justify-between px-0.5 shrink-0 pt-1 border-t border-gray-800/60">
+                                                            {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map((m) => (
+                                                                <span key={m} className="text-[6px] text-gray-600">{m}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-2.5 min-h-0">
+                                                        <div className="bg-gray-950/90 border border-gray-800 rounded-xl p-2 flex flex-col gap-1 flex-1 min-h-0 overflow-hidden">
+                                                            <div className="flex items-center justify-between border-b border-gray-800 pb-1 shrink-0">
+                                                                <span className="font-bold text-gray-200 uppercase tracking-wider text-[6.5px]">Live Audit Stream</span>
+                                                                <DotsThree size={9} weight="bold" className="text-gray-600" />
+                                                            </div>
+                                                            <div className="space-y-1 overflow-hidden">
+                                                                <div className="flex items-center gap-1.5 bg-gray-900/90 p-1 rounded-lg border border-gray-800">
+                                                                    <TrendUp size={7} weight="bold" style={{ color: swatches['Primary'] || '#8b5cf6' }} className="shrink-0" />
+                                                                    <span className="text-gray-200 font-medium truncate flex-1 text-[6.5px]">Enterprise License</span>
+                                                                    <span className="text-emerald-400 font-bold text-[6.5px] shrink-0">+$2,400</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 bg-gray-900/90 p-1 rounded-lg border border-gray-800">
+                                                                    <CheckCircle size={7} weight="bold" className="text-emerald-400 shrink-0" />
+                                                                    <span className="text-gray-200 font-medium truncate flex-1 text-[6.5px]">Webhook #849</span>
+                                                                    <span className="text-purple-400 font-bold text-[6.5px] shrink-0">200 OK</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 bg-gray-900/90 p-1 rounded-lg border border-gray-800">
+                                                                    <Users size={7} weight="bold" className="text-amber-400 shrink-0" />
+                                                                    <span className="text-gray-200 font-medium truncate flex-1 text-[6.5px]">New Team Member</span>
+                                                                    <span className="text-amber-400 font-bold text-[6.5px] shrink-0">Joined</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="bg-gray-950/90 border border-gray-800 rounded-xl p-2 shrink-0">
+                                                            <span className="block font-bold text-gray-200 uppercase tracking-wider text-[6.5px] pb-1.5 border-b border-gray-800">Top Regions</span>
+                                                            <div className="mt-1.5 space-y-1">
+                                                                {[
+                                                                    { name: 'North America', pct: 64 },
+                                                                    { name: 'Europe', pct: 22 },
+                                                                    { name: 'APAC', pct: 14 },
+                                                                ].map((r) => (
+                                                                    <div key={r.name} className="flex items-center gap-1.5">
+                                                                        <span className="w-12 shrink-0 text-[6px] text-gray-500 truncate">{r.name}</span>
+                                                                        <div className="flex-1 h-[3px] rounded-full bg-white/10 overflow-hidden">
+                                                                            <div className="h-full rounded-full" style={{ width: `${r.pct}%`, backgroundColor: swatches['Secondary'] || '#a78bfa' }} />
+                                                                        </div>
+                                                                        <span className="w-5 text-right text-[6px] font-bold text-gray-400 shrink-0">{r.pct}%</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </SidebarLayout>
-                                </BrowserFrame>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -17,6 +17,13 @@ export interface ExportVideoOptions {
   props?: Record<string, unknown>;
 }
 
+export interface RepoPackResult {
+  content: string;
+  filePath: string;
+  totalFiles: number;
+  totalCharacters: number;
+}
+
 const electronAPI = {
   readDirectory: (dirPath: string): Promise<string[]> =>
     ipcRenderer.invoke('read-directory', dirPath),
@@ -56,6 +63,9 @@ const electronAPI = {
 
   cloneScan: (gitPath: string): Promise<any> =>
     ipcRenderer.invoke('clone-scan', gitPath),
+
+  packRepo: (source: string): Promise<RepoPackResult | null> =>
+    ipcRenderer.invoke('pack-repo', source),
 
   getSystemFonts: (): Promise<string[]> =>
     ipcRenderer.invoke('get-system-fonts'),

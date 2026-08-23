@@ -29,6 +29,7 @@ interface ElectronAPI {
   deleteDirectory: (dirPath: string) => Promise<boolean>;
   scanRepo: (dirPath: string) => Promise<ScrapedFindings | null>;
   cloneScan: (gitPath: string) => Promise<ScrapedFindings | null>;
+  packRepo: (source: string) => Promise<RepoPackResult | null>;
   getSystemFonts: () => Promise<string[]>;
   exportVideo: (options: ExportVideoOptions) => Promise<{ success: boolean; error?: string }>;
   renderVideo: (options: any) => Promise<{ success: boolean; error?: string }>;
@@ -46,6 +47,13 @@ interface ScrapedFindings {
   components: string[],
   colors: string[],
   fonts: string[],
+}
+
+interface RepoPackResult {
+  content: string,
+  filePath: string,
+  totalFiles: number,
+  totalCharacters: number,
 }
 
 declare module 'vader-sentiment';
