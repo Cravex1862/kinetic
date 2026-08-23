@@ -256,6 +256,35 @@ Create a stylized text-based logo placeholder using the project title or brand n
 Style it with gradient text, glow effects, and premium typography using the brand fonts.`;
   }
 
+  // Vector morphing guidance — only relevant when real SVG path data is available
+  const flubberSection = isSvg
+    ? `
+═══════════════════════════════════════════════════
+VECTOR MORPH TOOLBOX (flubber — PRE-IMPORTED for this SVG logo):
+═══════════════════════════════════════════════════
+The 'flubber' library is installed and already available as \`* as flubber\`.
+Use it for true SVG shape morphing: dots melting into the logo mark, icon-to-icon transitions, blob-to-logo reveals.
+
+USAGE PATTERN:
+  // Build the interpolator ONCE (memoized so it is not recreated every frame):
+  const morph = useMemo(
+    () => flubber.interpolate('M ...fromPathD...', 'M ...toPathD...', { maxSegmentLength: 2 }),
+    []
+  );
+  // Drive it each frame with clamped eased progress:
+  const t = interpolate(frame, [0, 60], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  <path d={morph(t)} fill="brandColor" />
+
+KEY HELPERS:
+  - flubber.interpolate(fromPathD, toPathD, opts) — SVG path string to SVG path string
+  - flubber.toCircle(pathD, cx, cy, r) / flubber.toRectangle(pathD, x, y, w, h) — collapse any shape into a primitive
+  - flubber.fromTo(a, b, opts) — accepts more input types than interpolate
+  - flubber.separate(compoundPathD) — split a compound path into individual shapes before morphing
+
+RULES: morph progress MUST stay within [0, 1] (always clamp); both path strings must come from the SVG SOURCE above
+(or primitives created via toCircle/toRectangle); use maxSegmentLength: 2 for smooth curves; memoize interpolators.`
+    : '';
+
   // Compact brand config for the prompt
   const fontSummary = Object.entries(brandConfig.fonts)
     .map(([role, settings]: [string, Record<string, unknown>]) =>
@@ -319,8 +348,8 @@ For special effects (particles, glows, scan lines, chromatic aberration):
   - Glow pulse: interpolate(frame % 30, [0, 15, 30], [0.3, 1, 0.3])
   - Floating orbs: Math.sin(frame / 25) * 20 for X, Math.cos(frame / 18) * 15 for Y
   - Particle scatter: Map over an array of particle objects with randomized positions and spring-driven convergence
-  - Chromatic split: Render 3 copies of the logo offset by interpolated RGB channel shifts
-
+   - Chromatic split: Render 3 copies of the logo offset by interpolated RGB channel shifts
+${flubberSection}
 ═══════════════════════════════════════════════════
 VISUAL QUALITY STANDARDS:
 ═══════════════════════════════════════════════════
@@ -394,6 +423,11 @@ MOTION CHECKS:
 STYLE CHECKS:
 11. Outermost div has backgroundColor: 'transparent'.
 12. Logo element is centered (flex + items-center + justify-center, or absolute positioning with transform).
+
+FLUBBER CHECKS (only if flubber is used):
+13. Interpolators are created inside useMemo with stable dependency arrays, not recreated inline per frame.
+14. Morph progress values are clamped within [0, 1] via interpolate with extrapolate clamping.
+15. Both source and target path arguments are non-empty valid SVG path data strings.
 
 If the code has errors, FIX THEM and return the corrected code.
 If the code is already correct, return it unchanged.
@@ -522,6 +556,8 @@ export async function runLogoPipeline(input: LogoPipelineInput): Promise<string>
   const cleanedCode = stripAllImports(finalSceneCode);
 
   const finalComposition = `import React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as flubber from 'flubber';
 import { Series, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate, Easing, AbsoluteFill, Img, staticFile } from 'remotion';
 
 import type { GlowConfig, StyleConfig } from '../primitives/types';
