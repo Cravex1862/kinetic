@@ -1,4 +1,4 @@
-import { callLLM, LLMResponse, sanitizeCompositionCode } from "../llmClient";
+import { callLLM, LLMResponse, sanitizeCompositionCode, safeParseJson } from "../llmClient";
 import type { AgentConfig, DesignTokens } from "../types";
 import { getPrimitiveSpec } from "../primitiveRegistry";
 import {
@@ -120,7 +120,7 @@ EXAMPLE IN-SCOPE VARIABLE USAGE IN JSX:\n
 CRITICAL MANDATES & NON-EMPTY CONSTRAINTS (STRICTLY ENFORCED):\n
 1. USE IN-SCOPE COLOR VARIABLES: Always use primaryColor, secondaryColor, accentColor, semanticColor, errorColor, successColor, neutralColor, surfaceColor, backgroundColor, textColor, fontFamily.\n
 2. DOMAIN RELEVANCY: Fill all text, titles, labels, and numbers with authentic context matching the scene objective.\n
-3. CODE FORMAT: Return ONLY valid TSX inside a \`\`\`tsx ... \`\`\` block. No markdown prose, no imports, ONLY GIVE export default const ${sceneID}
+3. CODE FORMAT: Return ONLY valid TSX inside a \`\`\`tsx ... \`\`\` block. No markdown prose, no imports, no export default wrappers. The component MUST be named exactly: export const ${sceneID} = () => {{ ... }}
 4. It is highley recommended that you request for skills. Keep in mind if you are requesting for skills only output a JSON with the correct format.`;
 }
 
@@ -214,12 +214,29 @@ export async function runSceneCreatorAgentDetailed(
 
   let cleaned = sanitizeCompositionCode(response.content);
 
-  let code: string = "";
+  // The model may reply with a props/skills request instead of code — sometimes
+  // with stray prose tokens around it ("on {...}"). Detect that leniently.
+  interface PrimitiveRequest {
+    primitives?: string[];
+    skills?: string[];
+    requestUI?: boolean;
+  }
+  const looksLikeCode = /export\s|<[A-Za-z]/.test(cleaned);
+  const parsedRequest = looksLikeCode
+    ? null
+    : safeParseJson<PrimitiveRequest>(cleaned, {});
+  const hasPropsRequest =
+    (parsedRequest?.primitives?.length ?? 0) > 0 ||
+    (parsedRequest?.skills?.length ?? 0) > 0 ||
+    parsedRequest?.requestUI === true;
 
-  try {
-    const parsed = JSON.parse(cleaned);
+  if (hasPropsRequest && parsedRequest) {
     const fullFill = JSON.stringify(
-      await handleRequest(parsed.primitives, parsed.skills, parsed.requestUI),
+      await handleRequest(
+        parsedRequest.primitives || [],
+        parsedRequest.skills || [],
+        parsedRequest.requestUI === true,
+      ),
     );
     const fullContext = `I said to you:
                             ${systemPrompt}\n 
@@ -228,14 +245,14 @@ export async function runSceneCreatorAgentDetailed(
                             ${cleaned}\n\n
                             and I responded:\n
                             ${fullFill} \n\n
-                            Now give the full code. DO NOT WRITE IMPORT STATEMENTS. JUST OUTPUT A export const sceneDesc() => {}
+                            Now give the full code. DO NOT WRITE IMPORT STATEMENTS. Output exactly one component: export const ${sceneID} = () => {{ ... }} inside a \`\`\`tsx block.
                             `;
-    response = await callLLM(config, fullContext, "", true);
-    cleaned = sanitizeCompositionCode(response.content);
-  } catch {
-    console.log(
-      "Hi, if you are reading this it means your LLM thinks its tuff and knows how to do motion graphics by itself.",
-    );
+    const followUp = await callLLM(config, fullContext, "Give me the complete scene code now.", true);
+    if (!followUp.error && followUp.content) {
+      cleaned = sanitizeCompositionCode(followUp.content);
+    } else {
+      console.warn("[SceneCreator] Follow-up call failed after props request:", followUp.error);
+    }
   }
 
   return {

@@ -236,6 +236,39 @@ async function assembleVideoComposition(
   ].join("\n");
 }
 
+// ─── Scene Code Normalization ────────────────────────────────────────────────
+
+function isValidSceneCode(code: string): boolean {
+  const trimmed = code.trim();
+  if (!trimmed) return false;
+  return /export\s|<[A-Za-z]/.test(trimmed);
+}
+
+function normalizeSceneExportName(code: string, sceneName: string): string {
+  const exportMatch = code.match(
+    /export\s+(?:const|function)\s+([A-Za-z_$][\w$]*)/,
+  );
+  if (exportMatch) {
+    const current = exportMatch[1];
+    if (current === sceneName) return code;
+    return code.replace(exportMatch[0], `export const ${sceneName}`);
+  }
+  const defaultMatch = code.match(/export\s+default\s+(?:function\s+)?([A-Za-z_$][\w$]*)?/);
+  if (defaultMatch && defaultMatch[1]) {
+    return code.replace(defaultMatch[0], `export const ${sceneName}`);
+  }
+  return `export const ${sceneName}: React.FC = () => (\n<>\n${code}\n</>\n);`;
+}
+
+function makePlaceholderScene(sceneName: string, purpose: string): string {
+  const label = purpose.replace(/[<>`{}]/g, "").trim().slice(0, 60) || "Scene";
+  return `export const ${sceneName}: React.FC = () => (
+  <div style={{ width: '100%', height: '100%', backgroundColor: '#0b0b14', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ color: '#64748b', fontFamily: 'Inter, sans-serif', fontSize: 28 }}>{label}</div>
+  </div>
+);`;
+}
+
 // ─── Main Pipeline ────────────────────────────────────────────────────────────
 /**
  * runTSXPipeline — the Manager Agent.
@@ -366,7 +399,7 @@ export async function runTSXPipeline(
   onState({ status: "sceneCreation", progress: 0.5 });
   console.log("[Manager] Creating scenes...");
 
-  const scenePromise = blueprints.map(async (bp) => {
+  const scenePromise = blueprints.map(async (bp, i) => {
     const prompt = `${bp.purpose}\n It should be ${bp.durationInFrames} long in frames${sceneLevelContext}`;
     const result = await runSceneCreatorAgent(
       config,
@@ -374,7 +407,7 @@ export async function runTSXPipeline(
       designTokens,
       prompt,
       undefined,
-      bp.id,
+      `Scene${i + 1}`,
     );
     const send: SceneCode = {
       blueprintId: bp.id,
@@ -384,7 +417,29 @@ export async function runTSXPipeline(
     return send;
   });
 
-  const sceneCodes: SceneCode[] = await Promise.all(scenePromise);
+  const rawSceneCodes: SceneCode[] = await Promise.all(scenePromise);
+
+  if (!rawSceneCodes.some((sc) => isValidSceneCode(sc.sceneCode))) {
+    console.error("[Manager] All scenes came back invalid/empty — aborting before assembly.");
+    onState({
+      status: "error",
+      progress: 0.8,
+      error:
+        "The AI failed to produce valid scene code. Check your model/provider in Settings and try again.",
+    });
+    return "";
+  }
+
+  const sceneCodes: SceneCode[] = rawSceneCodes.map((sc, i) => {
+    const sceneName = `Scene${i + 1}`;
+    const code = isValidSceneCode(sc.sceneCode)
+      ? normalizeSceneExportName(sc.sceneCode, sceneName)
+      : makePlaceholderScene(sceneName, blueprints[i]?.purpose || "");
+    if (code !== sc.sceneCode) {
+      console.warn(`[Manager] Normalized ${sceneName} (was ${sc.sceneCode.slice(0, 40)}...)`);
+    }
+    return { ...sc, sceneCode: code };
+  });
   onState({ status: "sceneCreation", progress: 0.8, sceneCodes });
 
   // ── Step 4: Assembler ─────────────────────────────────────────────────────
@@ -404,6 +459,10 @@ export async function runTSXPipeline(
   onState({ status: "verifying", progress: 0.92, assembled, finalCode });
   try {
     finalCode = await runVerifierAgent(config, assembled);
+    finalCode = finalCode
+      .replace(/^```[a-z]*\s*\n?/i, "")
+      .replace(/\n?```\s*$/i, "")
+      .trim();
   } catch (err) {
     console.warn("[Manager] Verifier threw, using assembled code as-is:", err);
     finalCode = assembled;
