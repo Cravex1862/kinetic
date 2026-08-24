@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { ArrowLeft, Pause, Play, ArrowsClockwise } from "@phosphor-icons/react";
 import { Player, PlayerRef } from "@remotion/player";
-import VideoComposition from "../scenes/VideoComposition";
+import { SafeComposition } from "../scenes/SafeComposition";
 import type { ProjectData } from "./AppRouter";
 import { AIsidebar } from "../components/AIsidebar";
 import type { BackgroundSelection } from "../components/BackgroundSelectorPanel";
@@ -225,7 +225,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                     <div className="h-full w-full overflow-hidden rounded-xl border border-gray-900 bg-black shadow-[0_0_60px_rgba(0,0,0,0.6)]">
                         <Player
                             ref={playerRef}
-                            component={VideoComposition}
+                            component={SafeComposition}
                             inputProps={{}} 
                             durationInFrames={durationInFrames}
                             fps={FPS}

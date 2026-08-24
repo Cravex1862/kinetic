@@ -30,6 +30,7 @@ interface ElectronAPI {
   scanRepo: (dirPath: string) => Promise<ScrapedFindings | null>;
   cloneScan: (gitPath: string) => Promise<ScrapedFindings | null>;
   packRepo: (source: string) => Promise<RepoPackResult | null>;
+  verifyTypecheck: () => Promise<TypecheckResult>;
   getSystemFonts: () => Promise<string[]>;
   exportVideo: (options: ExportVideoOptions) => Promise<{ success: boolean; error?: string }>;
   renderVideo: (options: any) => Promise<{ success: boolean; error?: string }>;
@@ -54,6 +55,16 @@ interface RepoPackResult {
   filePath: string,
   totalFiles: number,
   totalCharacters: number,
+}
+
+interface TypecheckError {
+  line: number;
+  message: string;
+}
+
+interface TypecheckResult {
+  ran: boolean;
+  errors: TypecheckError[];
 }
 
 declare module 'vader-sentiment';

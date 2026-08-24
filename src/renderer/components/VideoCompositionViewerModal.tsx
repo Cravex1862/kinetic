@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Desktop, Play, ArrowsCounterClockwise } from '@phosphor-icons/react';
 import { Player } from '@remotion/player';
-import VideoComposition from '../scenes/VideoComposition';
+import { SafeComposition } from '../scenes/SafeComposition';
 
 interface VideoCompositionViewerModalProps {
   onClose: () => void;
@@ -62,7 +62,7 @@ export const VideoCompositionViewerModal: React.FC<VideoCompositionViewerModalPr
           <div className="w-full max-w-4xl aspect-video relative rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 bg-zinc-950">
             <Player
               key={`video_composition_preview_${reloadKey}`}
-              component={VideoComposition}
+              component={SafeComposition}
               durationInFrames={370}
               compositionWidth={1920}
               compositionHeight={1080}

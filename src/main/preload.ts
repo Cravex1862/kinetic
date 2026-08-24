@@ -24,6 +24,16 @@ export interface RepoPackResult {
   totalCharacters: number;
 }
 
+export interface TypecheckError {
+  line: number;
+  message: string;
+}
+
+export interface TypecheckResult {
+  ran: boolean;
+  errors: TypecheckError[];
+}
+
 const electronAPI = {
   readDirectory: (dirPath: string): Promise<string[]> =>
     ipcRenderer.invoke('read-directory', dirPath),
@@ -66,6 +76,9 @@ const electronAPI = {
 
   packRepo: (source: string): Promise<RepoPackResult | null> =>
     ipcRenderer.invoke('pack-repo', source),
+
+  verifyTypecheck: (): Promise<TypecheckResult> =>
+    ipcRenderer.invoke('verify-typecheck'),
 
   getSystemFonts: (): Promise<string[]> =>
     ipcRenderer.invoke('get-system-fonts'),

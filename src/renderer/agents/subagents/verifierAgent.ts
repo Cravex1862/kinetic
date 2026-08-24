@@ -102,6 +102,56 @@ export async function runVerifierAgent(
     return applyLinePatches(assembledCode, patches);
 }
 
+// ─── Repair Agent Runner (compiler/static-error driven) ───────────────────────
+export const REPAIR_SYSTEM = `You are a World-Class TypeScript/Remotion Repair Agent.
+
+You will receive:
+1. A list of validation errors (TypeScript compiler errors and/or static checks).
+2. The FULL source of src/renderer/scenes/VideoComposition.tsx.
+
+Fix EVERY listed error while changing as little as possible.
+
+CRITICAL RULES:
+- Keep every existing scene component name (Scene1, Scene2, ...) and the VideoComposition master component with its default export.
+- Do NOT add import statements. React and remotion helpers (Series, Sequence, useCurrentFrame, useVideoConfig, interpolate, spring, Easing, AbsoluteFill) are already imported for you.
+- Do NOT use Math.random(), Date.now(), new Date(), or any Node APIs — animation values must derive only from the frame number.
+- If an error is a false positive you cannot reproduce, leave that part unchanged.
+- Output ONLY the complete corrected TypeScript file inside one \`\`\`tsx ... \`\`\` block. No prose.`;
+
+export async function runRepairAgent(
+    config: AgentConfig,
+    code: string,
+    issues: string[]
+): Promise<string> {
+    const numberedCode = code
+        .split('\n')
+        .map((line, i) => `${i + 1}: ${line}`)
+        .join('\n');
+
+    const userPrompt = `VALIDATION ERRORS TO FIX:\n${issues
+        .map((issue, i) => `${i + 1}. ${issue}`)
+        .join('\n')}\n\nFULL FILE:\n${numberedCode}`;
+
+    const response = await callLLM(config, REPAIR_SYSTEM, userPrompt, true);
+    if (response.error || !response.content) {
+        console.warn('[Repair] LLM response empty, returning code as-is');
+        return code;
+    }
+
+    const cleaned = response.content
+        .trim()
+        .replace(/^```[a-z]*\s*\n?/i, '')
+        .replace(/\n?```\s*$/i, '')
+        .trim();
+
+    if (!cleaned || cleaned.length < 50 || !/export\s/.test(cleaned)) {
+        console.warn('[Repair] Repaired output looked invalid, keeping previous version');
+        return code;
+    }
+
+    return cleaned;
+}
+
 // ─── Edit Agent Runner ────────────────────────────────────────────────────────
 export async function runEditAgent(
     config: AgentConfig,

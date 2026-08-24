@@ -28,7 +28,8 @@ import {
   runStoryboardClientInterview,
 } from "./subagents/storyboardAgent";
 import { runSceneCreatorAgent } from "./subagents/sceneCreator";
-import { runVerifierAgent } from "./subagents/verifierAgent";
+import { runVerifierAgent, runRepairAgent } from "./subagents/verifierAgent";
+import { runStaticChecks } from "./staticChecks";
 import { ClientInterViewAnswers } from "./subagents/storyboardAgent";
 
 export { sanitizeCompositionCode };
@@ -198,6 +199,50 @@ function makePlaceholderScene(sceneName: string, purpose: string): string {
     <div style={{ color: '#64748b', fontFamily: 'Inter, sans-serif', fontSize: 28 }}>{label}</div>
   </div>
 );`;
+}
+
+// ─── Composition Validation ──────────────────────────────────────────────────
+
+async function collectValidationIssues(code: string): Promise<{
+  issues: string[];
+  typecheckRan: boolean;
+}> {
+  const issues: string[] = [];
+  let typecheckRan = false;
+
+  try {
+    for (const check of runStaticChecks(code)) {
+      issues.push(
+        `Static check${check.line ? ` (line ${check.line})` : ""}: ${check.message}`,
+      );
+    }
+  } catch (err) {
+    console.warn("[Manager] Static checks crashed:", err);
+  }
+
+  try {
+    if (!window.electronAPI?.writeFile || !window.electronAPI?.verifyTypecheck) {
+      console.warn("[Manager] electronAPI bridge missing — skipping compiler pass");
+      return { issues, typecheckRan };
+    }
+    await window.electronAPI.writeFile(
+      "src/renderer/scenes/VideoComposition.tsx",
+      code,
+    );
+    const result = await window.electronAPI.verifyTypecheck();
+    if (!result.ran) {
+      console.warn("[Manager] TypeScript check could not run — skipping compiler errors");
+      return { issues, typecheckRan };
+    }
+    typecheckRan = true;
+    for (const err of result.errors) {
+      issues.push(`TypeScript (line ${err.line}): ${err.message}`);
+    }
+  } catch (err) {
+    console.warn("[Manager] Compiler pass crashed/skipped:", err);
+  }
+
+  return { issues, typecheckRan };
 }
 
 // ─── Main Pipeline ────────────────────────────────────────────────────────────
@@ -386,26 +431,82 @@ export async function runTSXPipeline(
 
   let finalCode = assembled;
 
-  // ── Step 5: Verifier Agent ────────────────────────────────────────────────
-  onState({ status: "verifying", progress: 0.92, assembled, finalCode });
+  // ── Step 5: Verify (static + TypeScript) → repair loop ───────────────────
+  onState({ status: "verifying", progress: 0.9, assembled });
   try {
-    finalCode = await runVerifierAgent(config, assembled);
-    finalCode = finalCode
-      .replace(/^```[a-z]*\s*\n?/i, "")
-      .replace(/\n?```\s*$/i, "")
-      .trim();
+    let candidate = assembled;
+    const firstPass = await collectValidationIssues(candidate);
+    let issues = firstPass.issues;
+    let typecheckRan = firstPass.typecheckRan;
+
+    for (let round = 0; issues.length > 0 && round < 2; round++) {
+      console.log(
+        `[Manager] ${issues.length} validation issue(s) — repair round ${round + 1}/2...`,
+      );
+      const repaired = await runRepairAgent(config, candidate, issues);
+      if (repaired === candidate) break;
+      candidate = repaired;
+      const next = await collectValidationIssues(candidate);
+      issues = next.issues;
+      typecheckRan = typecheckRan || next.typecheckRan;
+    }
+
+    if (typecheckRan && issues.some((i) => i.startsWith("TypeScript"))) {
+      console.error(
+        `[Manager] Composition still has compiler errors after repairs (${issues.length} issue(s)).`,
+      );
+      try {
+        if (window.electronAPI?.writeFile) {
+          await window.electronAPI.writeFile(
+            "src/renderer/scenes/VideoComposition.tsx",
+            candidate,
+          );
+        }
+      } catch {
+        // ignore secondary write failure — error state is what matters
+      }
+      onState({
+        status: "error",
+        progress: 1.0,
+        error:
+          "The AI outputted errored code. The video composition failed validation and could not be auto-repaired.",
+      });
+      return "";
+    }
+
+    finalCode = candidate;
+
+    try {
+      const polished = await runVerifierAgent(config, finalCode);
+      finalCode = polished
+        .replace(/^```[a-z]*\s*\n?/i, "")
+        .replace(/\n?```\s*$/i, "")
+        .trim();
+    } catch {
+      console.warn("[Manager] LLM polish pass skipped.");
+    }
   } catch (err) {
-    console.warn("[Manager] Verifier threw, using assembled code as-is:", err);
+    console.warn("[Manager] Verification crashed, using assembled code as-is:", err);
     finalCode = assembled;
   }
 
   // ── Step 6: Write to disk ─────────────────────────────────────────────────
-  if (window.electronAPI?.writeFile) {
-    await window.electronAPI.writeFile(
-      "src/renderer/scenes/VideoComposition.tsx",
-      finalCode,
-    );
-    console.log("[Manager] VideoComposition.tsx written to disk.");
+  try {
+    if (window.electronAPI?.writeFile) {
+      await window.electronAPI.writeFile(
+        "src/renderer/scenes/VideoComposition.tsx",
+        finalCode,
+      );
+      console.log("[Manager] VideoComposition.tsx written to disk.");
+    }
+  } catch (err) {
+    console.error("[Manager] Failed writing VideoComposition.tsx:", err);
+    onState({
+      status: "error",
+      progress: 1.0,
+      error: "The AI outputted errored code — the video composition could not be saved.",
+    });
+    return "";
   }
 
   const sceneOutputs: SceneOutput[] = blueprints.map((bp) => {

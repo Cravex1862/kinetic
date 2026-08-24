@@ -432,7 +432,36 @@ function registerIpcHandlers(): void {
     }
   });
 
-
+  ipcMain.handle('verify-typecheck', async (): Promise<{ ran: boolean; errors: { line: number; message: string }[] }> => {
+    try {
+      const projectRoot = app.isPackaged ? app.getAppPath() : process.cwd();
+      const { stdout } = await execPromise('npx tsc -p tsconfig.json --noEmit --pretty false', {
+        cwd: projectRoot,
+        timeout: 120000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      return { ran: true, errors: [] };
+    } catch (err: unknown) {
+      const e = err as { stdout?: string; killed?: boolean; message?: string };
+      if (e?.killed) {
+        console.error('verify-typecheck: timed out');
+        return { ran: false, errors: [{ line: 0, message: 'TypeScript check timed out' }] };
+      }
+      const stdout = e?.stdout || '';
+      if (!stdout) {
+        console.error('verify-typecheck: failed to run tsc:', e?.message);
+        return { ran: false, errors: [] };
+      }
+      const target = 'src/renderer/scenes/VideoComposition.tsx';
+      const errors: { line: number; message: string }[] = [];
+      for (const line of stdout.split(/\r?\n/)) {
+        if (!line.includes(target)) continue;
+        const m = line.match(/:(\d+):\d+:\s*error\s+TS\d+:\s*(.*)$/);
+        if (m) errors.push({ line: Number(m[1]), message: m[2] });
+      }
+      return { ran: true, errors };
+    }
+  });
 }
 
 
