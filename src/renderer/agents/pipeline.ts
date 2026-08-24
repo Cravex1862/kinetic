@@ -3,7 +3,7 @@
  *
  * Orchestrates the full multi-agent pipeline:
  *   1. Design Agent       → global font, colors, theme
- *   2. Storyboard Agent   → scene blueprints (which scenes, which primitives)
+ *   2. Storyboard Agent   → scene blueprints (which scenes, which visual sections)
  *   3. Per-scene loop     → generates whole scene with animations.
  *   4. Verifier Agent     → single-pass syntax review + auto-patch
  *   5. Write to disk      → src/renderer/scenes/VideoComposition.tsx
@@ -22,10 +22,6 @@ import type {
   AgentConfig,
 } from "./types";
 import { detectSiteKeyFromPrompt, loadDesignSpec } from "./designSpecLoader";
-import {
-  PRIMITIVE_SDK_MAP,
-  TRANSITION_WRAPPER_NAMES,
-} from "./primitiveRegistry";
 import { runDesignAgent } from "./subagents/designAgent";
 import {
   runStoryboardAgent,
@@ -90,71 +86,15 @@ export function stripAllImports(code: string): string {
 // ─── Assembler helpers ────────────────────────────────────────────────────────
 
 /**
- * Detects which primitive component names appear in a block of JSX code.
- * Used to figure out which SDK imports to add to the header.
- */
-function detectUsedPrimitives(allAnimatedJSX: string): string[] {
-  const used: string[] = [];
-  for (const name of Object.keys(PRIMITIVE_SDK_MAP)) {
-    // Look for <ComponentName or <ComponentName> or <ComponentName\n
-    if (new RegExp(`<${name}[\\s/>]`).test(allAnimatedJSX)) {
-      used.push(name);
-    }
-  }
-  return used;
-}
-
-/**
- * Detects which TransitionSDK wrappers appear in the animated JSX.
- */
-function detectUsedTransitions(allAnimatedJSX: string): string[] {
-  return TRANSITION_WRAPPER_NAMES.filter((name) =>
-    new RegExp(`<${name}[\\s/>]`).test(allAnimatedJSX),
-  );
-}
-
-/**
- * Groups component names by their SDK, returning a map of SDK path → component names.
- */
-function groupBySDK(componentNames: string[]): Map<string, string[]> {
-  const map = new Map<string, string[]>();
-  for (const name of componentNames) {
-    const sdk = PRIMITIVE_SDK_MAP[name];
-    if (!sdk) continue;
-    if (!map.has(sdk)) map.set(sdk, []);
-    map.get(sdk)!.push(name);
-  }
-  return map;
-}
-
-/**
  * Builds the canonical import header for the assembled file.
- * Only imports what's actually used — no dead imports.
+ * Scenes are self-contained: only react + remotion are provided.
  */
-function buildImportsHeader(
-  usedPrimitives: string[],
-  usedTransitions: string[],
-): string {
+function buildImportsHeader(): string {
   const lines: string[] = [
     `import React from 'react';`,
-    `import { Series, useCurrentFrame } from 'remotion';`,
+    `import { Series, Sequence, useCurrentFrame, useVideoConfig, interpolate, spring, Easing, AbsoluteFill } from 'remotion';`,
+    `import type { CSSProperties } from 'react';`,
   ];
-
-  // Group primitives by SDK
-  const bySDK = groupBySDK(usedPrimitives);
-  for (const [sdk, names] of bySDK.entries()) {
-    const unique = [...new Set(names)].sort();
-    lines.push(`import { ${unique.join(", ")} } from ${sdk};`);
-  }
-
-  // TransitionSDK import (if any wrappers were used)
-  if (usedTransitions.length > 0) {
-    const unique = [...new Set(usedTransitions)].sort();
-    lines.push(
-      `import { ${unique.join(", ")} } from '../primitives/TransitionSDK';`,
-    );
-  }
-
   return lines.join("\n");
 }
 
@@ -209,16 +149,7 @@ async function assembleVideoComposition(
   sceneCodes: SceneCode[],
   designTokens: DesignTokens,
 ): Promise<string> {
-  const allAnimatedJSX = sceneCodes
-    .map((scene) => {
-      return `${scene.sceneCode}\n`;
-    })
-    .join(`\n`);
-
-  const usedPrimitives = detectUsedPrimitives(allAnimatedJSX);
-  const usedTransitions = detectUsedTransitions(allAnimatedJSX);
-
-  const importsHeader = buildImportsHeader(usedPrimitives, usedTransitions);
+  const importsHeader = buildImportsHeader();
 
   const masterComposition = buildMasterComposition(
     blueprints,
@@ -391,7 +322,7 @@ export async function runTSXPipeline(
         id: "scene1",
         purpose: prompt,
         durationInFrames: 150,
-        componentList: ["MockWindow"],
+        componentList: [],
       },
     ];
   }
@@ -433,7 +364,7 @@ export async function runTSXPipeline(
   const sceneCodes: SceneCode[] = rawSceneCodes.map((sc, i) => {
     const sceneName = `Scene${i + 1}`;
     const code = isValidSceneCode(sc.sceneCode)
-      ? normalizeSceneExportName(sc.sceneCode, sceneName)
+      ? normalizeSceneExportName(stripAllImports(sc.sceneCode), sceneName)
       : makePlaceholderScene(sceneName, blueprints[i]?.purpose || "");
     if (code !== sc.sceneCode) {
       console.warn(`[Manager] Normalized ${sceneName} (was ${sc.sceneCode.slice(0, 40)}...)`);

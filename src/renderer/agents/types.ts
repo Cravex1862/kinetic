@@ -80,7 +80,7 @@ export interface SceneBlueprint {
   id: string;
   purpose: string;
   durationInFrames: number;
-  componentList: string[]; // primitive names e.g. ["BrowserFrame", "BarChartCard"]
+  componentList: string[]; // visual section hints for the scene brief
 }
 
 export interface SceneCode {

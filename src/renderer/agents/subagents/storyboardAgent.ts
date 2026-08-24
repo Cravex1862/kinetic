@@ -1,54 +1,6 @@
 import { callLLM, safeParseJson } from "../llmClient";
 import type { AgentConfig, DesignTokens, SceneBlueprint } from "../types";
 
-export const STORYBOARD_PRIMITIVE_NAMES = [
-  // Structural
-  "BrowserFrame",
-  "SidebarLayout",
-  "TopNavbar",
-  "AppCanvas",
-  "MockWindow",
-  "HeroMetricCard",
-  "DataGridContainer",
-  "SplitHeroLayout",
-  "TabSwitcherContainer",
-  "ActionButton",
-  "BreadcrumbHeader",
-  "NotificationToaster",
-  // Cards
-  "GlassmorphicCard",
-  "KanbanTaskCard",
-  "NotificationCard",
-  "PricingPlanCard",
-  "PriceCard",
-  "ProfileCard",
-  "SettingsToggleCard",
-  "CustomCard",
-  "FeatureCard",
-  "FeatureBenefitCard",
-  "BillingInvoiceCard",
-  "PushNotificationToast",
-  "RegularCard",
-  "ProfileHeaderCard",
-  // Charts
-  "BarChartCard",
-  "AreaChart",
-  "DonutChartCard",
-  "LineChartCard",
-  "MetricFunnelCard",
-  "PieChartCard",
-  "ScatterPlotCard",
-  "StockCard",
-  // Motion & Transitions
-  "SpringEnter",
-  "FadeBlur",
-  "SlideInOut",
-  "ScaleUp",
-  "Cursor",
-  "TextTyper",
-  "ChartAnimate",
-];
-
 export interface SecondBySecondEvent {
   second: number;
   timestamp: string;
@@ -245,16 +197,13 @@ Your job: fully detail EVERYTHING that happens in ONE specific scene of a motion
 
 YOU MUST DECIDE EVERY DETAIL FOR THIS SCENE:
 1. DURATION: durationInFrames (e.g. 150) and durationInSeconds (e.g. 5).
-2. LAYOUT STRUCTURE: Exact container nesting hierarchy (e.g., MockWindow > SidebarLayout > 2-col hero grid).
+2. LAYOUT STRUCTURE: Describe the visual layout as plain sections (e.g., "top navigation bar above a two-column hero grid with a metrics row").
 3. 3D PERSPECTIVE: rotateX (e.g. "10deg"), rotateY (e.g. "-6deg"), perspective (e.g. "1200px"), transformOrigin (e.g. "center center").
-4. COMPONENTS TO USE: Select 2-4 items from the available components list.
-5. HOW EACH COMPONENT IS ANIMATED: Staggered delays, SpringEnter, SlideInOut, Cursor click target.
+4. VISUAL SECTIONS: Plan 2-4 distinct visual sections for this scene (e.g. header bar, metrics grid, chart panel, footer CTA).
+5. HOW EACH SECTION IS ANIMATED: Staggered delays, fade/slide/scale entrances, cursor click moments.
 6. EXACT DATA TO DISPLAY: Real non-placeholder copy, titles, metric values (e.g. 99.99%, 120 SQLi threats), and chart categories.
 7. SECOND-BY-SECOND TIMELINE: Break down what happens at second 1, second 2, second 3, etc.
 8. TRANSITION TO NEXT SCENE: Seamless 3D flip 90deg or camera zoom exit.
-
-AVAILABLE PRIMITIVE COMPONENTS:
-${JSON.stringify(STORYBOARD_PRIMITIVE_NAMES, null, 2)}
 
 Return ONLY a valid JSON object matching this exact structure:
 {
@@ -262,15 +211,15 @@ Return ONLY a valid JSON object matching this exact structure:
   "title": "Hero Infrastructure Command Center",
   "durationInFrames": 150,
   "durationInSeconds": 5,
-  "layoutStructure": "MockWindow container wrapping a 2-column hero grid with HeroMetricCard and BarChartCard side-by-side.",
+  "layoutStructure": "Top navigation bar wrapping a two-column hero grid with a metrics row on the left and an animated bar chart panel on the right.",
   "perspective3D": {
     "rotateX": "10deg",
     "rotateY": "-6deg",
     "perspective": "1200px",
     "transformOrigin": "center center"
   },
-  "componentList": ["MockWindow", "HeroMetricCard", "BarChartCard", "Cursor", "SpringEnter"],
-  "howEachComponentIsAnimated": "MockWindow enters with SpringEnter delay 0 and 3D tilt. Metric card slides in from left at frame 15. Bar chart animates bars at frame 30. Cursor clicks deploy button at frame 45.",
+  "componentList": ["top navigation bar", "two-column metrics grid", "animated bar chart panel"],
+  "howEachComponentIsAnimated": "Navigation bar fades in at frame 0 with a subtle downward drift. Metrics grid slides in from left at frame 15. Bar chart animates bars growing upward at frame 30. Cursor clicks deploy button at frame 45.",
   "exactDataToDisplay": {
     "heading": "GuardRail Security Command Center",
     "subheading": "Real-time infrastructure threat monitoring & cluster protection",
@@ -400,7 +349,7 @@ Detail EVERYTHING for this specific scene now. Valid JSON ONLY.`;
           perspective: "1200px",
           transformOrigin: "center center",
         },
-        componentList: ["MockWindow", "HeroMetricCard", "BarChartCard"],
+        componentList: ["hero section"],
         howEachComponentIsAnimated:
           "SpringEnter entrance + Staggered SlideInOut",
         exactDataToDisplay: {

@@ -64,7 +64,7 @@ export const AGENT_STAGE_PROMPTS: AgentStagePrompt[] = [
   {
     stage: 'Step 3 — Component Creator (Layout Assembler)',
     step: 3,
-    systemPrompt: buildSceneCreatorSystemPrompt(['<Primitive>'], '<PropSpec>', ''),
+    systemPrompt: buildSceneCreatorSystemPrompt('', ''),
     description: 'Builds a single primitive component with rich props and inner JSX for the scene.',
   },
 
