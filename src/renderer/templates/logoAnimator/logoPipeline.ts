@@ -2,6 +2,7 @@ import { callLLM, getStoredConfig, LLMClientFactory } from "@/renderer/agents/ll
 import type { AgentConfig, Provider } from "@/renderer/agents/types";
 import { PipelineState } from "@/renderer/agents/types";
 import { sceneExportName, stripAllImports, writeComposition } from "@/renderer/agents/compositionStore";
+import type { FontSettings } from "@/renderer/components/BrandStylingPanel";
 
 export type LogoPipelineCallback = (state: PipelineState) => void;
 
@@ -69,7 +70,7 @@ async function readSvgTextFromBlobUrl(blobUrl: string): Promise<string> {
 //     Produces the complete animated Scene1 component in one shot.
 
 interface LogoBrandConfig {
-  fonts: Record<string, Record<string, unknown>>;
+  fonts: Record<string, FontSettings>;
   colors: Record<string, string>;
   bgSelection: Record<string, unknown>;
 }
@@ -141,7 +142,7 @@ RULES: morph progress MUST stay within [0, 1] (always clamp); both path strings 
 
   // Compact brand config for the prompt
   const fontSummary = Object.entries(brandConfig.fonts)
-    .map(([role, settings]: [string, Record<string, unknown>]) =>
+    .map(([role, settings]: [string, FontSettings]) =>
       `${role}: ${settings.fontFamily || 'Inter'} ${settings.size || 16}px ${settings.bold ? 'bold' : ''} ${settings.color || '#fff'}`
     ).join('\n');
 
@@ -312,7 +313,7 @@ export interface LogoPipelineInput {
   stylePreset: LogoStylePreset;
   logoFileUrl: string;
   logoFileName: string;
-  fonts: Record<string, Record<string, unknown>>;
+  fonts: Record<string, FontSettings>;
   colors: Record<string, string>;
   bgSelection: Record<string, unknown>;
   savePath?: string;

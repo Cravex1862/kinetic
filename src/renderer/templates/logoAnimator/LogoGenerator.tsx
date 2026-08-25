@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, UploadSimple, Image as ImageIcon, Sparkle } from '@phosphor-icons/react';
-import logoIcon from '../../../../kinetic_brand/logo_transparent.svg';
-import { callLLM, getStoredConfig } from "@/renderer/agents/llmClient";
+import { UploadSimple, Image as ImageIcon, Sparkle } from "@phosphor-icons/react";
 import { ProjectData } from "@/renderer/pages/AppRouter";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
-import { BrandStylingPanel, FontSettings } from "@/renderer/components/BrandStylingPanel";
+import { BrandStylingPanel } from "@/renderer/components/BrandStylingPanel";
 import { CustomInstructionsPanel } from "@/renderer/components/CustomInstructionsPanel";
-import { PipelineState } from "@/renderer/agents/types";
-import { BackgroundSelection } from "@/renderer/components/BackgroundSelectorPanel";
 import { ResizableSidebar } from "@/renderer/components/ResizableSidebar";
 import {
   runLogoPipeline,
   LOGO_STYLE_PRESETS,
-  LogoStylePreset
+  LogoStylePreset,
 } from "./logoPipeline";
+import {
+  useGeneratorScaffold,
+  SidebarHeader,
+} from "../generatorScaffold";
 
 interface LogoGeneratorProps {
   project: ProjectData | null;
@@ -24,31 +24,15 @@ interface LogoGeneratorProps {
   customConfirm: (title: string, message: string, buttons?: any[]) => Promise<any>;
 }
 
-type FontRow = 'Title Font' | 'Heading' | 'Paragraph';
-
-const defaultFonts: Record<FontRow, FontSettings> = {
-  'Title Font': { fontFamily: 'Inter', bold: true, italic: false, underline: false, color: '#fff', size: 48 },
-  Heading: { fontFamily: 'Inter', bold: false, italic: false, underline: false, color: '#e2e8f0', size: 32 },
-  Paragraph: { fontFamily: 'Inter', bold: false, italic: false, underline: false, color: '#94a3b8', size: 14 },
-};
-
-const defaultSwatches: Record<string, string> = {
-  Primary: '#8b5cf6',
-  Secondary: '#a78bfa',
-  Accent: '#f59e0b',
-  Background: '#030712',
-  GlowColor: 'rgba(139, 92, 246, 0.5)',
-};
-
 const STATUS_LABELS: Record<string, string> = {
-  'storyboarding': 'Preparing logo...',
-  'designing': 'Creating animation...',
-  'animating': 'Adding motion...',
-  'assembling': 'Verifying & assembling...',
-  'component-building': 'Building components...',
-  'verifying': 'Checking output...',
-  'done': 'Complete!',
-  'error': 'Error',
+  storyboarding: "Preparing logo...",
+  designing: "Creating animation...",
+  animating: "Adding motion...",
+  assembling: "Verifying & assembling...",
+  "component-building": "Building components...",
+  verifying: "Checking output...",
+  done: "Complete!",
+  error: "Error",
 };
 
 export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
@@ -58,36 +42,49 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
   project,
   customAlert,
 }) => {
-  const [instructions, setInstructions] = useState(
-    project?.prompt || 'Create a smooth 3d spinning logo reveal with glowing neon particles and backdrop shadows'
+  const scaffold = useGeneratorScaffold({
+    project,
+    onBack,
+    customAlert,
+    defaultPrompt:
+      "Create a smooth 3d spinning logo reveal with glowing neon particles and backdrop shadows",
+    refineSystemPrompt: undefined,
+    extraBackFields: {},
+  });
+
+  const {
+    instructions,
+    setInstructions,
+    fonts,
+    setFonts,
+    swatches,
+    setSwatches,
+    availableFonts,
+    isRefining,
+    bgSelection,
+    setBgSelection,
+    pipelineState,
+    setPipelineState,
+    handleRefinePrompt,
+    handleBack,
+  } = scaffold;
+
+  const [logoFileUrl, setLogoFileUrl] = useState<string>(
+    (project as any)?.logoUrl || "",
   );
-  const [fonts, setFonts] = useState<Record<string, any>>(project?.fonts as any || defaultFonts);
-  const [swatches, setSwatches] = useState<Record<string, string>>(project?.colors || defaultSwatches);
-  const [availableFonts, setAvailableFonts] = useState<string[]>(['Inter', 'Roboto', 'Poppins', 'DM Sans', 'Outfit']);
-  const [isRefining, setIsRefining] = useState(false);
-  const [bgSelection, setBgSelection] = useState<BackgroundSelection>(project?.bgSelection || { type: 'color', color: '#09090b', blurPx: 0 });
-  const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
-  const [logoFileUrl, setLogoFileUrl] = useState<string>((project as any)?.logoUrl || '');
-  const [logoFileName, setLogoFileName] = useState<string>((project as any)?.logoFileName || '');
-  const [customSvgContent, setCustomSvgContent] = useState<string>('');
-  const [selectedStyle, setSelectedStyle] = useState<LogoStylePreset>(LOGO_STYLE_PRESETS[1]); // Default to 3D Spin
+  const [logoFileName, setLogoFileName] = useState<string>(
+    (project as any)?.logoFileName || "",
+  );
+  const [customSvgContent, setCustomSvgContent] = useState<string>("");
+  const [selectedStyle, setSelectedStyle] = useState<LogoStylePreset>(
+    LOGO_STYLE_PRESETS[1],
+  );
   const [isAnimating, setIsAnimating] = useState<boolean>(true);
   const [animKey, setAnimKey] = useState<number>(1);
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchSystemFonts = async () => {
-      if (window.electronAPI?.getSystemFonts) {
-        const sysFonts = await window.electronAPI.getSystemFonts();
-        if (sysFonts && sysFonts.length > 0) {
-          setAvailableFonts(sysFonts);
-        }
-      }
-    };
-    fetchSystemFonts();
-
-    // Trigger initial 3.5s preview animation on load
     triggerPreviewAnimation();
   }, []);
 
@@ -102,7 +99,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
 
   const handleSelectStylePreset = (preset: LogoStylePreset) => {
     setSelectedStyle(preset);
-    if (preset.id !== 'custom') {
+    if (preset.id !== "custom") {
       triggerPreviewAnimation();
     } else {
       setIsAnimating(false);
@@ -115,50 +112,25 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
       const url = URL.createObjectURL(file);
       setLogoFileUrl(url);
       setLogoFileName(file.name);
-
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (typeof event.target?.result === 'string') {
+        if (typeof event.target?.result === "string") {
           setCustomSvgContent(event.target.result);
         }
       };
       reader.readAsText(file);
-
-      if (selectedStyle.id !== 'custom') {
+      if (selectedStyle.id !== "custom") {
         triggerPreviewAnimation();
       }
     }
   };
 
-  const handleRefinePrompt = async () => {
+  const handleRefineWithStyle = async () => {
     if (!instructions.trim()) return;
-    const config = getStoredConfig();
-    if (!config) {
-      await customAlert('Setup Required', 'Please configure API key first using the settings menu');
-      return;
-    }
-    setIsRefining(true);
-    try {
-      const systemPrompt =
-        "You are an AI prompt engineer for logo motion-graphics animations. " +
-        "Refine the user's logo animation concept to be vivid, professional, and detailed for keyframe rendering. " +
-        `The selected animation style is "${selectedStyle.label}" (${selectedStyle.description}). ` +
-        "Keep total animation time within 5 seconds (150 frames @ 30fps). " +
-        "Return ONLY the refined prompt text with no intro or wrapper text.";
-      const response = await callLLM(config, systemPrompt, instructions);
-      if (response.error) {
-        await customAlert("AI Error", `Error refining prompt: ${response.error}`);
-      } else if (response.content) {
-        setInstructions(response.content.trim());
-      }
-    } catch (err) {
-      await customAlert("AI Error", `Failed to refine prompt: ${err}`);
-    } finally {
-      setIsRefining(false);
-    }
+    await handleRefinePrompt();
   };
 
-  const handleBack = () => {
+  const handleBackWithLogo = () => {
     if (project) {
       onBack({
         ...project,
@@ -174,24 +146,15 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleBack();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [instructions, fonts, swatches, bgSelection, logoFileUrl, logoFileName, project]);
-
   const handleGenerateClick = async () => {
     if (!instructions.trim()) {
-      await customAlert("Missing Instructions", "Please enter an animation prompt before generating.");
+      await customAlert(
+        "Missing Instructions",
+        "Please enter an animation prompt before generating.",
+      );
       return;
     }
-
-    setPipelineState({ status: 'storyboarding', progress: 0.02 });
-
+    setPipelineState({ status: "storyboarding", progress: 0.02 });
     const output = await runLogoPipeline({
       prompt: instructions,
       stylePreset: selectedStyle,
@@ -217,15 +180,20 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
         }
       },
     });
-
     if (output && output.length > 0) {
       onGenerate({
         ...project,
-        title: project?.title || 'Logo Animation',
+        title: project?.title || "Logo Animation",
         prompt: instructions,
-        narration: '',
+        narration: "",
         code: output,
-        scenes: [{ id: 'scene_1', description: `Logo reveal: ${selectedStyle.label}`, duration: 150 }],
+        scenes: [
+          {
+            id: "scene_1",
+            description: `Logo reveal: ${selectedStyle.label}`,
+            duration: 150,
+          },
+        ],
         showVisualizer: false,
         fonts,
         colors: swatches,
@@ -234,12 +202,15 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
         logoFileName,
         unfinished: false,
         generationState: undefined,
-        savePath: project?.savePath || '',
+        savePath: project?.savePath || "",
       } as any);
     }
   };
 
-  const renderLogoAsset = (extraClassName = "", extraStyle?: React.CSSProperties) => {
+  const renderLogoAsset = (
+    extraClassName = "",
+    extraStyle?: React.CSSProperties,
+  ) => {
     if (customSvgContent) {
       return (
         <div
@@ -249,10 +220,9 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
         />
       );
     }
-
     return (
       <img
-        src={logoFileUrl || logoIcon}
+        src={logoFileUrl || require("../../../../kinetic_brand/logo_transparent.svg").default}
         alt={logoFileName || "Kinetic Logo Preview"}
         className={`max-h-[220px] max-w-[380px] object-contain ${extraClassName}`}
         style={extraStyle}
@@ -262,37 +232,22 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
 
   return (
     <div className="flex h-screen bg-gray-950 text-white page-enter">
-      {/* LEFT COLUMN: Controls Sidebar */}
-      <ResizableSidebar initialWidth={380} minWidth={320} maxWidth={650} className="border-r border-gray-900 bg-gray-950 p-5 gap-4 overflow-y-auto">
-        <header className="flex items-center gap-2 border-b border-gray-900 pb-3">
-          <button
-            onClick={handleBack}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-900 hover:text-purple-400"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 hover:opacity-85 transition-opacity"
-            title="Return to Dashboard"
-          >
-            <img src={logoIcon} className="h-6 w-6 object-contain" alt="Kinetic" style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)' }} />
-            <span className="text-sm font-bold text-white">kinetic</span>
-          </button>
-          <span className="text-sm text-gray-700">/</span>
-          <span className="text-sm text-gray-400">Logo</span>
-        </header>
+      <ResizableSidebar
+        initialWidth={380}
+        minWidth={320}
+        maxWidth={650}
+        className="border-r border-gray-900 bg-gray-950 p-5 gap-4 overflow-y-auto"
+      >
+        <SidebarHeader breadcrumb="Logo" onBack={handleBackWithLogo} />
 
-        {/* Custom Instructions Panel */}
         <CustomInstructionsPanel
           instructions={instructions}
           setInstructions={setInstructions}
           isRefining={isRefining}
-          handleRefinePrompt={handleRefinePrompt}
+          handleRefinePrompt={handleRefineWithStyle}
           placeholder="Describe logo reveal effects, particle colors, or motion directives..."
         />
 
-        {/* Logo File Upload Section */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
@@ -300,12 +255,14 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
               Logo Asset
             </h4>
             {logoFileName && (
-              <span className="text-[11px] text-gray-400 truncate max-w-[140px]" title={logoFileName}>
+              <span
+                className="text-[11px] text-gray-400 truncate max-w-[140px]"
+                title={logoFileName}
+              >
                 {logoFileName}
               </span>
             )}
           </div>
-
           <input
             type="file"
             ref={logoInputRef}
@@ -313,29 +270,37 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             accept=".svg,image/svg+xml"
             className="hidden"
           />
-
           <div
             onClick={() => logoInputRef.current?.click()}
             className="flex flex-col items-center justify-center p-4 border border-dashed border-gray-800 rounded-lg bg-gray-950 hover:bg-gray-900 hover:border-purple-500 cursor-pointer transition-all gap-2 group"
           >
             {logoFileUrl ? (
               <div className="flex flex-col items-center gap-2">
-                <img src={logoFileUrl} alt="Uploaded logo preview" className="h-12 w-auto max-w-[160px] object-contain drop-shadow-md" />
-                <span className="text-[11px] text-purple-400 font-medium group-hover:underline">Change SVG logo</span>
+                <img
+                  src={logoFileUrl}
+                  alt="Uploaded logo preview"
+                  className="h-12 w-auto max-w-[160px] object-contain drop-shadow-md"
+                />
+                <span className="text-[11px] text-purple-400 font-medium group-hover:underline">
+                  Change SVG logo
+                </span>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1.5 text-center">
                 <div className="h-9 w-9 rounded-full bg-gray-900 border border-purple-500/40 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform">
                   <UploadSimple size={18} />
                 </div>
-                <span className="text-xs font-semibold text-gray-300">Click or drop SVG vector logo</span>
-                <span className="text-[10px] text-purple-400/90 font-medium">SVG Vector File Required (.svg)</span>
+                <span className="text-xs font-semibold text-gray-300">
+                  Click or drop SVG vector logo
+                </span>
+                <span className="text-[10px] text-purple-400/90 font-medium">
+                  SVG Vector File Required (.svg)
+                </span>
               </div>
             )}
           </div>
         </section>
 
-        {/* Animation Style Selector */}
         <section className="flex flex-col gap-2.5">
           <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
             <Sparkle size={14} className="text-purple-400" />
@@ -346,10 +311,11 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
               <button
                 key={preset.id}
                 onClick={() => handleSelectStylePreset(preset)}
-                className={`flex items-center px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${selectedStyle.id === preset.id
-                  ? 'border-2 border-purple-500 text-purple-300 bg-transparent font-bold'
-                  : 'border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-gray-300 bg-transparent'
-                  }`}
+                className={`flex items-center px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  selectedStyle.id === preset.id
+                    ? "border-2 border-purple-500 text-purple-300 bg-transparent font-bold"
+                    : "border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-gray-300 bg-transparent"
+                }`}
                 title={preset.description}
               >
                 <span>{preset.label}</span>
@@ -363,7 +329,6 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
           )}
         </section>
 
-        {/* Brand Styling Panel */}
         <BrandStylingPanel
           fonts={fonts}
           setFonts={setFonts}
@@ -375,9 +340,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
         />
       </ResizableSidebar>
 
-      {/* RIGHT COLUMN: Preview Canvas & Execution */}
       <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950 justify-between h-full">
-        {/* Preview Canvas */}
         <PreviewWindow title="Logo Reveal Canvas">
           <style>{`
             @keyframes logo-3d-spin {
@@ -442,24 +405,9 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
               100% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
             }
             @keyframes logo-stroke-draw {
-              0% {
-                clip-path: inset(0 100% 0 0);
-                filter: grayscale(1) contrast(4) brightness(0.6) invert(0.1);
-                opacity: 0.3;
-                transform: scale(0.97);
-              }
-              60% {
-                clip-path: inset(0 0% 0 0);
-                filter: grayscale(1) contrast(3) brightness(0.7);
-                opacity: 0.95;
-                transform: scale(1.02);
-              }
-              100% {
-                clip-path: inset(0 0% 0 0);
-                filter: grayscale(0) contrast(1) brightness(1);
-                opacity: 1;
-                transform: scale(1);
-              }
+              0% { clip-path: inset(0 100% 0 0); filter: grayscale(1) contrast(4) brightness(0.6) invert(0.1); opacity: 0.3; transform: scale(0.97); }
+              60% { clip-path: inset(0 0% 0 0); filter: grayscale(1) contrast(3) brightness(0.7); opacity: 0.95; transform: scale(1.02); }
+              100% { clip-path: inset(0 0% 0 0); filter: grayscale(0) contrast(1) brightness(1); opacity: 1; transform: scale(1); }
             }
             @keyframes logo-cinematic-zoom {
               0% { transform: scale(3.5); opacity: 0; filter: blur(30px); }
@@ -467,167 +415,163 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             }
           `}</style>
 
-          {/* Dynamic Background Stage Layer */}
           <div
             className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden"
             style={{
-              ...(bgSelection?.color === 'transparent'
+              ...(bgSelection?.color === "transparent"
                 ? {
                     backgroundImage:
-                      'linear-gradient(45deg, #18181b 25%, transparent 25%), linear-gradient(-45deg, #18181b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #18181b 75%), linear-gradient(-45deg, transparent 75%, #18181b 75%)',
-                    backgroundSize: '16px 16px',
-                    backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
-                    backgroundColor: '#09090b',
+                      "linear-gradient(45deg, #18181b 25%, transparent 25%), linear-gradient(-45deg, #18181b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #18181b 75%), linear-gradient(-45deg, transparent 75%, #18181b 75%)",
+                    backgroundSize: "16px 16px",
+                    backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
+                    backgroundColor: "#09090b",
                   }
-                : bgSelection?.type === 'image' && bgSelection.imageUrl
-                ? {
-                    backgroundImage: `url(${bgSelection.imageUrl})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    filter: `blur(${bgSelection.blurPx || 0}px)`,
-                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
-                  }
-                : bgSelection?.type === 'gradient' && bgSelection.gradient
-                ? {
-                    background: bgSelection.gradient,
-                    filter: `blur(${bgSelection.blurPx || 0}px)`,
-                    transform: bgSelection.blurPx ? 'scale(1.08)' : 'none',
-                  }
-                : {
-                    backgroundColor: bgSelection?.color || '#09090b',
-                  }),
+                : bgSelection?.type === "image" && bgSelection.imageUrl
+                  ? {
+                      backgroundImage: `url(${bgSelection.imageUrl})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      filter: `blur(${bgSelection.blurPx || 0}px)`,
+                      transform: bgSelection.blurPx ? "scale(1.08)" : "none",
+                    }
+                  : bgSelection?.type === "gradient" && bgSelection.gradient
+                    ? {
+                        background: bgSelection.gradient,
+                        filter: `blur(${bgSelection.blurPx || 0}px)`,
+                        transform: bgSelection.blurPx ? "scale(1.08)" : "none",
+                      }
+                    : {
+                        backgroundColor: bgSelection?.color || "#09090b",
+                      }),
             }}
           />
 
-          {/* Centered Crisp Logo Preview Layer */}
           <div className="relative z-10 w-full h-full flex items-center justify-center p-8 transition-all">
-              {selectedStyle.id === 'shatter-reform' && isAnimating ? (
+            {selectedStyle.id === "shatter-reform" && isAnimating ? (
+              <div
+                key={animKey}
+                onClick={() => triggerPreviewAnimation()}
+                title="Click logo to replay preview animation"
+                className="cursor-pointer relative max-h-[220px] max-w-[380px]"
+              >
                 <div
-                  key={animKey}
-                  onClick={() => triggerPreviewAnimation()}
-                  title="Click logo to replay preview animation"
-                  className="cursor-pointer relative max-h-[220px] max-w-[380px]"
-                >
-                  {/* Fragment 1: Top-Left Jagged Shard */}
-                  <div
-                    style={{
-                      clipPath: 'polygon(0 0, 62% 0, 44% 48%, 0 68%)',
-                      animation: 'logo-shatter-tl 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
-                    }}
-                  >
-                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
-                  </div>
-                  {/* Fragment 2: Top-Right Jagged Shard */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      clipPath: 'polygon(62% 0, 100% 0, 100% 54%, 44% 48%)',
-                      animation: 'logo-shatter-tr 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
-                    }}
-                  >
-                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
-                  </div>
-                  {/* Fragment 3: Bottom-Left Jagged Shard */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      clipPath: 'polygon(0 68%, 44% 48%, 56% 100%, 0 100%)',
-                      animation: 'logo-shatter-bl 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
-                    }}
-                  >
-                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
-                  </div>
-                  {/* Fragment 4: Bottom-Right Jagged Shard */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      clipPath: 'polygon(44% 48%, 100% 54%, 100% 100%, 56% 100%)',
-                      animation: 'logo-shatter-br 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards',
-                    }}
-                  >
-                    {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
-                  </div>
-                </div>
-              ) : selectedStyle.id === 'particle-burst' && isAnimating ? (
-                <div
-                  key={animKey}
-                  onClick={() => triggerPreviewAnimation()}
-                  title="Click logo to replay preview animation"
-                  className="cursor-pointer relative flex items-center justify-center max-h-[220px] max-w-[380px]"
-                >
-                  {/* 24 Particle Sparks flying inward */}
-                  {Array.from({ length: 24 }).map((_, i) => {
-                    const angle = (i * 360) / 24;
-                    const rad = (angle * Math.PI) / 180;
-                    const startDist = 180 + (i % 3) * 40;
-                    const startX = Math.cos(rad) * startDist;
-                    const startY = Math.sin(rad) * startDist;
-                    const colors = ['#8b5cf6', '#a78bfa', '#f59e0b', '#38bdf8', '#ec4899', '#10b981'];
-                    const color = colors[i % colors.length];
-                    const size = 6 + (i % 4) * 2;
-
-                    return (
-                      <div
-                        key={i}
-                        className="absolute rounded-full pointer-events-none"
-                        style={{
-                          width: `${size}px`,
-                          height: `${size}px`,
-                          backgroundColor: color,
-                          boxShadow: `0 0 12px ${color}, 0 0 20px ${color}`,
-                          animation: `particle-spark-fly 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards`,
-                          animationDelay: `${(i % 5) * 0.04}s`,
-                          ['--startX' as any]: `${startX}px`,
-                          ['--startY' as any]: `${startY}px`,
-                        }}
-                      />
-                    );
-                  })}
-
-                  {/* Shockwave Burst + Logo Reveal */}
-                  {renderLogoAsset("", {
-                    animation: 'logo-particle-burst-reveal 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                  })}
-                </div>
-              ) : (
-                <div
-                  key={animKey}
-                  onClick={() => selectedStyle.id !== 'custom' && triggerPreviewAnimation()}
-                  title="Click logo to replay preview animation"
-                  className="cursor-pointer flex flex-col items-center gap-2"
                   style={{
-                    animation: (isAnimating && selectedStyle.id !== 'custom')
-                      ? (
-                        selectedStyle.id === '3d-spin' ? 'logo-3d-spin 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards' :
-                        selectedStyle.id === 'particle-burst' ? 'logo-particle-burst 3.5s ease-out forwards' :
-                        selectedStyle.id === 'neon-glow' ? 'logo-neon-glow 3.5s ease-in-out forwards' :
-                        selectedStyle.id === 'bounce-drop' ? 'logo-bounce-drop 3.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' :
-                        selectedStyle.id === 'glitch-reveal' ? 'logo-glitch-reveal 3.5s steps(6, end) forwards' :
-                        selectedStyle.id === 'stroke-draw' ? 'logo-stroke-draw 3.5s ease-out forwards' :
-                        selectedStyle.id === 'cinematic-zoom' ? 'logo-cinematic-zoom 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' :
-                        'logo-scale-fade 3.5s ease-out forwards'
-                      )
-                      : undefined,
+                    clipPath: "polygon(0 0, 62% 0, 44% 48%, 0 68%)",
+                    animation: "logo-shatter-tl 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards",
                   }}
                 >
                   {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
                 </div>
-              )}
-            </div>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    clipPath: "polygon(62% 0, 100% 0, 100% 54%, 44% 48%)",
+                    animation: "logo-shatter-tr 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards",
+                  }}
+                >
+                  {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+                </div>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    clipPath: "polygon(0 68%, 44% 48%, 56% 100%, 0 100%)",
+                    animation: "logo-shatter-bl 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards",
+                  }}
+                >
+                  {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+                </div>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    clipPath: "polygon(44% 48%, 100% 54%, 100% 100%, 56% 100%)",
+                    animation: "logo-shatter-br 3.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards",
+                  }}
+                >
+                  {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+                </div>
+              </div>
+            ) : selectedStyle.id === "particle-burst" && isAnimating ? (
+              <div
+                key={animKey}
+                onClick={() => triggerPreviewAnimation()}
+                title="Click logo to replay preview animation"
+                className="cursor-pointer relative flex items-center justify-center max-h-[220px] max-w-[380px]"
+              >
+                {Array.from({ length: 24 }).map((_, i) => {
+                  const angle = (i * 360) / 24;
+                  const rad = (angle * Math.PI) / 180;
+                  const startDist = 180 + (i % 3) * 40;
+                  const startX = Math.cos(rad) * startDist;
+                  const startY = Math.sin(rad) * startDist;
+                  const colors = ["#8b5cf6", "#a78bfa", "#f59e0b", "#38bdf8", "#ec4899", "#10b981"];
+                  const color = colors[i % colors.length];
+                  const size = 6 + (i % 4) * 2;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute rounded-full pointer-events-none"
+                      style={{
+                        width: `${size}px`,
+                        height: `${size}px`,
+                        backgroundColor: color,
+                        boxShadow: `0 0 12px ${color}, 0 0 20px ${color}`,
+                        animation: `particle-spark-fly 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards`,
+                        animationDelay: `${(i % 5) * 0.04}s`,
+                        ["--startX" as any]: `${startX}px`,
+                        ["--startY" as any]: `${startY}px`,
+                      }}
+                    />
+                  );
+                })}
+                {renderLogoAsset("", {
+                  animation: "logo-particle-burst-reveal 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                })}
+              </div>
+            ) : (
+              <div
+                key={animKey}
+                onClick={() =>
+                  selectedStyle.id !== "custom" && triggerPreviewAnimation()
+                }
+                title="Click logo to replay preview animation"
+                className="cursor-pointer flex flex-col items-center gap-2"
+                style={{
+                  animation:
+                    isAnimating && selectedStyle.id !== "custom"
+                      ? selectedStyle.id === "3d-spin"
+                        ? "logo-3d-spin 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards"
+                        : selectedStyle.id === "particle-burst"
+                          ? "logo-particle-burst 3.5s ease-out forwards"
+                          : selectedStyle.id === "neon-glow"
+                            ? "logo-neon-glow 3.5s ease-in-out forwards"
+                            : selectedStyle.id === "bounce-drop"
+                              ? "logo-bounce-drop 3.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+                              : selectedStyle.id === "glitch-reveal"
+                                ? "logo-glitch-reveal 3.5s steps(6, end) forwards"
+                                : selectedStyle.id === "stroke-draw"
+                                  ? "logo-stroke-draw 3.5s ease-out forwards"
+                                  : selectedStyle.id === "cinematic-zoom"
+                                    ? "logo-cinematic-zoom 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+                                    : "logo-scale-fade 3.5s ease-out forwards"
+                      : undefined,
+                }}
+              >
+                {renderLogoAsset("drop-shadow-[0_15px_35px_rgba(139,92,246,0.4)]")}
+              </div>
+            )}
+          </div>
         </PreviewWindow>
 
-        {/* Custom Instructions Panel */}
         <div className="w-full">
           <CustomInstructionsPanel
             instructions={instructions}
             setInstructions={setInstructions}
             isRefining={isRefining}
-            handleRefinePrompt={handleRefinePrompt}
+            handleRefinePrompt={handleRefineWithStyle}
             placeholder="Describe your logo animation (e.g., 3D spin, glowing particle reveal, stroke draw-in)..."
           />
         </div>
 
-        {/* Bottom Action Footer */}
         <footer className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl p-4 gap-4">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-transparent text-purple-300 border border-purple-500/50">
@@ -639,16 +583,23 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
           </div>
 
           <div className="flex items-center gap-4 flex-grow justify-end">
-            {pipelineState && pipelineState.status !== 'idle' && (
+            {pipelineState && pipelineState.status !== "idle" && (
               <div className="flex flex-col gap-1 w-52">
                 <div className="flex justify-between text-[10px] text-gray-400">
-                  <span>{STATUS_LABELS[pipelineState.status] || pipelineState.status}</span>
-                  <span>{Math.round((pipelineState.progress || 0) * 100)}%</span>
+                  <span>
+                    {STATUS_LABELS[pipelineState.status] ||
+                      pipelineState.status}
+                  </span>
+                  <span>
+                    {Math.round((pipelineState.progress || 0) * 100)}%
+                  </span>
                 </div>
                 <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-purple-500 to-violet-400 transition-all duration-500 ease-out"
-                    style={{ width: `${(pipelineState.progress || 0) * 100}%` }}
+                    style={{
+                      width: `${(pipelineState.progress || 0) * 100}%`,
+                    }}
                   />
                 </div>
               </div>
@@ -656,7 +607,12 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
 
             <button
               onClick={handleGenerateClick}
-              disabled={!!pipelineState && pipelineState.status !== 'done' && pipelineState.status !== 'error' && pipelineState.status !== 'idle'}
+              disabled={
+                !!pipelineState &&
+                pipelineState.status !== "done" &&
+                pipelineState.status !== "error" &&
+                pipelineState.status !== "idle"
+              }
               className="premium-button-primary flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-semibold text-sm shadow-lg shadow-purple-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Sparkle size={16} className="text-purple-200" />

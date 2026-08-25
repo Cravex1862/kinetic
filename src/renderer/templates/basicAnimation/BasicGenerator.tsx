@@ -1,10 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import {
-  ArrowLeft,
-  ArrowRight,
-  Bell,
-  CheckCircle,
-  Gear,
   Lock,
   MagnifyingGlass,
   PlayCircle,
@@ -15,28 +10,28 @@ import {
   User,
   Users,
   X,
+  CheckCircle,
+  Bell,
+  Gear,
+  ArrowRight,
+  Users as UsersIcon,
 } from "@phosphor-icons/react";
-import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
-import { runPipeline, approveCurrentStage } from "@/renderer/agents/pipeline";
+import { runPipeline } from "@/renderer/agents/pipeline";
 import { pipelineHistory } from "@/renderer/utils/pipelineHistoryStore";
-import { callLLM, getStoredConfig } from "@/renderer/agents/llmClient";
 import { ProjectData } from "../../pages/AppRouter";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
 import {
   BrandStylingPanel,
-  FontSettings,
 } from "@/renderer/components/BrandStylingPanel";
-import { CustomInstructionsPanel } from "@/renderer/components/CustomInstructionsPanel";
-import { PipelineState } from "@/renderer/agents/types";
-import { BackgroundSelection } from "@/renderer/components/BackgroundSelectorPanel";
-
-import { AudioUploadField } from "@/renderer/components/AudioUploadField";
 import { VoiceoverAudioField } from "@/renderer/components/VoiceoverAudioField";
-import { extractAudioFeatures } from "@/renderer/utils/audioUtils";
-import { runBeatNetAI } from "@/renderer/utils/beatDetector";
+import { AudioUploadField } from "@/renderer/components/AudioUploadField";
 import { ResizableSidebar } from "@/renderer/components/ResizableSidebar";
 import { MOCK_TOUR_PROJECT } from "@/renderer/constants";
 import { AIsidebar } from "@/renderer/components/AIsidebar";
+import {
+  useGeneratorScaffold,
+  SidebarHeader,
+} from "../generatorScaffold";
 
 interface AnimationGeneratorProps {
   project: ProjectData | null;
@@ -53,46 +48,6 @@ interface AnimationGeneratorProps {
   tourStep?: number;
 }
 
-type FontRow = "Title Font" | "Heading" | "Paragraph";
-
-const defaultFonts: Record<FontRow, FontSettings> = {
-  "Title Font": {
-    fontFamily: "Inter",
-    bold: true,
-    italic: false,
-    underline: false,
-    color: "#ffffff",
-    size: 48,
-  },
-  Heading: {
-    fontFamily: "Inter",
-    bold: false,
-    italic: false,
-    underline: false,
-    color: "#e2e8f0",
-    size: 32,
-  },
-  Paragraph: {
-    fontFamily: "Inter",
-    bold: false,
-    italic: false,
-    underline: false,
-    color: "#94a3b8",
-    size: 14,
-  },
-};
-
-const colorSwatches = [
-  { label: "Primary", defaultColor: "#8b5cf6" },
-  { label: "Secondary", defaultColor: "#a78bfa" },
-  { label: "Accent", defaultColor: "#f59e0b" },
-  { label: "Background", defaultColor: "#030712" },
-  { label: "Neutral", defaultColor: "#64748b" },
-  { label: "Semantic", defaultColor: "#3b82f6" },
-  { label: "Error", defaultColor: "#ef4444" },
-  { label: "Success", defaultColor: "#22c55e" },
-];
-
 const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
   onBack,
   onGenerate,
@@ -102,257 +57,59 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
   customConfirm,
   tourActive,
 }) => {
-  const [instructions, setInstructions] = useState(project?.prompt || "");
-  const [narration, setNarration] = useState(project?.narration || "");
-  const [useNarration, setUseNarration] = useState(!!project?.narration);
-  const [voiceoverMode, setVoiceoverMode] = useState<"text" | "audio">("text");
-  const [voiceoverAudioFile, setVoiceoverAudioFile] = useState<File | null>(
-    null,
-  );
-  const [isTranscribingVoiceover, setIsTranscribingVoiceover] = useState(false);
-  const [fonts, setFonts] = useState<Record<string, any>>(
-    (project?.fonts as any) || defaultFonts,
-  );
-  const [swatches, setSwatches] = useState<Record<string, string>>(
-    project?.colors ||
-      Object.fromEntries(colorSwatches.map((s) => [s.label, s.defaultColor])),
-  );
-  const [availableFonts, setAvailableFonts] = useState<string[]>([
-    "Inter",
-    "Roboto",
-    "Poppins",
-    "DM Sans",
-  ]);
-  const [isRefining, setIsRefining] = useState(false);
-  const [bgDescription, setBgDescription] = useState(
-    project?.bgDescription || "",
-  );
-  const [backgroundImage, setBackgroundImage] = useState(
-    project?.colors?.backgroundImage || "",
-  );
-  const [uploadedAssets, setUploadedAssets] = useState<string[]>([]);
-  const [showVisualizer, setShowVisualizer] = useState(false);
-  const [bgSelection, setBgSelection] = useState<BackgroundSelection>({
-    type: "color",
-    color: "#09090b",
-    blurPx: 0,
+  const scaffold = useGeneratorScaffold({
+    project,
+    onBack,
+    customAlert,
   });
-  const [pipelineState, setPipelineState] = useState<PipelineState | null>(
-    null,
-  );
-  const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [beatFrames, setBeatFrames] = useState<number[]>([]);
-  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
-  const assetInputRef = useRef<HTMLInputElement>(null);
 
-  const handleVoiceoverAudioChange = async (file: File | null) => {
-    setVoiceoverAudioFile(file);
-    if (!file) return;
+  const {
+    instructions,
+    setInstructions,
+    narration,
+    setNarration,
+    useNarration,
+    setUseNarration,
+    voiceoverMode,
+    setVoiceoverMode,
+    voiceoverAudioFile,
+    isTranscribingVoiceover,
+    handleVoiceoverAudioChange,
+    fonts,
+    setFonts,
+    swatches,
+    setSwatches,
+    availableFonts,
+    isRefining,
+    bgSelection,
+    setBgSelection,
+    pipelineState,
+    setPipelineState,
+    backgroundImage,
+    bgDescription,
+    audioFile,
+    beatFrames,
+    isAnalyzingAudio,
+    handleSelectAudio,
+    handleAssetUpload,
+    assetInputRef,
+    handleRefinePrompt,
+    capturePipelineState,
+    tokenFont,
+    handleBack,
+    uploadedAssets,
+    setUploadedAssets,
+    showVisualizer,
+    setShowVisualizer,
+  } = scaffold;
 
-    setIsTranscribingVoiceover(true);
-    try {
-      const float32Array = await extractAudioFeatures(file);
-      const worker = new Worker(
-        new URL("../../agents/whisperWorker.ts", import.meta.url),
-        { type: "module" },
-      );
-
-      worker.onmessage = (e) => {
-        const { status, result } = e.data;
-        if (status === "complete") {
-          setIsTranscribingVoiceover(false);
-          worker.terminate();
-
-          const chunks = result?.chunks || [];
-          const formattedScript = chunks
-            .map((c: any) => {
-              const startSec = Array.isArray(c.timestamp) ? c.timestamp[0] : 0;
-              const endSec = Array.isArray(c.timestamp)
-                ? c.timestamp[1] || startSec + 1.5
-                : startSec + 1.5;
-              return `[${startSec.toFixed(1)}s - ${endSec.toFixed(1)}s] ${c.text.trim()}`;
-            })
-            .join("\n");
-
-          setNarration(formattedScript || result.text || "");
-          setUseNarration(true);
-        } else if (status === "error") {
-          setIsTranscribingVoiceover(false);
-          worker.terminate();
-        }
-      };
-
-      worker.postMessage({ action: "transcribe", audioData: float32Array });
-    } catch (err) {
-      setIsTranscribingVoiceover(false);
-    }
-  };
-
-  const handleSelectAudio = async (file: File | null) => {
-    setAudioFile(file);
-    if (!file) {
-      setBeatFrames([]);
-      return;
-    }
-
-    setIsAnalyzingAudio(true);
-    const predictions = await runBeatNetAI(file);
-    const frames = predictions.map((p) => p.frame);
-    setBeatFrames(frames);
-    setIsAnalyzingAudio(false);
-  };
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (tourActive && !instructions) {
       setInstructions(
         "Create a clean kinetic dashboard animation with rising bar charts and sleek typography",
       );
     }
   }, [tourActive]);
-
-  useEffect(() => {
-    const fetchSystemFonts = async () => {
-      if (window.electronAPI?.getSystemFonts) {
-        const sysFonts = await window.electronAPI.getSystemFonts();
-        if (sysFonts && sysFonts.length > 0) {
-          setAvailableFonts(sysFonts);
-        }
-      }
-    };
-    fetchSystemFonts();
-  }, []);
-
-  const handleAssetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newAssets: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        newAssets.push(files[i].name);
-      }
-      setUploadedAssets((prev) => [...prev, ...newAssets]);
-    }
-  };
-
-  const handleRefinePrompt = async () => {
-    if (!instructions.trim()) return;
-    const config = getStoredConfig();
-    if (!config) {
-      await customAlert(
-        "Setup Required",
-        "Please configure API key first using the settings menu",
-      );
-      return;
-    }
-    setIsRefining(true);
-    try {
-      const systemPrompt =
-        "You are an AI prompt engineer for motion-graphics video generation. " +
-        "Take the user's basic description of the video animation they want to create and refine it to be descriptive, " +
-        "detailed, professional, and optimized for generating high-quality animation frames. " +
-        "Return ONLY the refined prompt text, with no introductory, greeting or meta text";
-
-      const response = await callLLM(config, systemPrompt, instructions);
-      if (response.error) {
-        await customAlert(
-          "AI error",
-          `Error refining prompt: ${response.error}`,
-        );
-      } else if (response.content) {
-        setInstructions(response.content.trim());
-      }
-    } catch (err) {
-      await customAlert("AI error", `Failed to refine prompt: ${err}`);
-    } finally {
-      setIsRefining(false);
-    }
-  };
-
-  const handleBack = () => {
-    if (project) {
-      onBack({
-        ...project,
-        prompt: instructions,
-        narration: useNarration ? narration : "",
-        fonts,
-        colors: { ...swatches, backgroundImage },
-        bgDescription,
-        showVisualizer,
-      });
-    } else {
-      onBack();
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleBack();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    instructions,
-    useNarration,
-    narration,
-    fonts,
-    swatches,
-    backgroundImage,
-    bgDescription,
-    showVisualizer,
-    project,
-  ]);
-
-  const capturePipelineState = (s: PipelineState) => {
-    setPipelineState(s);
-    pipelineHistory.record(s);
-  };
-
-  const handleResume = async () => {
-    if (!project || !project.generationState) return;
-    setPipelineState({ status: "storyboarding", progress: 0.1 });
-    pipelineHistory.reset();
-    pipelineHistory.record({ status: "storyboarding", progress: 0.1 });
-    const resumeState = {
-      scenes: project.generationState.scenes,
-      componentTrees: project.generationState.componentTrees,
-      animationPlans: project.generationState.animationPlans,
-      copies: project.generationState.copies,
-    };
-    const onCheckpoint = (checkpoint: any) => {
-      if (onUpdateProject && project) {
-        onUpdateProject({
-          ...project,
-          ...checkpoint,
-          fonts,
-          colors: { ...swatches, backgroundImage },
-          bgDescription,
-          showVisualizer,
-        });
-      }
-    };
-    const output = await runPipeline(
-      instructions,
-      useNarration ? narration : "",
-      capturePipelineState,
-      { skipRepoGate: true },
-    );
-    if (output && output.assembled) {
-      onGenerate({
-        ...project,
-        prompt: instructions,
-        narration: useNarration ? narration : "",
-        code: output.assembled,
-        scenes: project?.scenes || [],
-        showVisualizer,
-        fonts,
-        colors: { ...swatches, backgroundImage },
-        bgDescription,
-        unfinished: false,
-        generationState: undefined,
-      });
-    }
-  };
 
   const handleGenerate = async () => {
     if (tourActive) {
@@ -363,18 +120,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     setPipelineState({ status: "storyboarding", progress: 0 });
     pipelineHistory.reset();
     pipelineHistory.record({ status: "storyboarding", progress: 0 });
-    const onCheckpoint = (checkpoint: any) => {
-      if (onUpdateProject && project) {
-        onUpdateProject({
-          ...project,
-          ...checkpoint,
-          fonts,
-          colors: { ...swatches, backgroundImage },
-          bgDescription,
-          showVisualizer,
-        });
-      }
-    };
     const output = await runPipeline(
       instructions,
       useNarration ? narration : "",
@@ -401,7 +146,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     }
   };
 
-  let StatusProps = {
+  const StatusProps = {
     fonts: fonts,
     setFonts: setFonts,
     swatches: swatches,
@@ -410,8 +155,8 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
     bgSelection: bgSelection,
     onSelectBackground: setBgSelection,
     customAlert: customAlert,
-    state: pipelineState || { status: "idle", progress: 0 },
-    onApproveStage: approveCurrentStage,
+    state: pipelineState || { status: "idle" as const, progress: 0 },
+    onApproveStage: scaffold.approveCurrentStage,
     questions: [],
     onSubmitAnswers: () => {},
   };
@@ -419,17 +164,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
   const cPrimary = swatches["Primary"] || "#8b5cf6";
   const cSecondary = swatches["Secondary"] || "#a78bfa";
   const cAccent = swatches["Accent"] || "#f59e0b";
-
-  const tokenFont = (row: FontRow): React.CSSProperties => {
-    const f = fonts[row] as FontSettings | undefined;
-    return {
-      fontFamily: f?.fontFamily,
-      color: f?.color,
-      fontWeight: f?.bold ? 700 : 400,
-      fontStyle: f?.italic ? "italic" : "normal",
-      textDecoration: f?.underline ? "underline" : "none",
-    };
-  };
 
   return (
     <div className="flex h-screen bg-gray-950 text-white page-enter">
@@ -439,46 +173,8 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
         maxWidth={650}
         className="border-r border-gray-900 bg-gray-950 p-5 gap-4 overflow-y-auto"
       >
-        <header className="flex items-center gap-2 border-b border-gray-900 pb-3">
-          <button
-            onClick={handleBack}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-900 hover:text-purple-400"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 hover:opacity-85 transition-opacity"
-            title="Return to Dashboard"
-          >
-            <img
-              src={logoIcon}
-              className="h-6 w-6 object-contain"
-              alt="Kinetic"
-              style={{
-                filter:
-                  "drop-shadow(0 0 10px rgba(139, 92, 246, 0.45)) brightness(1.15)",
-              }}
-            />
-            <span className="text-sm font-bold text-white">kinetic</span>
-          </button>
-          <span className="text-sm text-gray-700">/</span>
-          <span className="text-sm text-gray-400">Basic</span>
-        </header>
+        <SidebarHeader breadcrumb="Basic" onBack={handleBack} />
 
-        {/* Reusable Instructions Panel Block */}
-        {/*   <div data-tour="prompt-input">
-                    <CustomInstructionsPanel
-                        instructions={instructions}
-                        setInstructions={setInstructions}
-                        isRefining={isRefining}
-                        handleRefinePrompt={handleRefinePrompt}
-                        placeholder="Describe custom layout or animation instructions..."
-                    />
-                </div>
-                */}
-
-        {/* Upload Script Panel block */}
         <section className="bg-gray-900/20 border border-gray-900 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between border-b border-gray-900 pb-2">
             <h4 className="text-xs font-bold text-gray-400">
@@ -513,25 +209,10 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
           placeholder="Describe custom layout or animation...."
           StatusProps={StatusProps}
         />
-
-        {/* Reusable Styling Accordion Block */}
-        {/*  <BrandStylingPanel
-                    fonts={fonts}
-                    setFonts={setFonts}
-                    swatches={swatches}
-                    setSwatches={setSwatches}
-                    availableFonts={availableFonts}
-                    bgSelection={bgSelection}
-                    onSelectBackground={setBgSelection}
-                />
-            */}
       </ResizableSidebar>
 
-      {/* RIGHT COLUMN: Walkthrough Canvas area and trigger button elements */}
       <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950/40 justify-between h-full">
-        {/* Walkthrough Preview Browser Component */}
         <PreviewWindow title="Walkthrough Preview Canvas">
-          {/* Isolated Background Layer */}
           <div
             className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden"
             style={{
@@ -565,7 +246,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
 
           <div className="relative z-10 w-full h-full p-6 flex items-center justify-center">
             <div className="w-full h-full max-w-5xl flex flex-col rounded-xl overflow-hidden border border-white/10 bg-[#0a0c14] shadow-[0_30px_80px_rgba(0,0,0,0.85)]">
-
               <div className="h-9 shrink-0 flex items-center gap-3 px-4 bg-[#131620] border-b border-white/[0.06] select-none">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
@@ -596,7 +276,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                 <header className="relative z-10 shrink-0 h-11 px-5 flex items-center justify-between border-b border-white/[0.06]">
                   <div className="flex items-center gap-5 min-w-0">
                     <div className="flex items-center gap-2 shrink-0">
-                      <img src={logoIcon} alt="" className="h-4 w-4 object-contain" style={{ filter: "drop-shadow(0 0 8px rgba(139,92,246,0.5)) brightness(1.15)" }} />
+                      <img src={require("../../../../kinetic_brand/logo_transparent.svg").default} alt="" className="h-4 w-4 object-contain" style={{ filter: "drop-shadow(0 0 8px rgba(139,92,246,0.5)) brightness(1.15)" }} />
                       <span className="text-[12px] font-extrabold tracking-tight text-white">Kinetic</span>
                       <span className="px-1.5 py-px rounded bg-white/[0.06] border border-white/[0.06] text-[6.5px] font-bold uppercase tracking-[0.15em] text-gray-400">Studio</span>
                     </div>
@@ -783,7 +463,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                       </div>
                       <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.04] rounded-lg px-1.5 py-1">
                         <div className="w-4 h-4 rounded-md bg-amber-400/10 flex items-center justify-center shrink-0">
-                          <Users size={8} className="text-amber-400" weight="bold" />
+                          <UsersIcon size={8} className="text-amber-400" weight="bold" />
                         </div>
                         <div className="flex-1 min-w-0"><span className="block text-[7.5px] font-semibold text-gray-200 truncate">New teammate invited</span></div>
                         <span className="text-[7px] font-bold text-amber-400 shrink-0">Pending</span>
@@ -805,7 +485,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
           </div>
         </PreviewWindow>
 
-        {/* Bottom row asset managers, beat-sync audio, and generate states triggers */}
         <div className="flex flex-col gap-4 mt-auto pt-4 border-t border-gray-900">
           <AudioUploadField
             audioFile={audioFile}
@@ -834,7 +513,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                 className="hidden"
               />
             </div>
-            {/* List items representing files uploaded */}
             {uploadedAssets.length > 0 && (
               <div className="flex flex-wrap gap-1.5 p-2.5 bg-gray-950/60 border border-gray-900 rounded-lg max-h-[80px] overflow-y-auto">
                 {uploadedAssets.map((asset, index) => (
@@ -859,7 +537,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
             )}
           </div>
 
-          {/* Progress tracking bars */}
           {pipelineState ? (
             <div className="flex flex-col gap-2 rounded-xl bg-gray-900 p-4 border border-gray-800">
               <div className="flex justify-between text-xs font-semibold text-gray-500">
@@ -904,30 +581,13 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                   className="h-3.5 w-3.5 rounded border-gray-800 bg-gray-950 text-purple-600 accent-purple-600 outline-none"
                 />
               </div>
-              {project?.unfinished && project?.generationState ? (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleGenerate}
-                    className="px-4 py-2 rounded-lg border border-gray-800 bg-gray-900 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-                  >
-                    Start Over
-                  </button>
-                  <button
-                    onClick={handleResume}
-                    className="premium-button-primary px-5 py-2 text-xs font-bold rounded-lg"
-                  >
-                    Resume Generation
-                  </button>
-                </div>
-              ) : (
-                <button
-                  data-tour="generate-btn"
-                  onClick={handleGenerate}
-                  className="premium-button-primary px-6 py-2 text-xs font-bold rounded-lg"
-                >
-                  Generate
-                </button>
-              )}
+              <button
+                data-tour="generate-btn"
+                onClick={handleGenerate}
+                className="premium-button-primary px-6 py-2 text-xs font-bold rounded-lg"
+              >
+                Generate
+              </button>
             </div>
           )}
         </div>
