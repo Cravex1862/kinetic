@@ -77,9 +77,12 @@ export async function runSceneCreatorAgentDetailed(
       skillGuideText = skills
         .map((s) => `=== CRAFT SKILL: ${s.name} ===\n${s.cleanContent}`)
         .join("\n\n");
+      console.log(`[SceneCreator] Injected ${skills.length} skill(s): ${skills.map((s) => s.name).join(', ')}`);
+    } else {
+      console.warn(`[SceneCreator] No relevant skills found for scene: "${scene.slice(0, 60)}..."`);
     }
   } catch (err) {
-    console.warn(`[ComponentCreator] Skill RAG retrieval failed:`, err);
+    console.warn(`[SceneCreator] Skill RAG retrieval failed:`, err);
   }
 
   const systemPrompt = buildSceneCreatorSystemPrompt(
