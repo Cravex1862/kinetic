@@ -205,7 +205,7 @@ export const AIsidebar: React.FC<InstructionProps> = ({
   initialStates,
 }) => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  let submitedAnswers: ClientInterViewAnswers[] = [];
+  const submitedAnswersRef = React.useRef<ClientInterViewAnswers[]>([]);
   const [states, setStates] = React.useState<PipelineState[]>(
     () =>
       (initialStates || []).filter(
@@ -267,9 +267,9 @@ export const AIsidebar: React.FC<InstructionProps> = ({
             {...StatusProps}
             state={state}
             questions={state.questions || []}
-            answers={submitedAnswers ? submitedAnswers : undefined}
+            answers={submitedAnswersRef.current.length > 0 ? submitedAnswersRef.current : undefined}
             onSubmitAnswers={(id, question, answer) => {
-              submitedAnswers.push({
+              submitedAnswersRef.current.push({
                 id,
                 question,
                 answer,

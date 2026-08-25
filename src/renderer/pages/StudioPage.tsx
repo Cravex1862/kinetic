@@ -12,9 +12,9 @@ import type { ProjectData } from "./AppRouter";
 import { AIsidebar } from "../components/AIsidebar";
 import type { BackgroundSelection } from "../components/BackgroundSelectorPanel";
 import type { FontSettings } from "../components/BrandStylingPanel";
-import { runPipeline, approveCurrentStage } from "../agents/pipeline";
+import { runPipeline } from "../agents/pipeline";
 import type { PipelineState } from "../agents/types";
-import { pipelineHistory } from "../utils/pipelineHistoryStore";
+import { getStoredConfig } from "../agents/llmClient";
 
 interface StudioPageProps {
     project: ProjectData;
@@ -112,17 +112,29 @@ export const StudioPage: React.FC<StudioPageProps> = ({
         setFrame(value);
     };
 
-    const captureState = (next: PipelineState) => {
+    const captureState = useCallback((next: PipelineState) => {
         setPipelineState(next);
-        pipelineHistory.record(next);
-    };
+    }, []);
+
+    const activeApproveRef = useRef<((data?: unknown) => void) | null>(null);
 
     const handleRun = async () => {
         if (isRunning || !instructions.trim()) return;
+        const config = getStoredConfig();
+        if (!config) {
+            await customAlert("Setup Required", "Please configure API key first using the settings menu");
+            return;
+        }
+        let resolver: ((data?: unknown) => void) | null = null;
+        const waitForApproval = () => new Promise<unknown>((resolve) => { resolver = resolve; });
+        const approveStage = (data?: unknown) => { resolver?.(data); resolver = null; };
+        activeApproveRef.current = approveStage;
+        const controller = { config, onState: captureState, waitForApproval, approveStage };
+
         setIsRunning(true);
         setPipelineState({ status: "storyboarding", progress: 0 });
         try {
-            const output = await runPipeline(instructions, project.narration || "", captureState, {
+            const output = await runPipeline(instructions, project.narration || "", controller, {
                 skipRepoGate: true,
             });
             if (output && output.assembled && onUpdateProject) {
@@ -157,7 +169,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
         onSelectBackground: setBgSelection,
         customAlert,
         state: pipelineState || ({ status: "idle", progress: 0 } as PipelineState),
-        onApproveStage: approveCurrentStage,
+        onApproveStage: (data?: unknown) => activeApproveRef.current?.(data),
         questions: [],
         onSubmitAnswers: () => {},
     };
@@ -167,7 +179,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
             <aside className="flex w-[360px] shrink-0 flex-col border-r border-gray-900 bg-[#0b0b14] p-3">
                 <div className="min-h-0 grow">
                     <AIsidebar
-                        initialStates={pipelineHistory.get()}
+                        initialStates={[]}
                         instructions={instructions}
                         setInstructions={setInstructions}
                         placeholder="Describe the changes you want to make..."

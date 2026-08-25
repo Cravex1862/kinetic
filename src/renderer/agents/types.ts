@@ -79,6 +79,13 @@ export interface PipelineState {
   finalCode?: string;
 }
 
+export interface PipelineController {
+  config: AgentConfig;
+  onState: (state: PipelineState) => void;
+  waitForApproval: () => Promise<unknown>;
+  approveStage: (data?: unknown) => void;
+}
+
 export const DEFAULT_MODELS: Record<Provider, string> = {
   openai: "gpt-4o",
   anthropic: "claude-3-5-sonnet-latest",

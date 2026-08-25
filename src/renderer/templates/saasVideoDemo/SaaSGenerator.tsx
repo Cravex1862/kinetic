@@ -21,8 +21,7 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
-import { runPipeline, approveCurrentStage } from "../../agents/pipeline";
-import { pipelineHistory } from "../../utils/pipelineHistoryStore";
+import { runPipeline } from "../../agents/pipeline";
 import type { PipelineState } from "../../agents/types";
 import type { ProjectData, AlertButton } from "../../pages/AppRouter";
 import { VoiceoverAudioField } from "@/renderer/components/VoiceoverAudioField";
@@ -266,7 +265,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
     }
     setRepoPack(pack);
 
-    approveCurrentStage({
+    scaffold.approveCurrentStage({
       confirmed: true,
       repoContext: buildRepoContext(results, pack),
     });
@@ -354,22 +353,26 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
   };
 
   const handleSkipRepoScan = () => {
-    approveCurrentStage({ confirmed: false });
+    scaffold.approveCurrentStage({ confirmed: false });
   };
 
   const handleGenerate = async () => {
     if (isGenerating) return;
     if (!instructions.trim() && !narration.trim()) return;
+    const controller = scaffold.createController();
+    if (!controller) {
+      await customAlert("Setup Required", "Please configure API key first using the settings menu");
+      return;
+    }
     setRepoPack(null);
     setScannedExports(null);
     setPipelineState(null);
-    pipelineHistory.reset();
     setIsGenerating(true);
     try {
       const output = await runPipeline(
         instructions,
         narration,
-        capturePipelineState,
+        controller,
         {},
       );
       if (output && output.assembled) {
@@ -530,7 +533,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
     onSelectBackground: setBgSelection,
     customAlert: customAlert,
     state: pipelineState || { status: "idle" as const, progress: 0 },
-    onApproveStage: approveCurrentStage,
+    onApproveStage: scaffold.approveCurrentStage,
     questions: [],
     onSubmitAnswers: () => {},
     repoScan: repoScanProps,

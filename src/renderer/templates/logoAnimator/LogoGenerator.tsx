@@ -10,6 +10,7 @@ import {
   LOGO_STYLE_PRESETS,
   LogoStylePreset,
 } from "./logoPipeline";
+import { getStoredConfig } from "@/renderer/agents/llmClient";
 import {
   useGeneratorScaffold,
   SidebarHeader,
@@ -155,6 +156,12 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
       return;
     }
     setPipelineState({ status: "storyboarding", progress: 0.02 });
+    const config = getStoredConfig();
+    if (!config) {
+      await customAlert("Setup Required", "Please configure API key first using the settings menu");
+      setPipelineState(null);
+      return;
+    }
     const output = await runLogoPipeline({
       prompt: instructions,
       stylePreset: selectedStyle,
@@ -163,6 +170,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
       fonts,
       colors: swatches,
       bgSelection: bgSelection as any,
+      config,
       savePath: project?.savePath,
       projectTitle: project?.title,
       onState: setPipelineState,

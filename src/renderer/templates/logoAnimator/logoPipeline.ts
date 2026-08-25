@@ -1,4 +1,4 @@
-import { callLLM, getStoredConfig, LLMClientFactory } from "@/renderer/agents/llmClient";
+import { callLLM, LLMClientFactory } from "@/renderer/agents/llmClient";
 import type { AgentConfig, Provider } from "@/renderer/agents/types";
 import { PipelineState } from "@/renderer/agents/types";
 import { sceneExportName, stripAllImports, writeComposition } from "@/renderer/agents/compositionStore";
@@ -316,6 +316,7 @@ export interface LogoPipelineInput {
   fonts: Record<string, FontSettings>;
   colors: Record<string, string>;
   bgSelection: Record<string, unknown>;
+  config: AgentConfig;
   savePath?: string;
   projectTitle?: string;
   onState: LogoPipelineCallback;
@@ -325,12 +326,10 @@ export interface LogoPipelineInput {
 export async function runLogoPipeline(input: LogoPipelineInput): Promise<string> {
   const {
     prompt, stylePreset, logoFileUrl, logoFileName,
-    fonts, colors, bgSelection,
+    fonts, colors, bgSelection, config,
     savePath, projectTitle, onState, onCheckpoint
   } = input;
 
-  // ── Config check ──
-  const config = getStoredConfig();
   if (!config) {
     onState({ status: 'error', progress: 0, error: 'No API key configured. Set one in Settings.' });
     return '';

@@ -17,7 +17,6 @@ import {
   Users as UsersIcon,
 } from "@phosphor-icons/react";
 import { runPipeline } from "@/renderer/agents/pipeline";
-import { pipelineHistory } from "@/renderer/utils/pipelineHistoryStore";
 import { ProjectData } from "../../pages/AppRouter";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
 import {
@@ -117,13 +116,16 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
       return;
     }
     if (!instructions.trim() && !narration.trim()) return;
+    const controller = scaffold.createController();
+    if (!controller) {
+      await customAlert("Setup Required", "Please configure API key first using the settings menu");
+      return;
+    }
     setPipelineState({ status: "storyboarding", progress: 0 });
-    pipelineHistory.reset();
-    pipelineHistory.record({ status: "storyboarding", progress: 0 });
     const output = await runPipeline(
       instructions,
       useNarration ? narration : "",
-      capturePipelineState,
+      controller,
       { skipRepoGate: true },
     );
     if (output && output.assembled) {

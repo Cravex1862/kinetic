@@ -12,7 +12,7 @@
  * BasicGenerator and SaaSGenerator do not need any changes.
  */
 
-import { callLLM, getStoredConfig } from "./llmClient";
+import { callLLM } from "./llmClient";
 import {
   isValidSceneCode,
   makePlaceholderScene,
@@ -23,6 +23,7 @@ import {
 } from "./compositionStore";
 import type {
   PipelineState,
+  PipelineController,
   SceneBlueprint,
   SceneCode,
   DesignTokens,
@@ -64,21 +65,6 @@ const truncate = (text: string, maxChars: number): string => {
   if (text.length <= maxChars) return text;
   return `${text.slice(0, maxChars)}\n\n[...context truncated to fit model window...]`;
 };
-
-let resumeResolver: ((data?: any) => void) | null = null;
-
-export function approveCurrentStage(data?: any) {
-  if (resumeResolver) {
-    resumeResolver(data);
-    resumeResolver = null;
-  }
-}
-
-function waitForApproval(): Promise<any> {
-  return new Promise((resolve) => {
-    resumeResolver = resolve;
-  });
-}
 
 // ─── Assembler helpers ────────────────────────────────────────────────────────
 
@@ -215,10 +201,11 @@ async function collectValidationIssues(code: string): Promise<{
 export async function runTSXPipeline(
   prompt: string,
   narration: string = "",
-  onState: (state: PipelineState) => void,
+  controller: PipelineController,
   options: RunPipelineOptions = {},
 ): Promise<resultProps | null | ""> {
-  const config = getStoredConfig();
+  const { config, onState, waitForApproval } = controller;
+
   if (!config) {
     onState({
       status: "error",
@@ -233,7 +220,7 @@ export async function runTSXPipeline(
   if (!options.skipRepoGate) {
     onState({ status: "repoScan", progress: 0 });
     console.log("[Manager] Repo Scan stage — waiting for scan or skip...");
-    const repoApproval: RepoStageApproval | undefined = await waitForApproval();
+    const repoApproval = (await waitForApproval()) as RepoStageApproval | undefined;
     if (repoApproval?.confirmed && repoApproval.repoContext) {
       repoContext = truncate(repoApproval.repoContext, REPO_CONTEXT_MAX_CHARS);
       console.log(
@@ -298,7 +285,7 @@ export async function runTSXPipeline(
   onState({ status: "interviewing", progress: 0.2, questions });
 
   const approvedInterviewAnswers: ClientInterViewAnswers[] =
-    (await waitForApproval()) || [];
+    ((await waitForApproval()) as ClientInterViewAnswers[]) || [];
 
   // ── Step 2: Storyboard Agent ──────────────────────────────────────────────
   console.log("[Manager] Storyboard Agent starting...");

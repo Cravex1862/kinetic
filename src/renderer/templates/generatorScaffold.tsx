@@ -2,12 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft } from "@phosphor-icons/react";
 import logoIcon from "../../../kinetic_brand/logo_transparent.svg";
 import { callLLM, getStoredConfig } from "@/renderer/agents/llmClient";
-import { pipelineHistory } from "@/renderer/utils/pipelineHistoryStore";
-import { approveCurrentStage } from "@/renderer/agents/pipeline";
 import { extractAudioFeatures } from "@/renderer/utils/audioUtils";
 import { runBeatNetAI } from "@/renderer/utils/beatDetector";
 import { FontSettings } from "@/renderer/components/BrandStylingPanel";
-import { PipelineState } from "@/renderer/agents/types";
+import type { PipelineState, AgentConfig, PipelineController } from "@/renderer/agents/types";
 import { BackgroundSelection } from "@/renderer/components/BackgroundSelectorPanel";
 import { ProjectData } from "@/renderer/pages/AppRouter";
 
@@ -234,9 +232,34 @@ export function useGeneratorScaffold({
   const capturePipelineState = useCallback(
     (s: PipelineState) => {
       setPipelineState(s);
-      pipelineHistory.record(s);
     },
     [],
+  );
+
+  const activeApproveRef = useRef<((data?: unknown) => void) | null>(null);
+
+  const createController = useCallback(
+    (configOverride?: AgentConfig): PipelineController | null => {
+      const config = configOverride ?? getStoredConfig();
+      if (!config) return null;
+
+      let resolver: ((data?: unknown) => void) | null = null;
+
+      const waitForApproval = (): Promise<unknown> =>
+        new Promise((resolve) => {
+          resolver = resolve;
+        });
+
+      const approveStage = (data?: unknown) => {
+        resolver?.(data);
+        resolver = null;
+      };
+
+      activeApproveRef.current = approveStage;
+
+      return { config, onState: capturePipelineState, waitForApproval, approveStage };
+    },
+    [capturePipelineState],
   );
 
   const tokenFont = useCallback(
@@ -333,9 +356,10 @@ export function useGeneratorScaffold({
     assetInputRef,
     handleRefinePrompt,
     capturePipelineState,
+    createController,
     tokenFont,
     handleBack: handleBackWithSave,
-    approveCurrentStage,
+    approveCurrentStage: (data?: unknown) => activeApproveRef.current?.(data),
   };
 }
 
