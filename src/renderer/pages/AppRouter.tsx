@@ -16,7 +16,7 @@ import { KeyboardShortcutsModal } from "../components/KeyboardShortcutsModal";
 
 import { VideoCompositionViewerModal } from "../components/VideoCompositionViewerModal";
 
-import { sanitizeCompositionCode } from "../agents/pipeline";
+import { writeComposition } from "../agents/compositionStore";
 
 import { StudioPage } from "./StudioPage";
 
@@ -363,15 +363,9 @@ const AppRouter: React.FC = () => {
         console.warn("[AppRouter] Save project failed:", e);
       }
     }
-    if (finalProject.code && window.electronAPI?.writeFile) {
+    if (finalProject.code) {
       try {
-        const sanitized = sanitizeCompositionCode(finalProject.code);
-        if (sanitized) {
-          await window.electronAPI.writeFile(
-            "src/renderer/scenes/VideoComposition.tsx",
-            sanitized,
-          );
-        }
+        await writeComposition(finalProject.code);
       } catch (e) {
         console.warn("[AppRouter] Write composition failed:", e);
       }
@@ -668,13 +662,11 @@ const AppRouter: React.FC = () => {
                 }
               }
             }
-            if (projectToOpen.code && window.electronAPI?.writeFile) {
-              const cleanCode = sanitizeCompositionCode(projectToOpen.code);
-              if (cleanCode) {
-                await window.electronAPI.writeFile(
-                  "src/renderer/scenes/VideoComposition.tsx",
-                  cleanCode,
-                );
+            if (projectToOpen.code) {
+              try {
+                await writeComposition(projectToOpen.code);
+              } catch (e) {
+                console.warn("[AppRouter] Failed to load composition on open:", e);
               }
             }
             setProject(projectToOpen);

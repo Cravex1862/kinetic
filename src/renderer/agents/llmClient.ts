@@ -362,32 +362,4 @@ export function safeParseJson<T>(content: string, defaultValue: T): T {
   }
 }
 
-export function sanitizeCompositionCode(code: string): string {
-  if (!code) return '';
-  let cleaned = code;
-  const blockMatch = code.match(/```(?:tsx|jsx|ts|js)?\s*([\s\S]*?)```/i);
-  if (blockMatch && blockMatch[1]) {
-    cleaned = blockMatch[1].trim();
-  } else {
-    cleaned = code.replace(/^```[a-z]*\n?/gi, '').replace(/\n?```$/gi, '').trim();
-  }
-
-  // Rewrite LLM relative imports to standard primitive SDK package paths
-  cleaned = cleaned.replace(/from\s+['"]\.\/(BrowserFrame|MockWindow|TopNavbar|SidebarLayout|AppCanvas|BreadcrumbHeader|SplitHeroLayout|HeroMetricCard|ActionButton|DataGridContainer|NotificationToaster)['"]/g, "from '../primitives/StructuralSDK'");
-  cleaned = cleaned.replace(/from\s+['"]\.\/(FeatureCard|GlassmorphicCard|KanbanTaskCard|NotificationCard|PricingPlanCard|PriceCard|ProfileCard|SettingsToggleCard|CustomCard|FeatureBenefitCard|BillingInvoiceCard|PushNotificationToast|RegularCard|ProfileHeaderCard)['"]/g, "from '../primitives/CardSDK'");
-  cleaned = cleaned.replace(/from\s+['"]\.\/(BarChartCard|AreaChartCard|LineChartCard|PieChartCard|DonutChartCard|FunnelChartCard|ScatterChartCard|SparklineCard)['"]/g, "from '../primitives/ChartsSDK'");
-  cleaned = cleaned.replace(/from\s+['"]\.\/(SpringEnter|FadeBlur|SlideInOut|ScaleUp|StaggerContainer|FlipIn|RotateIn|PopIn|transitions)['"]/g, "from '../primitives/TransitionSDK'");
-  cleaned = cleaned.replace(/from\s+['"]\.\/(Cursor|TextTyper|FocusZoom|ChartAnimate|DragAndDrop|MarqueeTrack|ProgressRing|SubtitlesTrack|motion)['"]/g, "from '../primitives/MotionSDK'");
-  cleaned = cleaned.replace(/from\s+['"]\.\/primitives['"]/g, "from '../primitives/StructuralSDK'");
-  cleaned = cleaned.replace(/from\s+['"]\.\/components['"]/g, "from '../primitives/StructuralSDK'");
-  cleaned = cleaned.replace(/import\s+\{\s*TailwindCss\s*\}\s+from\s+['"]\.\/tailwind['"];?/g, '');
-
-  // Ensure default export exists
-  if (cleaned.includes('export const VideoComposition') && !cleaned.includes('export default VideoComposition')) {
-    cleaned += '\n\nexport default VideoComposition;\n';
-  }
-
-  return cleaned;
-}
-
 

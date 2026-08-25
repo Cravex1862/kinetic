@@ -1,4 +1,5 @@
-import { callLLM, sanitizeCompositionCode } from "../llmClient";
+import { callLLM } from "../llmClient";
+import { extractCodeBlock } from "../compositionStore";
 import type { AgentConfig } from "../types";
 import {
   findRelevantSkills,
@@ -102,7 +103,7 @@ export async function runSceneCreatorAgentDetailed(
     return { code: "", systemPrompt, userPrompt };
   }
 
-  const cleaned = sanitizeCompositionCode(response.content);
+  const cleaned = extractCodeBlock(response.content);
 
   return {
     code: cleaned,

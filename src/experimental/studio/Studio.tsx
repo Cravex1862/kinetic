@@ -9,7 +9,7 @@ import { MultiTrackTimeline } from './MultiTrackTimeline';
 import { SceneHierarchyPanel } from './SceneHierarchyPanel';
 import VideoComposition from '@/renderer/scenes/VideoComposition';
 import { Player, PlayerRef } from '@remotion/player';
-import { sanitizeCompositionCode } from '../../renderer/agents/pipeline';
+import { extractCodeBlock, readComposition, writeComposition } from '../../renderer/agents/compositionStore';
 import { getStoredConfig, callLLM } from '../../renderer/agents/llmClient';
 import { TimelineCommentPins } from './TimelineCommentPins';
 import { buildTargetedCommentPrompt } from './scopedAiEdit';
@@ -149,9 +149,7 @@ export const Studio: React.FC<StudioProps> = ({
     // Sync project.code to VideoComposition.tsx whenever project code or project changes
     useEffect(() => {
         const syncCode = async () => {
-            if (!project?.code || !window.electronAPI?.writeFile) return;
-            const cleanCode = sanitizeCompositionCode(project.code);
-            if (!cleanCode) return;
+            if (!project?.code) return;
 
             // Reset cache if path changed
             if (lastSyncedPathRef.current !== (project?.savePath || '')) {
@@ -159,10 +157,10 @@ export const Studio: React.FC<StudioProps> = ({
                 lastSyncedPathRef.current = project?.savePath || '';
             }
 
-            if (lastSyncedCodeRef.current === cleanCode) return;
-            lastSyncedCodeRef.current = cleanCode;
+            if (lastSyncedCodeRef.current === project.code) return;
+            lastSyncedCodeRef.current = project.code;
 
-            await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', cleanCode);
+            await writeComposition(project.code);
             setTimeout(() => {
                 setCompKey((k) => k + 1);
             }, 100);
@@ -173,8 +171,8 @@ export const Studio: React.FC<StudioProps> = ({
     useEffect(() => {
         const loadNodes = async () => {
             let codeToParse = project?.code || '';
-            if (!codeToParse && window.electronAPI?.readFile) {
-                const diskCode = await window.electronAPI.readFile('src/renderer/scenes/VideoComposition.tsx');
+            if (!codeToParse) {
+                const diskCode = await readComposition();
                 if (diskCode) codeToParse = diskCode;
             }
             const parsed = parseSceneCodeToNodes(codeToParse);
@@ -226,10 +224,9 @@ export const Studio: React.FC<StudioProps> = ({
             if (config && config.apiKey && project.code) {
                 const systemPrompt = `You are an expert Remotion code animator AI agent. Execute the following targeted section edit request for frame ${pin.frame}: "${pin.text}". Modify keyframe values or layout parameters strictly at frame ${pin.frame}. Return pure TSX code inside a markdown code block.`;
                 const response = await callLLM(config, systemPrompt, scopedPrompt);
-                const generatedCode = response.content || (response as any).code;
-                if (generatedCode && window.electronAPI?.writeFile) {
-                    const sanitized = sanitizeCompositionCode(generatedCode);
-                    await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', sanitized);
+                const generatedCode = extractCodeBlock(response.content || '');
+                if (generatedCode) {
+                    await writeComposition(generatedCode);
                     setCompKey((k) => k + 1);
                 }
             } else if (activeNode) {
@@ -254,20 +251,17 @@ export const Studio: React.FC<StudioProps> = ({
 
         saveTimerRef.current = setTimeout(() => {
             lastWrittenCodeRef.current = newCode;
-            const compiled = sanitizeCompositionCode(newCode);
-            if (!compiled) return;
+            if (!newCode) return;
 
-            if (window.electronAPI?.writeFile) {
-                window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', compiled);
+            writeComposition(newCode);
 
-                if (project.savePath) {
-                    const updatedProject: ProjectData = {
-                        ...project,
-                        code: newCode,
-                    };
-                    window.electronAPI.writeFile(project.savePath, JSON.stringify(updatedProject, null, 2));
-                    onUpdateProject(updatedProject);
-                }
+            if (project.savePath) {
+                const updatedProject: ProjectData = {
+                    ...project,
+                    code: newCode,
+                };
+                window.electronAPI.writeFile(project.savePath, JSON.stringify(updatedProject, null, 2));
+                onUpdateProject(updatedProject);
             }
         }, 150);
     };

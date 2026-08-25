@@ -1,7 +1,7 @@
 import { callLLM, getStoredConfig } from "@/renderer/agents/llmClient";
 import type { AgentConfig, Provider } from "@/renderer/agents/types";
 import { PipelineState } from "@/renderer/agents/types";
-import { stripAllImports } from "@/renderer/agents/pipeline";
+import { sceneExportName, stripAllImports, writeComposition } from "@/renderer/agents/compositionStore";
 
 export type LogoPipelineCallback = (state: PipelineState) => void;
 
@@ -591,7 +591,7 @@ export const VideoComposition: React.FC = () => {
         <div className="w-full h-full bg-slate-950 text-white relative overflow-hidden flex items-center justify-center">
             <Series>
                 <Series.Sequence durationInFrames={150}>
-                    <Scene1 />
+                    <${sceneExportName(0)} />
                 </Series.Sequence>
             </Series>
         </div>
@@ -614,8 +614,8 @@ export default VideoComposition;
 
   if (window.electronAPI?.writeFile) {
     try {
-      await window.electronAPI.writeFile('src/renderer/scenes/VideoComposition.tsx', finalComposition);
-      console.log('[LogoPipeline] Wrote VideoComposition.tsx');
+      const wrote = await writeComposition(finalComposition);
+      if (wrote) console.log('[LogoPipeline] Wrote VideoComposition.tsx');
       if (savePath) {
         await window.electronAPI.writeFile(savePath, JSON.stringify(finishedData, null, 2));
         console.log(`[LogoPipeline] Saved project checkpoint to: ${savePath}`);

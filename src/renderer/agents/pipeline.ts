@@ -12,7 +12,15 @@
  * BasicGenerator and SaaSGenerator do not need any changes.
  */
 
-import { callLLM, getStoredConfig, sanitizeCompositionCode } from "./llmClient";
+import { callLLM, getStoredConfig } from "./llmClient";
+import {
+  isValidSceneCode,
+  makePlaceholderScene,
+  normalizeSceneExportName,
+  sceneExportName,
+  stripAllImports,
+  writeComposition,
+} from "./compositionStore";
 import type {
   PipelineState,
   SceneBlueprint,
@@ -30,8 +38,6 @@ import { runSceneCreatorAgent } from "./subagents/sceneCreator";
 import { runVerifierAgent, runRepairAgent } from "./subagents/verifierAgent";
 import { runStaticChecks } from "./staticChecks";
 import { ClientInterViewAnswers } from "./subagents/storyboardAgent";
-
-export { sanitizeCompositionCode };
 
 export interface resultProps {
   designTokens: DesignTokens;
@@ -74,15 +80,6 @@ function waitForApproval(): Promise<any> {
   });
 }
 
-// ─── Utility: strip import lines from agent output ────────────────────────────
-export function stripAllImports(code: string): string {
-  if (!code) return "";
-  return code
-    .replace(/^import\s+[\s\S]*?;/gm, "")
-    .replace(/^import\s+.*?from\s+['"].*?['"];?/gm, "")
-    .trim();
-}
-
 // ─── Assembler helpers ────────────────────────────────────────────────────────
 
 /**
@@ -108,7 +105,7 @@ function buildMasterComposition(
 ): string {
   const sequences = sceneCodes
     .map((sc, i) => {
-      const sceneName = `Scene${i + 1}`;
+      const sceneName = sceneExportName(i);
       const duration = blueprints[i]?.durationInFrames ?? 150;
       return `        <Series.Sequence durationInFrames={${duration}}>\n          <${sceneName} />\n        </Series.Sequence>`;
     })
@@ -167,39 +164,6 @@ async function assembleVideoComposition(
   ].join("\n");
 }
 
-// ─── Scene Code Normalization ────────────────────────────────────────────────
-
-function isValidSceneCode(code: string): boolean {
-  const trimmed = code.trim();
-  if (!trimmed) return false;
-  return /export\s|<[A-Za-z]/.test(trimmed);
-}
-
-function normalizeSceneExportName(code: string, sceneName: string): string {
-  const exportMatch = code.match(
-    /export\s+(?:const|function)\s+([A-Za-z_$][\w$]*)/,
-  );
-  if (exportMatch) {
-    const current = exportMatch[1];
-    if (current === sceneName) return code;
-    return code.replace(exportMatch[0], `export const ${sceneName}`);
-  }
-  const defaultMatch = code.match(/export\s+default\s+(?:function\s+)?([A-Za-z_$][\w$]*)?/);
-  if (defaultMatch && defaultMatch[1]) {
-    return code.replace(defaultMatch[0], `export const ${sceneName}`);
-  }
-  return `export const ${sceneName}: React.FC = () => (\n<>\n${code}\n</>\n);`;
-}
-
-function makePlaceholderScene(sceneName: string, purpose: string): string {
-  const label = purpose.replace(/[<>`{}]/g, "").trim().slice(0, 60) || "Scene";
-  return `export const ${sceneName}: React.FC = () => (
-  <div style={{ width: '100%', height: '100%', backgroundColor: '#0b0b14', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ color: '#64748b', fontFamily: 'Inter, sans-serif', fontSize: 28 }}>{label}</div>
-  </div>
-);`;
-}
-
 // ─── Composition Validation ──────────────────────────────────────────────────
 
 async function collectValidationIssues(code: string): Promise<{
@@ -220,14 +184,11 @@ async function collectValidationIssues(code: string): Promise<{
   }
 
   try {
-    if (!window.electronAPI?.writeFile || !window.electronAPI?.verifyTypecheck) {
+    if (!window.electronAPI?.verifyTypecheck) {
       console.warn("[Manager] electronAPI bridge missing — skipping compiler pass");
       return { issues, typecheckRan };
     }
-    await window.electronAPI.writeFile(
-      "src/renderer/scenes/VideoComposition.tsx",
-      code,
-    );
+    await writeComposition(code);
     const result = await window.electronAPI.verifyTypecheck();
     if (!result.ran) {
       console.warn("[Manager] TypeScript check could not run — skipping compiler errors");
@@ -378,7 +339,7 @@ export async function runTSXPipeline(
       config,
       prompt,
       undefined,
-      `Scene${i + 1}`,
+      sceneExportName(i),
     );
     const send: SceneCode = {
       blueprintId: bp.id,
@@ -402,7 +363,7 @@ export async function runTSXPipeline(
   }
 
   const sceneCodes: SceneCode[] = rawSceneCodes.map((sc, i) => {
-    const sceneName = `Scene${i + 1}`;
+    const sceneName = sceneExportName(i);
     const code = isValidSceneCode(sc.sceneCode)
       ? normalizeSceneExportName(stripAllImports(sc.sceneCode), sceneName)
       : makePlaceholderScene(sceneName, blueprints[i]?.purpose || "");
@@ -450,16 +411,7 @@ export async function runTSXPipeline(
       console.error(
         `[Manager] Composition still has compiler errors after repairs (${issues.length} issue(s)).`,
       );
-      try {
-        if (window.electronAPI?.writeFile) {
-          await window.electronAPI.writeFile(
-            "src/renderer/scenes/VideoComposition.tsx",
-            candidate,
-          );
-        }
-      } catch {
-        // ignore secondary write failure — error state is what matters
-      }
+      await writeComposition(candidate);
       onState({
         status: "error",
         progress: 1.0,
@@ -487,11 +439,8 @@ export async function runTSXPipeline(
 
   // ── Step 6: Write to disk ─────────────────────────────────────────────────
   try {
-    if (window.electronAPI?.writeFile) {
-      await window.electronAPI.writeFile(
-        "src/renderer/scenes/VideoComposition.tsx",
-        finalCode,
-      );
+    const wrote = await writeComposition(finalCode);
+    if (wrote) {
       console.log("[Manager] VideoComposition.tsx written to disk.");
     }
   } catch (err) {

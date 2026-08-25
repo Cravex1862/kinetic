@@ -1,3 +1,5 @@
+import { sceneExportName, sceneExportRegex } from "./compositionStore";
+
 export interface StaticIssue {
   line: number;
   message: string;
@@ -67,14 +69,11 @@ export function runStaticChecks(code: string): StaticIssue[] {
     });
   }
 
-  const sceneExports = [
-    ...code.matchAll(/export\s+const\s+(Scene\d+)\s*[=:]/g),
-  ].map((m) => m[1]);
+  const sceneExports = [...code.matchAll(sceneExportRegex())].map((m) => m[1]);
   if (sceneExports.length === 0) {
     issues.push({
       line: 0,
-      message:
-        "No scene components found — expected at least one 'export const SceneN' component",
+      message: "No scene components found — expected at least one 'export const SceneN' component",
     });
   } else {
     const nums = sceneExports.map((s) => Number(s.slice(5)));
@@ -83,7 +82,7 @@ export function runStaticChecks(code: string): StaticIssue[] {
       if (!nums.includes(i)) {
         issues.push({
           line: 0,
-          message: `Missing export const Scene${i} — sequence numbering gap`,
+          message: `Missing export const ${sceneExportName(i - 1)} — sequence numbering gap`,
         });
       }
     }
