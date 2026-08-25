@@ -1,4 +1,4 @@
-import { callLLM, getStoredConfig } from "@/renderer/agents/llmClient";
+import { callLLM, getStoredConfig, LLMClientFactory } from "@/renderer/agents/llmClient";
 import type { AgentConfig, Provider } from "@/renderer/agents/types";
 import { PipelineState } from "@/renderer/agents/types";
 import { sceneExportName, stripAllImports, writeComposition } from "@/renderer/agents/compositionStore";
@@ -62,152 +62,6 @@ async function blobUrlToBase64(blobUrl: string): Promise<{ base64: string; mimeT
 async function readSvgTextFromBlobUrl(blobUrl: string): Promise<string> {
   const response = await fetch(blobUrl);
   return await response.text();
-}
-
-// ─── Multimodal LLM Call ─────────────────────────────────────
-
-async function callLLMWithImage(
-  config: AgentConfig,
-  systemPrompt: string,
-  userPrompt: string,
-  imageBase64: string,
-  mimeType: string
-): Promise<{ content: string; error?: string }> {
-  const maxRetries = 4;
-  let retryDelay = 2000;
-  const model = config.model || '';
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      let url: string;
-      let headers: Record<string, string>;
-      let body: Record<string, unknown>;
-
-      if (config.provider === 'google') {
-        const googleModel = model || 'gemini-2.5-flash';
-        url = `https://generativelanguage.googleapis.com/v1beta/models/${googleModel}:generateContent?key=${config.apiKey}`;
-        headers = { 'Content-Type': 'application/json' };
-        body = {
-          contents: [{
-            role: 'user',
-            parts: [
-              { text: `${systemPrompt}\n\n${userPrompt}` },
-              { inlineData: { mimeType, data: imageBase64 } }
-            ]
-          }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 16384 },
-        };
-      } else if (config.provider === 'anthropic') {
-        url = 'https://api.anthropic.com/v1/messages';
-        headers = {
-          'x-api-key': config.apiKey,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        };
-        body = {
-          model: model || 'claude-sonnet-4-20250514',
-          max_tokens: 16384,
-          system: systemPrompt,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: userPrompt },
-              { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } }
-            ]
-          }],
-          temperature: 0.4,
-        };
-      } else if (config.provider === 'hackclub') {
-        url = 'https://ai.hackclub.com/proxy/v1/chat/completions';
-        headers = {
-          'Authorization': `Bearer ${config.apiKey || 'local'}`,
-          'Content-Type': 'application/json',
-        };
-        body = {
-          model: model || 'gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            {
-              role: 'user', content: [
-                { type: 'text', text: userPrompt },
-                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
-              ]
-            }
-          ],
-          temperature: 0.4,
-        };
-      } else {
-        // OpenAI-compatible
-        let openaiUrl = 'https://api.openai.com/v1/chat/completions';
-        if (config.baseUrl) {
-          const cleaned = config.baseUrl.replace(/\/+$/, '');
-          openaiUrl = cleaned.endsWith('/chat/completions') ? cleaned : `${cleaned}/chat/completions`;
-        }
-        url = openaiUrl;
-        headers = {
-          'Authorization': `Bearer ${config.apiKey}`,
-          'Content-Type': 'application/json',
-        };
-        body = {
-          model: model || 'gpt-4o',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            {
-              role: 'user', content: [
-                { type: 'text', text: userPrompt },
-                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
-              ]
-            }
-          ],
-          temperature: 0.4,
-          max_tokens: 16384,
-        };
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        if (response.status === 429 && attempt < maxRetries) {
-          console.warn(`[LogoPipeline] Rate limited (429). Retrying in ${retryDelay}ms...`);
-          await new Promise(r => setTimeout(r, retryDelay));
-          retryDelay = Math.min(retryDelay * 2, 15000);
-          continue;
-        }
-        const errBody = await response.text();
-        return { content: '', error: `${response.status}: ${errBody}` };
-      }
-
-      const raw: Record<string, unknown> = await response.json();
-
-      let content = '';
-      if (config.provider === 'google') {
-        const googleRaw = raw as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-        content = googleRaw?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      } else if (config.provider === 'anthropic') {
-        const anthropicRaw = raw as { content?: Array<{ text?: string }> };
-        content = anthropicRaw?.content?.[0]?.text ?? '';
-      } else {
-        const openaiRaw = raw as { choices?: Array<{ message?: { content?: string } }> };
-        content = openaiRaw?.choices?.[0]?.message?.content ?? '';
-      }
-
-      return { content };
-    } catch (err: unknown) {
-      if (attempt < maxRetries) {
-        console.warn(`[LogoPipeline] Network error. Retrying in ${retryDelay}ms...`);
-        await new Promise(r => setTimeout(r, retryDelay));
-        retryDelay = Math.min(retryDelay * 2, 15000);
-        continue;
-      }
-      return { content: '', error: err instanceof Error ? err.message : String(err) };
-    }
-  }
-
-  return { content: '', error: 'Max retries exceeded for multimodal LLM call.' };
 }
 
 // ─── Stage 1: Logo Animator Agent ────────────────────────────
@@ -378,7 +232,11 @@ OUTPUT: Return ONLY the raw TSX component code. No markdown fences, no explanati
   // Route to multimodal or text-only call
   if (!isSvg && multimodal && logoData.imageBase64 && logoData.mimeType) {
     console.log('[LogoPipeline] Using multimodal call — sending logo image to AI');
-    const response = await callLLMWithImage(config, systemPrompt, userPrompt, logoData.imageBase64, logoData.mimeType);
+    const client = LLMClientFactory.create(config, { temperature: 0.4 });
+    const response = await client.callMultimodal(systemPrompt, [
+      { type: 'text', text: userPrompt },
+      { type: 'image', mimeType: logoData.mimeType, base64: logoData.imageBase64 },
+    ]);
     if (response.error) return { error: response.error };
     const cleaned = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
     return { tsxCode: cleaned };

@@ -1,6 +1,10 @@
 import type { AgentConfig, Provider } from './types';
 import { DEFAULT_MODELS } from './types';
 
+export type TextPart = { type: 'text'; text: string };
+export type ImagePart = { type: 'image'; mimeType: string; base64: string };
+export type LLMPart = TextPart | ImagePart;
+
 export interface LLMResponse {
   content: string;
   error?: string;
@@ -8,24 +12,41 @@ export interface LLMResponse {
 
 export interface ILLMClient {
   call(systemPrompt: string, userPrompt: string): Promise<LLMResponse>;
+  callMultimodal(systemPrompt: string, parts: LLMPart[]): Promise<LLMResponse>;
+}
+
+interface ClientOverrides {
+  temperature?: number;
+  maxTokens?: number;
+  maxRetries?: number;
 }
 
 abstract class BaseLLMClient implements ILLMClient {
   protected config: AgentConfig;
   protected model: string;
+  protected overrides: ClientOverrides;
 
-  constructor(config: AgentConfig) {
+  constructor(config: AgentConfig, overrides?: ClientOverrides) {
     this.config = config;
     this.model = config.model ?? DEFAULT_MODELS[config.provider];
+    this.overrides = overrides ?? {};
   }
 
-  abstract getUrl(): string;
-  abstract getHeaders(): Record<string, string>;
-  abstract getRequestBody(systemPrompt: string, userPrompt: string): Record<string, unknown>;
-  abstract extractContent(raw: unknown): string;
+  protected abstract getUrl(): string;
+  protected abstract getHeaders(): Record<string, string>;
+  protected abstract buildRequestBody(systemPrompt: string, parts: LLMPart[]): Record<string, unknown>;
+  protected abstract extractContent(raw: unknown): string;
 
   public async call(systemPrompt: string, userPrompt: string): Promise<LLMResponse> {
-    const maxRetries = 6;
+    return this.callWithParts(systemPrompt, [{ type: 'text', text: userPrompt }]);
+  }
+
+  public async callMultimodal(systemPrompt: string, parts: LLMPart[]): Promise<LLMResponse> {
+    return this.callWithParts(systemPrompt, parts);
+  }
+
+  private async callWithParts(systemPrompt: string, parts: LLMPart[]): Promise<LLMResponse> {
+    const maxRetries = this.overrides.maxRetries ?? 6;
     let retryDelay = 2000;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -33,7 +54,7 @@ abstract class BaseLLMClient implements ILLMClient {
         const response = await fetch(this.getUrl(), {
           method: 'POST',
           headers: this.getHeaders(),
-          body: JSON.stringify(this.getRequestBody(systemPrompt, userPrompt)),
+          body: JSON.stringify(this.buildRequestBody(systemPrompt, parts)),
         });
 
         if (!response.ok) {
@@ -66,7 +87,7 @@ abstract class BaseLLMClient implements ILLMClient {
 }
 
 class OpenAICompatibleClient extends BaseLLMClient {
-  getUrl(): string {
+  protected getUrl(): string {
     const isLocal = this.config.provider === 'ollama' || this.config.provider === 'lmstudio' || this.config.provider === 'local' || this.config.provider === 'byoc';
     if (this.config.baseUrl && isLocal) {
       let cleaned = this.config.baseUrl.replace(/\/+$/, '');
@@ -76,7 +97,7 @@ class OpenAICompatibleClient extends BaseLLMClient {
       return cleaned.endsWith('/chat/completions') ? cleaned : `${cleaned}/chat/completions`;
     }
     if (this.config.provider === 'hackclub') {
-      return 'https://openrouter.ai/api/v1/chat/completions';
+      return 'https://ai.hackclub.com/proxy/v1/chat/completions';
     }
     if (this.config.provider === 'ollama' || this.config.provider === 'local') {
       return 'http://localhost:11434/v1/chat/completions';
@@ -90,7 +111,7 @@ class OpenAICompatibleClient extends BaseLLMClient {
     return 'https://api.openai.com/v1/chat/completions';
   }
 
-  getHeaders(): Record<string, string> {
+  protected getHeaders(): Record<string, string> {
     const key = this.config.apiKey || 'local';
     return {
       'Authorization': `Bearer ${key}`,
@@ -98,15 +119,20 @@ class OpenAICompatibleClient extends BaseLLMClient {
     };
   }
 
-  getRequestBody(systemPrompt: string, userPrompt: string): Record<string, unknown> {
+  protected buildRequestBody(systemPrompt: string, parts: LLMPart[]): Record<string, unknown> {
+    const userContent = parts.map((p) =>
+      p.type === 'text'
+        ? { type: 'text', text: p.text }
+        : { type: 'image_url', image_url: { url: `data:${p.mimeType};base64,${p.base64}` } }
+    );
     const body: Record<string, unknown> = {
       model: this.model,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: userContent.length === 1 && userContent[0]!.type === 'text' ? userContent[0]!.text : userContent },
       ],
-      temperature: 0.3,
-      max_tokens: 4096,
+      temperature: this.overrides.temperature ?? 0.3,
+      max_tokens: this.overrides.maxTokens ?? 4096,
     };
     if (this.config.provider !== 'hackclub' && systemPrompt.toLowerCase().includes('json only') && !systemPrompt.toLowerCase().includes('tsx') && !systemPrompt.toLowerCase().includes('jsx')) {
       body.response_format = { type: 'json_object' };
@@ -114,18 +140,18 @@ class OpenAICompatibleClient extends BaseLLMClient {
     return body;
   }
 
-  extractContent(raw: unknown): string {
+  protected extractContent(raw: unknown): string {
     const data = raw as { choices?: Array<{ message?: { content?: string } }> };
     return data.choices?.[0]?.message?.content ?? '';
   }
 }
 
 class AnthropicClient extends BaseLLMClient {
-  getUrl(): string {
+  protected getUrl(): string {
     return 'https://api.anthropic.com/v1/messages';
   }
 
-  getHeaders(): Record<string, string> {
+  protected getHeaders(): Record<string, string> {
     return {
       'x-api-key': this.config.apiKey,
       'anthropic-version': '2023-06-01',
@@ -133,50 +159,57 @@ class AnthropicClient extends BaseLLMClient {
     };
   }
 
-  getRequestBody(systemPrompt: string, userPrompt: string): Record<string, unknown> {
+  protected buildRequestBody(systemPrompt: string, parts: LLMPart[]): Record<string, unknown> {
+    const content = parts.map((p) =>
+      p.type === 'text'
+        ? { type: 'text', text: p.text }
+        : { type: 'image', source: { type: 'base64', media_type: p.mimeType, data: p.base64 } }
+    );
     return {
       model: this.model,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-      temperature: 0.3,
+      messages: [{ role: 'user', content }],
+      temperature: this.overrides.temperature ?? 0.3,
+      max_tokens: this.overrides.maxTokens ?? 16384,
     };
   }
 
-  extractContent(raw: unknown): string {
+  protected extractContent(raw: unknown): string {
     const data = raw as { content?: Array<{ text?: string }> };
     return data.content?.[0]?.text ?? '';
   }
 }
 
 class GoogleClient extends BaseLLMClient {
-  getUrl(): string {
+  protected getUrl(): string {
     return `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.config.apiKey}`;
   }
 
-  getHeaders(): Record<string, string> {
+  protected getHeaders(): Record<string, string> {
+    return { 'Content-Type': 'application/json' };
+  }
+
+  protected buildRequestBody(systemPrompt: string, parts: LLMPart[]): Record<string, unknown> {
+    const mappedParts = parts.map((p) =>
+      p.type === 'text'
+        ? { text: p.text }
+        : { inlineData: { mimeType: p.mimeType, data: p.base64 } }
+    );
+    const allParts = [{ text: `${systemPrompt}\n\n` }, ...mappedParts];
     return {
-      'Content-Type': 'application/json',
+      contents: [{ role: 'user', parts: allParts }],
+      generationConfig: { temperature: this.overrides.temperature ?? 0.3, maxOutputTokens: this.overrides.maxTokens ?? 16384 },
     };
   }
 
-  getRequestBody(systemPrompt: string, userPrompt: string): Record<string, unknown> {
-    return {
-      contents: [{
-        role: 'user',
-        parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
-      }],
-      generationConfig: { temperature: 0.3 },
-    };
-  }
-
-  extractContent(raw: unknown): string {
+  protected extractContent(raw: unknown): string {
     const data = raw as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
     return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   }
 }
 
 export class LLMClientFactory {
-  public static create(config: AgentConfig): ILLMClient {
+  public static create(config: AgentConfig, overrides?: ClientOverrides): ILLMClient {
     switch (config.provider) {
       case 'openai':
       case 'hackclub':
@@ -184,11 +217,11 @@ export class LLMClientFactory {
       case 'lmstudio':
       case 'local':
       case 'groq':
-        return new OpenAICompatibleClient(config);
+        return new OpenAICompatibleClient(config, overrides);
       case 'anthropic':
-        return new AnthropicClient(config);
+        return new AnthropicClient(config, overrides);
       case 'google':
-        return new GoogleClient(config);
+        return new GoogleClient(config, overrides);
       default:
         throw new Error(`Unsupported provider: ${config.provider}`);
     }
@@ -207,7 +240,7 @@ export async function fetchAvailableModels(
         const res = await fetch(`${host}/api/tags`);
         if (res.ok) {
           const data = await res.json();
-          const models = (data.models || []).map((m: any) => m.name);
+          const models = (data.models || []).map((m: { name: string }) => m.name);
           if (models.length > 0) return { models };
         }
       } catch (e) {
@@ -217,7 +250,7 @@ export async function fetchAvailableModels(
       const v1Res = await fetch(v1Endpoint);
       if (v1Res.ok) {
         const data = await v1Res.json();
-        const models = (data.data || []).map((m: any) => m.id);
+        const models = (data.data || []).map((m: { id: string }) => m.id);
         return { models };
       }
       return { models: [], error: `Could not reach Ollama server at ${host}. Make sure Ollama is running!` };
@@ -229,7 +262,7 @@ export async function fetchAvailableModels(
       const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
-        const models = (data.data || []).map((m: any) => m.id);
+        const models = (data.data || []).map((m: { id: string }) => m.id);
         return { models };
       }
       return { models: [], error: `Could not reach LM Studio server at ${host}. Make sure server is turned on!` };
@@ -243,7 +276,7 @@ export async function fetchAvailableModels(
       if (res.ok) {
         const data = await res.json();
         const models = (data.data || [])
-          .map((m: any) => m.id)
+          .map((m: { id: string }) => m.id)
           .filter((id: string) => id.includes('gpt'));
         return { models };
       }
@@ -256,7 +289,7 @@ export async function fetchAvailableModels(
       if (res.ok) {
         const data = await res.json();
         const models = (data.models || [])
-          .map((m: any) => m.name.replace(/^models\//, ''))
+          .map((m: { name: string }) => m.name.replace(/^models\//, ''))
           .filter((name: string) => name.includes('gemini'));
         return { models };
       }
@@ -273,13 +306,11 @@ export async function fetchAvailableModels(
       });
       if (res.ok) {
         const data = await res.json();
-        const models = (data.data || []).map((m: any) => m.id);
+        const models = (data.data || []).map((m: { id: string }) => m.id);
         return { models };
       }
       return { models: [], error: `Anthropic API returned status ${res.status}` };
     }
-
-
 
     if (provider === 'groq') {
       if (!apiKey) return { models: [], error: 'API key is required to fetch Groq models.' };
@@ -288,7 +319,7 @@ export async function fetchAvailableModels(
       });
       if (res.ok) {
         const data = await res.json();
-        const models = (data.data || []).map((m: any) => m.id);
+        const models = (data.data || []).map((m: { id: string }) => m.id);
         return { models };
       }
       return { models: [], error: `Groq API returned status ${res.status}` };
@@ -323,12 +354,11 @@ export async function callLLM(
       const responseText = await globalBYOCHandler(fullPrompt);
       return { content: responseText };
     }
-    catch (e: any) {
-      return { error: e.message || 'BYOC user cancelled prompt.', content: '' }
+    catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : 'BYOC user cancelled prompt.', content: '' }
     };
   }
 
-  // Caching disabled for accurate model benchmarking
   const client = LLMClientFactory.create(config);
   let result = await client.call(systemPrompt, userPrompt);
 
