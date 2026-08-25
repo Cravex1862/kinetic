@@ -65,10 +65,14 @@ const LazyComposition = React.lazy(async () => {
   }
 });
 
-export const SafeComposition: React.FC = () => (
+interface SafeCompositionProps {
+  inputProps?: Record<string, unknown>;
+}
+
+export const SafeComposition: React.FC<SafeCompositionProps> = ({ inputProps }) => (
   <CompositionErrorBoundary>
     <React.Suspense fallback={null}>
-      <LazyComposition />
+      <LazyComposition {...inputProps} />
     </React.Suspense>
   </CompositionErrorBoundary>
 );

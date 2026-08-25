@@ -4,6 +4,11 @@ import './index.css';
 
 import VideoComposition from './scenes/VideoComposition';
 
+interface CompositionProps {
+  totalDuration?: number;
+  bgSelection?: Record<string, unknown>;
+}
+
 const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -14,6 +19,9 @@ const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
         durationInFrames={300}
+        calculateMetadata={async ({ props }: { props: CompositionProps }) => ({
+          durationInFrames: typeof props.totalDuration === 'number' ? props.totalDuration : 300,
+        })}
       />
     </>
   );

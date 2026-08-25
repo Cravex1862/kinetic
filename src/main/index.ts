@@ -89,7 +89,14 @@ function registerIpcHandlers(): void {
     try {
       // Write a temporary props file so that Remotion gets all the layout and keyframe data
       const tempPropsPath = path.join(app.getPath('temp'), `kinetic_render_props_${Date.now()}.json`);
-      fs.writeFileSync(tempPropsPath, JSON.stringify(options.props || {}));
+      const totalDuration = Array.isArray(options.framesPerScene)
+        ? options.framesPerScene.reduce((sum: number, f: number) => sum + f, 0)
+        : undefined;
+      fs.writeFileSync(tempPropsPath, JSON.stringify({
+        ...(options.props || {}),
+        ...(totalDuration != null ? { totalDuration } : {}),
+        ...(options.props?.bgSelection != null ? { bgSelection: options.props.bgSelection } : {}),
+      }));
 
       const cmd = `npx remotion render "src/renderer/Root.tsx" "${options.compositionId}" "${options.outputPath}" --width=${options.width} --height=${options.height} --fps=${options.fps} --props="${tempPropsPath}"`;
 

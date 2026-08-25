@@ -238,7 +238,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                         <Player
                             ref={playerRef}
                             component={SafeComposition}
-                            inputProps={{}} 
+                            inputProps={{ bgSelection }}
                             durationInFrames={durationInFrames}
                             fps={FPS}
                             compositionWidth={1920}
