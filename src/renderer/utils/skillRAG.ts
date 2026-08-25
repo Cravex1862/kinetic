@@ -21,7 +21,7 @@ export interface RelevantSkill {
     score: number;
 }
 
-export const ENABLE_VECTOR_MATCHING = false;
+export const ENABLE_VECTOR_MATCHING = true;
 
 function tokenize(text: string): string[] {
     return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').split(/\s+/).filter(Boolean);
