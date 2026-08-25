@@ -191,9 +191,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
         <nav className="flex-1 px-4 py-6 space-y-2">
           <button
             onClick={() => setActiveTab('ai')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'ai'
-              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
-              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+            className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${activeTab === 'ai'
+              ? 'bg-[#1a1a1e] text-white border-l-[3px] border-l-purple-500'
+              : 'text-gray-400 hover:bg-gray-900/60 hover:text-gray-200 border-l-[3px] border-l-transparent'
               }`}
           >
             <Cpu size={18} />
@@ -201,9 +201,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           </button>
           <button
             onClick={() => setActiveTab('video')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'video'
-              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
-              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+            className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${activeTab === 'video'
+              ? 'bg-[#1a1a1e] text-white border-l-[3px] border-l-purple-500'
+              : 'text-gray-400 hover:bg-gray-900/60 hover:text-gray-200 border-l-[3px] border-l-transparent'
               }`}
           >
             <VideoCamera size={18} />
@@ -211,9 +211,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           </button>
           <button
             onClick={() => setActiveTab('workspace')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'workspace'
-              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
-              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+            className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${activeTab === 'workspace'
+              ? 'bg-[#1a1a1e] text-white border-l-[3px] border-l-purple-500'
+              : 'text-gray-400 hover:bg-gray-900/60 hover:text-gray-200 border-l-[3px] border-l-transparent'
               }`}
           >
             <Folder size={18} />
@@ -221,9 +221,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           </button>
           <button
             onClick={() => setActiveTab('shortcuts')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'shortcuts'
-              ? 'border-2 border-purple-500 bg-transparent text-purple-300 shadow-sm'
-              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-gray-200'
+            className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${activeTab === 'shortcuts'
+              ? 'bg-[#1a1a1e] text-white border-l-[3px] border-l-purple-500'
+              : 'text-gray-400 hover:bg-gray-900/60 hover:text-gray-200 border-l-[3px] border-l-transparent'
               }`}
           >
             <Keyboard size={18} />
@@ -231,9 +231,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
           </button>
           <button
             onClick={() => setActiveTab('danger')}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${activeTab === 'danger'
-              ? 'bg-red-500/10 border border-red-500/30 text-red-400'
-              : 'border border-transparent text-gray-400 hover:bg-gray-900/60 hover:text-red-400/80'
+            className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${activeTab === 'danger'
+              ? 'bg-red-500/10 text-red-400 border-l-[3px] border-l-red-500'
+              : 'text-gray-400 hover:bg-gray-900/60 hover:text-red-400/80 border-l-[3px] border-l-transparent'
               }`}
           >
             <Trash size={18} />
@@ -285,7 +285,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={key}
                         onClick={() => setProvider(key)}
                         className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${provider === key
-                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
                           : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
@@ -407,7 +407,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                       <button
                         onClick={() => setUseCustomModel(!useCustomModel)}
                         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${useCustomModel
-                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
                           : 'border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                           }`}
                         aria-label="Toggle custom model input"
@@ -470,7 +470,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setResolution(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${resolution === val
-                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
                           : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
@@ -492,7 +492,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setAspectRatio(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${aspectRatio === val
-                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
                           : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
@@ -512,7 +512,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setFps(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${fps === val
-                          ? 'border-2 border-purple-500 bg-transparent text-purple-300'
+                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
                           : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
