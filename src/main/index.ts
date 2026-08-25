@@ -3,7 +3,7 @@ import * as path from 'path'; // Imports node path utility to find system folder
 import * as fs from 'fs'; // Imports node file system utility to interact with files on the disk.
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { ExportVideoOptions, RepoPackResult } from './preload';
+import type { ExportVideoOptions, RepoPackResult, ScrapedFindings } from '../shared/ipc-types';
 
 const execPromise = promisify(exec);
 
@@ -240,13 +240,6 @@ function registerIpcHandlers(): void {
       return false;
     }
   });
-
-  interface ScrapedFindings {
-    routes: string[],
-    components: string[],
-    colors: string[],
-    fonts: string[]
-  }
 
   const scanDirectoryHelper = (dirPath: string): ScrapedFindings => {
     const findings: ScrapedFindings = {

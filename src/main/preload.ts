@@ -1,38 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-
-export interface RenderProgress {
-  frame: number;
-  total: number;
-  status: string;
-  error?: string;
-}
-
-export interface ExportVideoOptions {
-  compositionId: string;
-  outputPath: string;
-  framesPerScene: number[];
-  fps: number;
-  width: number;
-  height: number;
-  props?: Record<string, unknown>;
-}
-
-export interface RepoPackResult {
-  content: string;
-  filePath: string;
-  totalFiles: number;
-  totalCharacters: number;
-}
-
-export interface TypecheckError {
-  line: number;
-  message: string;
-}
-
-export interface TypecheckResult {
-  ran: boolean;
-  errors: TypecheckError[];
-}
+import type { RenderProgress, ExportVideoOptions, RepoPackResult, TypecheckResult } from '../shared/ipc-types';
 
 const electronAPI = {
   readDirectory: (dirPath: string): Promise<string[]> =>
