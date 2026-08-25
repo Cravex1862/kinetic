@@ -170,10 +170,10 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
   return (
     <div className="flex h-screen bg-gray-950 text-white page-enter">
       <ResizableSidebar
-        initialWidth={380}
-        minWidth={320}
-        maxWidth={650}
-        className="border-r border-gray-900 bg-gray-950 p-5 gap-4 overflow-y-auto"
+        initialWidth={340}
+        minWidth={280}
+        maxWidth={500}
+        className="border-r border-gray-900 bg-gray-950 p-4 gap-3 overflow-y-auto"
       >
         <SidebarHeader breadcrumb="Basic" onBack={handleBack} />
 
@@ -201,6 +201,57 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
             />
           )}
         </section>
+
+        <AudioUploadField
+          audioFile={audioFile}
+          beatCount={beatFrames.length}
+          isAnalyzing={isAnalyzingAudio}
+          onSelectAudio={handleSelectAudio}
+        />
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-400">
+              Project Assets
+            </span>
+            <button
+              onClick={() => assetInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-900 border border-gray-800 hover:border-gray-700 text-white rounded-lg text-[10px] font-semibold transition-colors"
+            >
+              <UploadSimple size={12} />
+              Upload
+            </button>
+            <input
+              type="file"
+              ref={assetInputRef}
+              multiple
+              onChange={handleAssetUpload}
+              className="hidden"
+            />
+          </div>
+          {uploadedAssets.length > 0 && (
+            <div className="flex flex-wrap gap-1 p-2 bg-gray-950/60 border border-gray-900 rounded-lg max-h-[60px] overflow-y-auto">
+              {uploadedAssets.map((asset, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded px-1.5 py-0.5 text-[9px] text-gray-400"
+                >
+                  <span className="truncate max-w-[80px]">{asset}</span>
+                  <button
+                    onClick={() =>
+                      setUploadedAssets((prev) =>
+                        prev.filter((_, i) => i !== index),
+                      )
+                    }
+                    className="text-gray-500 hover:text-red-400"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <AIsidebar
           instructions={instructions}
@@ -487,112 +538,43 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
           </div>
         </PreviewWindow>
 
-        <div className="flex flex-col gap-4 mt-auto pt-4 border-t border-gray-900">
-          <AudioUploadField
-            audioFile={audioFile}
-            beatCount={beatFrames.length}
-            isAnalyzing={isAnalyzingAudio}
-            onSelectAudio={handleSelectAudio}
-          />
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-400">
-                Project Assets
+        {pipelineState ? (
+          <div className="flex flex-col gap-2 rounded-xl bg-gray-900 p-4 border border-gray-800">
+            <div className="flex justify-between text-xs font-semibold text-gray-500">
+              <span className="capitalize">
+                {pipelineState.status.replace("-", " ")}
               </span>
-              <button
-                onClick={() => assetInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-gray-700 text-white rounded-lg text-xs font-semibold transition-colors"
-              >
-                <UploadSimple size={14} />
-                Upload Assets
-              </button>
-              <input
-                type="file"
-                ref={assetInputRef}
-                multiple
-                onChange={handleAssetUpload}
-                className="hidden"
+              <span>{Math.round(pipelineState.progress * 100)}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-950">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${pipelineState.status === "error" ? "bg-red-500" : "bg-violet-600"}`}
+                style={{
+                  width: `${Math.round(pipelineState.progress * 100)}%`,
+                }}
               />
             </div>
-            {uploadedAssets.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 p-2.5 bg-gray-950/60 border border-gray-900 rounded-lg max-h-[80px] overflow-y-auto">
-                {uploadedAssets.map((asset, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded px-1.5 py-0.5 text-[9px] text-gray-400"
-                  >
-                    <span className="truncate max-w-[100px]">{asset}</span>
-                    <button
-                      onClick={() =>
-                        setUploadedAssets((prev) =>
-                          prev.filter((_, i) => i !== index),
-                        )
-                      }
-                      className="text-gray-500 hover:text-red-400"
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
+            {pipelineState.error && (
+              <div className="text-xs text-red-400 mt-2">
+                {pipelineState.error}
               </div>
             )}
-          </div>
-
-          {pipelineState ? (
-            <div className="flex flex-col gap-2 rounded-xl bg-gray-900 p-4 border border-gray-800">
-              <div className="flex justify-between text-xs font-semibold text-gray-500">
-                <span className="capitalize">
-                  {pipelineState.status.replace("-", " ")}
-                </span>
-                <span>{Math.round(pipelineState.progress * 100)}%</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-950">
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${pipelineState.status === "error" ? "bg-red-500" : "bg-violet-600"}`}
-                  style={{
-                    width: `${Math.round(pipelineState.progress * 100)}%`,
-                  }}
-                />
-              </div>
-              {pipelineState.error && (
-                <div className="text-xs text-red-400 mt-2">
-                  {pipelineState.error}
-                </div>
-              )}
-              {(pipelineState.status === "error" ||
-                pipelineState.status === "done") && (
-                <button
-                  onClick={() => setPipelineState(null)}
-                  className="mt-2 text-xs text-violet-400 hover:text-violet-300 font-bold self-start"
-                >
-                  Dismiss
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-4 justify-between bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-gray-400">
-                  Enable Audio Visualizer
-                </span>
-                <input
-                  type="checkbox"
-                  checked={showVisualizer}
-                  onChange={(e) => setShowVisualizer(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-gray-800 bg-gray-950 text-purple-600 accent-purple-600 outline-none"
-                />
-              </div>
+            {(pipelineState.status === "error" ||
+              pipelineState.status === "done") && (
               <button
-                data-tour="generate-btn"
-                onClick={handleGenerate}
-                className="premium-button-primary px-6 py-2 text-xs font-bold rounded-lg"
+                onClick={() => setPipelineState(null)}
+                className="mt-2 text-xs text-violet-400 hover:text-violet-300 font-bold self-start"
               >
-                Generate
+                Dismiss
               </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between bg-[#18181b] border-t border-[#27272a] px-4 py-2 text-[11px] text-gray-500">
+            <span>Ready to render 1080p @ 30fps</span>
+            <span>v1.0.0</span>
+          </div>
+        )}
       </main>
     </div>
   );
