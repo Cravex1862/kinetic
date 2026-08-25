@@ -412,10 +412,8 @@ Detail EVERYTHING for this specific scene now. Valid JSON ONLY.`;
 export async function runStoryboardAgent(
   config: AgentConfig,
   userPrompt: string,
-  narrationText: string = "",
   interviewAnswers: ClientInterViewAnswers[],
   designTokens?: DesignTokens,
-  sceneCountHint: number = 3,
 ): Promise<SceneBlueprint[]> {
   const fallbackTokens: DesignTokens = designTokens || {
     fontFamily: "Inter",

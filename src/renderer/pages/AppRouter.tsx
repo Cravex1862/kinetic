@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Dashboard from "./Dashboard";
-import type { SceneOutput } from "../agents/types";
 import BasicGenerator from "../templates/basicAnimation/BasicGenerator";
 import TemplateSelector from "./TemplateSelector";
 import Settings from "./Settings";

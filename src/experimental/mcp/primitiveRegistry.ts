@@ -1,6 +1,6 @@
-import { ActionButton, AppCanvas, BreadcrumbHeader, BrowserFrame, DataGridContainer, HeroMetricCard, MockWindow, NotificationToaster, SidebarLayout, SplitHeroLayout, TabSwitcherContainer, TopNavbar } from "../primitives/StructuralSDK";
-import { BillingInvoiceCard, CustomCard, FeatureBenefitCard, FeatureCard, GlassmorphicCard, KanbanTaskCard, NotificationCard, PriceCard, PricingPlanCard, ProfileCard, ProfileHeaderCard, PushNotificationToast, RegularCard, SettingsToggleCard } from "../primitives/CardSDK";
-import { AreaChart, BarChartCard, DonutChartCard, LineChartCard, MetricFunnel, PieChartCard, ScatterPlotCard, StockCard } from "../primitives/ChartsSDK";
+import { ActionButton, AppCanvas, BreadcrumbHeader, BrowserFrame, DataGridContainer, HeroMetricCard, MockWindow, NotificationToaster, SidebarLayout, SplitHeroLayout, TabSwitcherContainer, TopNavbar } from "../../renderer/primitives/StructuralSDK";
+import { BillingInvoiceCard, CustomCard, FeatureBenefitCard, FeatureCard, GlassmorphicCard, KanbanTaskCard, NotificationCard, PriceCard, PricingPlanCard, ProfileCard, ProfileHeaderCard, PushNotificationToast, RegularCard, SettingsToggleCard } from "../../renderer/primitives/CardSDK";
+import { AreaChart, BarChartCard, DonutChartCard, LineChartCard, MetricFunnel, PieChartCard, ScatterPlotCard, StockCard } from "../../renderer/primitives/ChartsSDK";
 
 export interface PrimitiveMeta {
     name: string;

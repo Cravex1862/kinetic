@@ -17,7 +17,6 @@ import type {
   PipelineState,
   SceneBlueprint,
   SceneCode,
-  SceneOutput,
   DesignTokens,
   AgentConfig,
 } from "./types";
@@ -348,10 +347,8 @@ export async function runTSXPipeline(
     blueprints = await runStoryboardAgent(
       config,
       enrichedPrompt,
-      narration,
       approvedInterviewAnswers,
       designTokens,
-      3,
     );
     onState({ status: "storyboarding", progress: 0.3, blueprints });
     console.log(`[Manager] Storyboard: ${blueprints.length} scenes planned`);
@@ -379,8 +376,6 @@ export async function runTSXPipeline(
     const prompt = `${bp.purpose}\n It should be ${bp.durationInFrames} long in frames${sceneLevelContext}`;
     const result = await runSceneCreatorAgent(
       config,
-      bp.componentList,
-      designTokens,
       prompt,
       undefined,
       `Scene${i + 1}`,
@@ -509,22 +504,9 @@ export async function runTSXPipeline(
     return "";
   }
 
-  const sceneOutputs: SceneOutput[] = blueprints.map((bp) => {
-    return {
-      sceneId: bp.id,
-      description: bp.purpose,
-      duration: bp.durationInFrames,
-      components: [],
-      keyframes: [],
-      narration: narration || "",
-      captions: [],
-    };
-  });
-
   onState({
     status: "done",
     progress: 1.0,
-    output: sceneOutputs,
     sceneCodes,
     assembled,
     finalCode,

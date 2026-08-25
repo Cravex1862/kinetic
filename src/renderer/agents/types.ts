@@ -27,38 +27,6 @@ export interface Storyboard {
   scenes: StoryboardScene[];
 }
 
-export interface ComponentNode {
-  type: string;
-  props: Record<string, unknown>;
-  children?: ComponentNode[];
-}
-
-export interface ComponentTree {
-  components: ComponentNode[];
-}
-
-export interface AnimationKeyframe {
-  component: string;
-  from: Record<string, unknown>;
-  to: Record<string, unknown>;
-  duration: number;
-  easing: string;
-}
-
-export interface AnimationPlan {
-  keyframes: AnimationKeyframe[];
-}
-
-export interface SceneOutput {
-  sceneId: string;
-  description: string;
-  duration: number;
-  components: ComponentNode[];
-  keyframes: AnimationKeyframe[];
-  narration: string;
-  captions: string[];
-}
-
 // ─── Multi-Agent Pipeline Types ──────────────────────────────────────────────
 
 export interface DesignTokens {
@@ -104,7 +72,6 @@ export interface PipelineState {
   progress: number;
   currentScene?: string; // e.g. "scene2"
   error?: string;
-  output?: SceneOutput[];
   questions?: any[];
   blueprints?: SceneBlueprint[];
   sceneCodes?: SceneCode[];

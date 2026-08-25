@@ -35,21 +35,6 @@ CRITICAL RULES:
 - "fixedLine" must be the exact complete replacement line of TSX code.
 - Return ONLY the JSON array or "verify". No markdown text surrounding it.`;
 
-export const EDIT_AGENT_SYSTEM = `You are a World-Class Motion Graphics Edit Agent.
-
-Your job: update the provided numbered VideoComposition.tsx file according to the user's requested edit.
-
-OUTPUT FORMAT RULES (EXACT MATCH TO DIAGRAM):
-Return ONLY a valid JSON array of targeted line replacements:
-[
-  { "line": "15", "fixedLine": "  const primaryColor = '#ff0055';" }
-]
-
-CRITICAL RULES:
-- "line" must be the line number string or number.
-- "fixedLine" must be the exact replacement line.
-- Return ONLY the JSON array. No markdown text surrounding it.`;
-
 // ─── Utility: apply line patch array to code string ───────────────────────────
 export function applyLinePatches(code: string, patches: VerifierPatch[]): string {
     if (!Array.isArray(patches) || patches.length === 0) return code;
@@ -150,30 +135,4 @@ export async function runRepairAgent(
     }
 
     return cleaned;
-}
-
-// ─── Edit Agent Runner ────────────────────────────────────────────────────────
-export async function runEditAgent(
-    config: AgentConfig,
-    assembledCode: string,
-    userEditRequest: string
-): Promise<string> {
-    const numberedCode = assembledCode
-        .split('\n')
-        .map((line, i) => `${i + 1}: ${line}`)
-        .join('\n');
-
-    const userPrompt = `USER EDIT REQUEST: "${userEditRequest}"\n\nCURRENT VIDEO COMPOSITION:\n${numberedCode}`;
-
-    const response = await callLLM(config, EDIT_AGENT_SYSTEM, userPrompt, true);
-    if (response.error || !response.content) {
-        return assembledCode;
-    }
-
-    const patches = safeParseJson<VerifierPatch[]>(response.content, []);
-    if (!Array.isArray(patches) || patches.length === 0) {
-        return assembledCode;
-    }
-
-    return applyLinePatches(assembledCode, patches);
 }

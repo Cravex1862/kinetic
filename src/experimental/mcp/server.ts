@@ -1,8 +1,8 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { PRIMITIVE_MENU_SUMMARY, ingestPrimitiveSourceCode } from "../renderer/agents/primitiveRegistry";
-import { generateFCPXML } from "../renderer/utils/fcpxmlExporter";
+import { PRIMITIVE_MENU_SUMMARY, ingestPrimitiveSourceCode } from "./primitiveRegistry";
+import { generateFCPXML } from "../../renderer/utils/fcpxmlExporter";
 
 const server = new Server(
     {

@@ -1,5 +1,5 @@
 import { callLLM, sanitizeCompositionCode } from "../llmClient";
-import type { AgentConfig, DesignTokens } from "../types";
+import type { AgentConfig } from "../types";
 import {
   findRelevantSkills,
   SkillCategory,
@@ -61,8 +61,6 @@ CRITICAL MANDATES & NON-EMPTY CONSTRAINTS (STRICTLY ENFORCED):\n
 // ─── Agent Runner with Detailed Prompt Return ─────────────────────────────────
 export async function runSceneCreatorAgentDetailed(
   config: AgentConfig,
-  primitiveName: string[],
-  designTokens: DesignTokens,
   scene: string,
   isBackground: boolean = false,
   sceneID: string,
@@ -115,16 +113,12 @@ export async function runSceneCreatorAgentDetailed(
 
 export async function runSceneCreatorAgent(
   config: AgentConfig,
-  primitiveName: string[],
-  designTokens: DesignTokens,
   scene: string,
   isBackground: boolean = false,
   sceneID: string,
 ): Promise<string> {
   const res = await runSceneCreatorAgentDetailed(
     config,
-    primitiveName,
-    designTokens,
     scene,
     isBackground,
     sceneID,
