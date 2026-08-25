@@ -79,15 +79,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div
       onScroll={handleScroll}
-      className="flex min-h-screen flex-col items-center bg-gray-950 text-white py-12 overflow-y-auto w-full page-enter"
+      className="flex min-h-screen flex-col items-center bg-gray-950 text-white py-8 overflow-y-auto w-full page-enter"
     >
 
       {/* Create Folder Modal */}
       {showCreateFolder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-950 p-8 shadow-2xl shadow-purple-500/5">
+          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-950 p-6 shadow-2xl shadow-purple-500/5">
             <h2 className="text-xl font-bold text-white tracking-wide">Create New Folder</h2>
-            <div className="mt-6 space-y-4">
+            <div className="mt-4 space-y-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Folder Name</label>
                 <input
@@ -119,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
             </div>
-            <div className="mt-8 flex gap-3">
+            <div className="mt-6 flex gap-3">
               <button
                 onClick={() => {
                   setShowCreateFolder(false);
@@ -154,9 +154,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Rename Folder Modal */}
       {renameFolderTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-950 p-8 shadow-2xl shadow-purple-500/5">
+          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-950 p-6 shadow-2xl shadow-purple-500/5">
             <h2 className="text-xl font-bold text-white tracking-wide">Rename Folder</h2>
-            <div className="mt-6 space-y-4">
+            <div className="mt-4 space-y-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">New Name</label>
                 <input
@@ -174,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
             </div>
-            <div className="mt-8 flex gap-3">
+            <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setRenameFolderTarget(null)}
                 className="flex-1 premium-button-secondary py-2.5 text-sm rounded-lg"
@@ -201,7 +201,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="absolute top-6 right-6 flex items-center gap-3">
         <button
           onClick={onOpenSettings}
-          className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
           title="Config Settings"
           aria-label="Open Settings"
         >
@@ -214,16 +214,16 @@ const Dashboard: React.FC<DashboardProps> = ({
         style={{
           transform: `translateY(${-Math.min(scrollTop * 0.4, 40)}px)`,
           opacity: Math.max(1 - (scrollTop / 120), 0.7),
-          marginBottom: `${Math.max(40 - scrollTop * 0.5, 0)}px`,
+          marginBottom: `${Math.max(32 - scrollTop * 0.5, 0)}px`,
           transition: 'transform 0.1s ease-out, opacity 0.1s ease-out, margin-bottom 0.1s ease-out'
         }}
-        className="flex flex-col items-center gap-3 flex-shrink-0"
+        className="flex flex-col items-center gap-2 flex-shrink-0"
       >
         <img
           src={logoWithText}
           alt="kinetic"
           style={{
-            height: `${Math.max(112 - scrollTop * 0.5, 56)}px`,
+            height: `${Math.max(96 - scrollTop * 0.5, 48)}px`,
             filter: 'drop-shadow(0 0 25px rgba(139, 92, 246, 0.45)) brightness(1.15)',
             transition: 'height 0.1s ease-out'
           }}
@@ -232,17 +232,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Dashboard Main Content */}
-      <div className="w-full mt-6 flex flex-col items-center">
+      <div className="w-full mt-4 flex flex-col items-center">
 
         {/* Row 1: Heading and Actions */}
-        <div className="w-full flex justify-between items-center mb-6 pb-2 border-b border-gray-800/60 max-w-3xl">
+        <div className="w-full flex justify-between items-center mb-4 pb-2 border-b border-gray-800/60 max-w-3xl">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Recent Projects & Folders</h2>
 
           <div className="flex items-center gap-2" ref={menuRef}>
             {/* Secondary: Create Folder */}
             <button
               onClick={() => setShowCreateFolder(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-800 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-800 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105"
               title="Create Folder"
               aria-label="Create Folder"
             >
@@ -252,7 +252,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* Secondary: Import */}
             <button
               onClick={onImportProject}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-800 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-800 text-gray-400 hover:border-purple-500/40 hover:text-purple-400 transition-all hover:scale-105"
               title="Import JSON Project"
               aria-label="Import JSON Project"
             >
@@ -263,7 +263,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <button
               onClick={onNewProject}
               data-tour="new-project-btn"
-              className="flex items-center gap-1.5 h-9 px-4 rounded-xl premium-button-primary shadow-lg shadow-purple-600/10 text-sm font-semibold"
+              className="flex items-center gap-1.5 h-8 px-3.5 rounded-lg premium-button-primary shadow-lg shadow-purple-600/10 text-xs font-semibold"
               aria-label="New Project"
             >
               <Plus size={16} weight="bold" />
@@ -274,7 +274,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Search Bar for Projects */}
         {projects.length > 0 && (
-          <div className="w-full max-w-3xl mb-6 relative">
+          <div className="w-full max-w-3xl mb-4 relative">
             <div className={`absolute z-10 inset-y-0 left-3.5 flex items-center pointer-events-none transition-colors ${searchFocused || searchQuery ? 'text-purple-400' : 'text-gray-400'}`}>
               <MagnifyingGlass size={18} weight="bold" />
             </div>
@@ -302,7 +302,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         {/* Row 2: Projects List container */}
         <div className="w-full flex justify-center">
           <div
-            className="w-full max-w-3xl space-y-6"
+            className="w-full max-w-3xl space-y-4"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               const projectPath = e.dataTransfer.getData('projectPath');
@@ -312,7 +312,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             }}
           >
             {projects.length > 0 ? (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {(() => {
                   const displayedFolders = folders.filter(f => {
                     const separator = f.path.includes('\\') ? '\\' : '/';
@@ -335,7 +335,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <>
                       {/* Folders list */}
                       {displayedFolders.length > 0 && (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {displayedFolders.map((f, index) => {
                             const separator = f.path.includes('\\') ? '\\' : '/';
                             const folderProjects = projects.filter(p => p.savePath.startsWith(f.path + separator));
@@ -357,7 +357,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 }}
                               >
                                 {/* Folder Header */}
-                                <div className="flex items-center justify-between px-2 py-1.5">
+                                <div className="flex items-center justify-between px-2 py-1">
                                   <button
                                     onClick={() => onToggleFolderCollapse(f.path)}
                                     className="flex flex-1 items-center gap-2.5 text-left font-medium text-gray-300 hover:text-white"
@@ -394,9 +394,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                                 {/* Folder Content list */}
                                 {!f.collapsed && (
-                                  <div className="mt-2 pl-4 space-y-2 border-l border-gray-800/80 ml-4">
+                                  <div className="mt-1.5 pl-4 space-y-1.5 border-l border-gray-800/80 ml-4">
                                     {displayedFolderProjects.length === 0 ? (
-                                      <div className="py-5 flex flex-col items-center gap-2">
+                                      <div className="py-3 flex flex-col items-center gap-1.5">
                                         <span className="text-xs text-gray-500">This folder is empty</span>
                                         <button
                                           onClick={onNewProject}
@@ -415,7 +415,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                           onDragStart={(e) => {
                                             e.dataTransfer.setData('projectPath', p.savePath);
                                           }}
-                                          className="flex items-center justify-between premium-card px-4 py-2.5 cursor-pointer rounded-lg group"
+                                          className="flex items-center justify-between premium-card px-3 py-2 cursor-pointer rounded-lg group"
                                         >
                                           <button
                                             onClick={() => onOpenProject(p)}
@@ -454,8 +454,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                       {/* Root Level Projects */}
                       {displayedRootProjects.length > 0 && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3 mt-6 mb-3">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-3 mt-4 mb-2">
                             <div className="flex-1 border-t border-gray-800/60" />
                             <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Uncategorized</h3>
                             <div className="flex-1 border-t border-gray-800/60" />
@@ -467,7 +467,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                               onDragStart={(e) => {
                                 e.dataTransfer.setData('projectPath', p.savePath);
                               }}
-                              className="flex items-center justify-between premium-card px-4 py-3 cursor-pointer rounded-xl group"
+                              className="flex items-center justify-between premium-card px-3 py-2 cursor-pointer rounded-xl group"
                             >
                               <button
                                 onClick={() => onOpenProject(p)}
@@ -499,7 +499,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       )}
 
                       {!hasAnyMatches && (
-                        <div className="flex flex-col items-center justify-center py-14 border border-dashed border-gray-800 rounded-2xl bg-gray-950/30 w-full">
+                        <div className="flex flex-col items-center justify-center py-10 border border-dashed border-gray-800 rounded-2xl bg-gray-950/30 w-full">
                           <MagnifyingGlass size={28} className="text-gray-700 mb-3" />
                           <span className="text-sm font-semibold text-gray-400">No results for "{searchQuery}"</span>
                           <button onClick={() => setSearchQuery('')} className="mt-3 text-xs text-purple-400 hover:text-purple-300 transition-colors">Clear search</button>
@@ -510,7 +510,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 })()}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16 border border-dashed border-gray-800/60 rounded-2xl bg-gray-950/20 w-full">
+              <div className="flex flex-col items-center justify-center py-12 border border-dashed border-gray-800/60 rounded-2xl bg-gray-950/20 w-full">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-transparent border-2 border-purple-500 mb-5">
                   <FilmSlate size={28} className="text-purple-400" />
                 </div>
