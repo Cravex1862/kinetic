@@ -4,7 +4,6 @@ import {
   X,
   ArrowRight,
   ArrowLeft,
-  User,
   CaretDown,
   Sparkle,
 } from "@phosphor-icons/react";
@@ -499,27 +498,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
       </ResizableSidebar>
 
       <main className="flex-1 flex flex-col bg-[#0a0c14] relative overflow-hidden">
-        <div className="h-14 border-b border-white/[0.04] flex items-center justify-between px-8 bg-black/20 backdrop-blur-xl z-10">
-          <div className="flex items-center gap-6">
-            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">
-              Canvas: 1920x1080
-            </span>
-            <div className="flex items-center gap-1.5 bg-white/[0.03] px-2 py-1 rounded">
-              <div className="w-1 h-1 rounded-full bg-emerald-500" />
-              <span className="text-[10px] font-medium text-emerald-400">
-                Synced
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 p-[1px]">
-              <div className="w-full h-full rounded-full bg-[#121212] flex items-center justify-center">
-                <User size={12} className="text-violet-400" weight="fill" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="flex-1 flex flex-col items-center justify-center min-h-0 p-8">
           <PreviewWindow title="">
             <div
