@@ -173,14 +173,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
               <ArrowLeft size={18} />
             </button>
             <div className="flex items-center gap-2">
-              <div
-                className="w-5 h-5 rounded bg-violet-600 flex items-center justify-center"
-                style={{
-                  filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.4))",
-                }}
-              >
-                <div className="w-1.5 h-1.5 bg-white rounded-full" />
-              </div>
+              <img src={logoIcon} alt="kinetic" className="w-5 h-5" />
               <span className="text-sm font-bold tracking-tight text-white">
                 kinetic
               </span>
