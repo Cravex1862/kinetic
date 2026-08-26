@@ -174,9 +174,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
             </button>
             <div className="flex items-center gap-2">
               <img src={logoIcon} alt="kinetic" className="w-5 h-5" />
-              <span className="text-sm font-bold tracking-tight text-white">
-                kinetic
-              </span>
+              <span className="text-sm tracking-tight text-white">kinetic</span>
             </div>
           </div>
           <span className="text-[10px] font-medium text-gray-500 bg-[#18181b] px-2 py-0.5 rounded border border-[#27272a]">
@@ -242,97 +240,124 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
               </h3>
             </div>
             <div className="space-y-4">
-              {(["Title Font", "Heading", "Paragraph"] as const).map((label) => {
-                const f = fonts[label];
-                if (!f) return null;
-                return (
-                  <div key={label} className="space-y-1.5">
-                    <span className="text-[10px] font-semibold text-gray-500 capitalize">
-                      {label}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 relative">
+              {(["Title Font", "Heading", "Paragraph"] as const).map(
+                (label) => {
+                  const f = fonts[label];
+                  if (!f) return null;
+                  return (
+                    <div key={label} className="space-y-1.5">
+                      <span className="text-[10px] font-semibold text-gray-500 capitalize">
+                        {label}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 relative">
+                          <select
+                            value={f.fontFamily}
+                            onChange={(e) =>
+                              setFonts((prev: any) => ({
+                                ...prev,
+                                [label]: {
+                                  ...prev[label],
+                                  fontFamily: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-full appearance-none bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-[11px] text-gray-300 focus:ring-1 focus:ring-violet-500 outline-none"
+                          >
+                            {availableFonts.map((font) => (
+                              <option key={font} value={font}>
+                                {font}
+                              </option>
+                            ))}
+                          </select>
+                          <CaretDown
+                            size={12}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"
+                          />
+                        </div>
+                        <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
+                          <input
+                            type="color"
+                            value={f.color}
+                            onChange={(e) =>
+                              setFonts((prev: any) => ({
+                                ...prev,
+                                [label]: {
+                                  ...prev[label],
+                                  color: e.target.value,
+                                },
+                              }))
+                            }
+                            className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                          />
+                          <div
+                            className="w-full h-full pointer-events-none"
+                            style={{ backgroundColor: f.color }}
+                          />
+                        </div>
                         <select
-                          value={f.fontFamily}
+                          value={f.size}
                           onChange={(e) =>
                             setFonts((prev: any) => ({
                               ...prev,
-                              [label]: { ...prev[label], fontFamily: e.target.value },
+                              [label]: {
+                                ...prev[label],
+                                size: Number(e.target.value),
+                              },
                             }))
                           }
-                          className="w-full appearance-none bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-[11px] text-gray-300 focus:ring-1 focus:ring-violet-500 outline-none"
+                          className="w-12 bg-[#18181b] border border-[#27272a] rounded-lg px-1 py-2 text-[10px] text-gray-400 font-medium outline-none"
                         >
-                          {availableFonts.map((font) => (
-                            <option key={font} value={font}>
-                              {font}
-                            </option>
-                          ))}
+                          {Array.from({ length: 63 }, (_, i) => i + 10).map(
+                            (s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ),
+                          )}
                         </select>
-                        <CaretDown
-                          size={12}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"
-                        />
                       </div>
-                      <input
-                        type="color"
-                        value={f.color}
-                        onChange={(e) =>
-                          setFonts((prev: any) => ({
-                            ...prev,
-                            [label]: { ...prev[label], color: e.target.value },
-                          }))
-                        }
-                        className="w-7 h-7 rounded-full cursor-pointer border-0 bg-transparent p-0"
-                        title={f.color}
-                      />
-                      <select
-                        value={f.size}
-                        onChange={(e) =>
-                          setFonts((prev: any) => ({
-                            ...prev,
-                            [label]: { ...prev[label], size: Number(e.target.value) },
-                          }))
-                        }
-                        className="w-12 bg-[#18181b] border border-[#27272a] rounded-lg px-1 py-2 text-[10px] text-gray-400 font-medium outline-none"
-                      >
-                        {Array.from({ length: 63 }, (_, i) => i + 10).map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex gap-1.5">
+                        {(["bold", "italic", "underline"] as const).map(
+                          (prop) => (
+                            <button
+                              key={prop}
+                              onClick={() =>
+                                setFonts((prev: any) => ({
+                                  ...prev,
+                                  [label]: {
+                                    ...prev[label],
+                                    [prop]: !prev[label][prop],
+                                  },
+                                }))
+                              }
+                              className={`flex-1 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                                f[prop]
+                                  ? "bg-[#18181b] border border-violet-500/30"
+                                  : "bg-[#18181b] border border-[#27272a] hover:bg-[#27272a]"
+                              }`}
+                            >
+                              <span
+                                className={`text-[10px] text-violet-400 ${
+                                  prop === "bold" ? "font-bold" : ""
+                                } ${prop === "italic" ? "italic" : ""} ${
+                                  prop === "underline" ? "underline" : ""
+                                }`}
+                              >
+                                {prop === "bold"
+                                  ? "B"
+                                  : prop === "italic"
+                                    ? "I"
+                                    : "U"}
+                              </span>
+                            </button>
+                          ),
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-1.5">
-                      {(["bold", "italic", "underline"] as const).map((prop) => (
-                        <button
-                          key={prop}
-                          onClick={() =>
-                            setFonts((prev: any) => ({
-                              ...prev,
-                              [label]: { ...prev[label], [prop]: !prev[label][prop] },
-                            }))
-                          }
-                          className={`flex-1 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                            f[prop]
-                              ? "bg-[#18181b] border border-violet-500/30"
-                              : "bg-[#18181b] border border-[#27272a] hover:bg-[#27272a]"
-                          }`}
-                        >
-                          <span
-                            className={`text-[10px] text-violet-400 ${
-                              prop === "bold" ? "font-bold" : ""
-                            } ${prop === "italic" ? "italic" : ""} ${
-                              prop === "underline" ? "underline" : ""
-                            }`}
-                          >
-                            {prop === "bold" ? "B" : prop === "italic" ? "I" : "U"}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           </div>
 
@@ -349,17 +374,23 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                   key={label}
                   className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] rounded-lg px-2 py-1.5 hover:border-gray-700 transition-colors"
                 >
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) =>
-                      setSwatches((prev: any) => ({
-                        ...prev,
-                        [label]: e.target.value,
-                      }))
-                    }
-                    className="w-5 h-5 rounded-full cursor-pointer border-0 bg-transparent p-0"
-                  />
+                  <div className="relative w-5 h-5 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) =>
+                        setSwatches((prev: any) => ({
+                          ...prev,
+                          [label]: e.target.value,
+                        }))
+                      }
+                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                    />
+                    <div
+                      className="w-full h-full pointer-events-none"
+                      style={{ backgroundColor: color }}
+                    />
+                  </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-[9px] font-semibold text-gray-400 capitalize truncate">
                       {label}
@@ -537,8 +568,12 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                       color: fonts["Title Font"]?.color,
                       fontSize: fonts["Title Font"]?.size,
                       fontWeight: fonts["Title Font"]?.bold ? 700 : 400,
-                      fontStyle: fonts["Title Font"]?.italic ? "italic" : "normal",
-                      textDecoration: fonts["Title Font"]?.underline ? "underline" : "none",
+                      fontStyle: fonts["Title Font"]?.italic
+                        ? "italic"
+                        : "normal",
+                      textDecoration: fonts["Title Font"]?.underline
+                        ? "underline"
+                        : "none",
                     }}
                     className="tracking-tighter max-w-lg"
                   >
