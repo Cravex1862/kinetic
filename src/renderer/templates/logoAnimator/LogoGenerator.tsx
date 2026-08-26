@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { UploadSimple, Image as ImageIcon, Sparkle } from "@phosphor-icons/react";
+import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
 import { ProjectData } from "@/renderer/pages/AppRouter";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
 import { BrandStylingPanel } from "@/renderer/components/BrandStylingPanel";
@@ -230,7 +231,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
     }
     return (
       <img
-        src={logoFileUrl || require("../../../../kinetic_brand/logo_transparent.svg").default}
+        src={logoFileUrl || logoIcon}
         alt={logoFileName || "Kinetic Logo Preview"}
         className={`max-h-[220px] max-w-[380px] object-contain ${extraClassName}`}
         style={extraStyle}

@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Users as UsersIcon,
 } from "@phosphor-icons/react";
+import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
 import { runPipeline } from "@/renderer/agents/pipeline";
 import { ProjectData } from "../../pages/AppRouter";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
@@ -329,7 +330,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                 <header className="relative z-10 shrink-0 h-11 px-5 flex items-center justify-between border-b border-white/[0.06]">
                   <div className="flex items-center gap-5 min-w-0">
                     <div className="flex items-center gap-2 shrink-0">
-                      <img src={require("../../../../kinetic_brand/logo_transparent.svg").default} alt="" className="h-4 w-4 object-contain" style={{ filter: "drop-shadow(0 0 8px rgba(139,92,246,0.5)) brightness(1.15)" }} />
+                      <img src={logoIcon} alt="" className="h-4 w-4 object-contain" style={{ filter: "drop-shadow(0 0 8px rgba(139,92,246,0.5)) brightness(1.15)" }} />
                       <span className="text-[12px] font-extrabold tracking-tight text-white">Kinetic</span>
                       <span className="px-1.5 py-px rounded bg-white/[0.06] border border-white/[0.06] text-[6.5px] font-bold uppercase tracking-[0.15em] text-gray-400">Studio</span>
                     </div>
