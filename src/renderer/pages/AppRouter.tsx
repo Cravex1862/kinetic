@@ -6,6 +6,7 @@ import Settings from "./Settings";
 import SetupWizard from "./SetupWizard";
 import { LogoGenerator } from "../templates/logoAnimator/LogoGenerator";
 import SaaSGenerator from "../templates/saasVideoDemo/SaaSGenerator";
+import UiUxGenerator from "../templates/uiUxWalkthrough/UiUxGenerator";
 import TourOverlay from "../components/TourOverlay";
 import { TOUR_STEPS, MOCK_TOUR_PROJECT } from "../constants";
 import { PrimitivesDemoOverlay } from "../components/PrimitivesDemoOverlay";
@@ -59,6 +60,7 @@ const AppRouter: React.FC = () => {
     | "template-selector"
     | "basic-generator"
     | "saas-generator"
+    | "ui-ux-generator"
     | "logo-generator"
     | "basic-studio"
     | "settings"
@@ -154,6 +156,7 @@ const AppRouter: React.FC = () => {
     | "template-selector"
     | "basic-generator"
     | "saas-generator"
+    | "ui-ux-generator"
     | "logo-generator"
     | "basic-studio"
     | "settings"
@@ -232,11 +235,10 @@ const AppRouter: React.FC = () => {
       setPage("basic-generator");
     } else if (templateKey === "logo-animator") {
       setPage("logo-generator");
-    } else if (
-      templateKey === "saas-demo-videos" ||
-      templateKey === "ui-ux-walkthrough"
-    ) {
+    } else if (templateKey === "saas-demo-videos") {
       setPage("saas-generator");
+    } else if (templateKey === "ui-ux-walkthrough") {
+      setPage("ui-ux-generator");
     } else {
       setPage("basic-generator");
     }
@@ -742,6 +744,37 @@ const AppRouter: React.FC = () => {
       {/* YoutubeVideoCreator moved to src/experimental/templates/ */}
       {page === "saas-generator" && (
         <SaaSGenerator
+          project={project}
+          onGenerate={handleGenerate}
+          onBack={(updatedProject) => {
+            if (updatedProject) {
+              setProject(updatedProject);
+              setProjects((prev) =>
+                prev.map((p) =>
+                  p.savePath === updatedProject.savePath ? updatedProject : p,
+                ),
+              );
+              if (updatedProject.savePath && window.electronAPI?.writeFile) {
+                window.electronAPI.writeFile(
+                  updatedProject.savePath,
+                  JSON.stringify(updatedProject, null, 2),
+                );
+              }
+            }
+            setPage("template-selector");
+          }}
+          onUpdateProject={(updated) => {
+            setProject(updated);
+            setProjects((prev) =>
+              prev.map((p) => (p.savePath === updated.savePath ? updated : p)),
+            );
+          }}
+          customAlert={customAlert}
+          customConfirm={customConfirm}
+        />
+      )}
+      {page === "ui-ux-generator" && (
+        <UiUxGenerator
           project={project}
           onGenerate={handleGenerate}
           onBack={(updatedProject) => {
