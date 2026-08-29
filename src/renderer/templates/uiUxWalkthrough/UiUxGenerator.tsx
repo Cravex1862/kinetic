@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  ArrowRight,
-  ArrowLeft,
-  CaretDown,
-  Sparkle,
-} from "@phosphor-icons/react";
+import { ArrowRight, ArrowLeft, Sparkle } from "@phosphor-icons/react";
+import { DesignTokensPanel } from "@/renderer/components/DesignTokensPanel";
 import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
 import { runPipeline } from "@/renderer/agents/pipeline";
 import { ProjectData } from "../../pages/AppRouter";
@@ -126,66 +122,7 @@ const UiUxGenerator: React.FC<UiUxGeneratorProps> = ({
             </div>
           </div>
 
-          <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm font-bold">T</span>
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Typography</h3>
-            </div>
-            <div className="space-y-4">
-              {(["Title Font", "Heading", "Paragraph"] as const).map((label) => {
-                const f = (fonts as any)[label];
-                if (!f) return null;
-                return (
-                  <div key={label} className="space-y-1.5">
-                    <span className="text-[10px] font-semibold text-gray-500 capitalize">{label}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 relative">
-                        <select value={f.fontFamily} onChange={(e) => setFonts((prev: any) => ({ ...prev, [label]: { ...prev[label], fontFamily: e.target.value } }))} className="w-full appearance-none bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-[11px] text-gray-300 focus:ring-1 focus:ring-violet-500 outline-none">
-                          {availableFonts.map((font: string) => (<option key={font} value={font}>{font}</option>))}
-                        </select>
-                        <CaretDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
-                      </div>
-                      <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
-                        <input type="color" value={f.color} onChange={(e) => setFonts((prev: any) => ({ ...prev, [label]: { ...prev[label], color: e.target.value } }))} className="absolute inset-0 w-full h-full cursor-pointer opacity-0" />
-                        <div className="w-full h-full pointer-events-none" style={{ backgroundColor: f.color }} />
-                      </div>
-                      <select value={f.size} onChange={(e) => setFonts((prev: any) => ({ ...prev, [label]: { ...prev[label], size: Number(e.target.value) } }))} className="w-12 bg-[#18181b] border border-[#27272a] rounded-lg px-1 py-2 text-[10px] text-gray-400 font-medium outline-none">
-                        {Array.from({ length: 63 }, (_, i) => i + 10).map((s) => (<option key={s} value={s}>{s}</option>))}
-                      </select>
-                    </div>
-                    <div className="flex gap-1.5">
-                      {(["bold", "italic", "underline"] as const).map((prop) => (
-                        <button key={prop} onClick={() => setFonts((prev: any) => ({ ...prev, [label]: { ...prev[label], [prop]: !prev[label][prop] } }))} className={`flex-1 h-7 rounded-lg flex items-center justify-center transition-colors ${f[prop] ? "bg-[#18181b] border border-violet-500/30" : "bg-[#18181b] border border-[#27272a] hover:bg-[#27272a]"}`}>
-                          <span className={`text-[10px] text-violet-400 ${prop === "bold" ? "font-bold" : ""} ${prop === "italic" ? "italic" : ""} ${prop === "underline" ? "underline" : ""}`}>{prop === "bold" ? "B" : prop === "italic" ? "I" : "U"}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm">&#9632;</span>
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Brand Colors</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(swatches as any).map(([label, color]) => (
-                <div key={label} className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] rounded-lg px-2 py-1.5 hover:border-gray-700 transition-colors">
-                  <div className="relative w-5 h-5 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
-                    <input type="color" value={color as string} onChange={(e) => setSwatches((prev: any) => ({ ...prev, [label]: e.target.value }))} className="absolute inset-0 w-full h-full cursor-pointer opacity-0" />
-                    <div className="w-full h-full pointer-events-none" style={{ backgroundColor: color as string }} />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[9px] font-semibold text-gray-400 capitalize truncate">{label}</span>
-                    <span className="text-[8px] text-gray-600 font-mono leading-none truncate">{color as string}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DesignTokensPanel fonts={fonts} setFonts={setFonts} swatches={swatches} setSwatches={setSwatches} availableFonts={availableFonts} />
         </div>
       </ResizableSidebar>
 
