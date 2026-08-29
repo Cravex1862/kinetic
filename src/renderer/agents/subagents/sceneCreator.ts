@@ -72,12 +72,26 @@ export async function runSceneCreatorAgentDetailed(
 
   let skillGuideText = "";
   try {
-    const skills = await findRelevantSkills(scene, 2, category as SkillCategory);
-    if (skills.length > 0) {
+    let skills = await findRelevantSkills(scene, 2, category as SkillCategory);
+    const hasFrontend = skills.some((s) => s.name === "frontend-design");
+    if (!hasFrontend && (category as string) === "layout") {
+      const { getSkillByName } = await import("../../utils/skillRAG");
+      const fd = getSkillByName("frontend-design");
+      if (fd) {
+        skills = [fd, ...skills].slice(0, 2);
+        console.log(`[SceneCreator] Force-injected frontend-design for layout scene`);
+      }
+    }
+    if (skills.length > 0 && skills[0].score > 0) {
       skillGuideText = skills
         .map((s) => `=== CRAFT SKILL: ${s.name} ===\n${s.cleanContent}`)
         .join("\n\n");
       console.log(`[SceneCreator] Injected ${skills.length} skill(s): ${skills.map((s) => s.name).join(', ')}`);
+    } else if (skills.length > 0) {
+      skillGuideText = skills
+        .map((s) => `=== CRAFT SKILL: ${s.name} ===\n${s.cleanContent}`)
+        .join("\n\n");
+      console.log(`[SceneCreator] Injected low-score skills (fallback): ${skills.map((s) => s.name).join(', ')}`);
     } else {
       console.warn(`[SceneCreator] No relevant skills found for scene: "${scene.slice(0, 60)}..."`);
     }
