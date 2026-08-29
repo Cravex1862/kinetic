@@ -28,7 +28,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         {question.suggestedAnswers.map((suggestion) => (
           <button
             key={suggestion}
-            className="text-white hover:text-purple-400 border border-gray-800 text-xs rounded-md p-1 m-1 grow"
+            onClick={() => setInputValue(suggestion)}
+            className="text-white hover:text-purple-400 border border-gray-800 text-xs rounded-md p-1 m-1 grow hover:border-purple-500/30 transition-colors"
+            title="Fill answer"
           >
             {suggestion}
           </button>
