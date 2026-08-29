@@ -21,37 +21,34 @@ export const AudioUploadField: React.FC<AudioUploadFieldProps> = ({
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-semibold text-gray-300">
-        Background Music (.mp3 / .wav)
-      </label>
-
       {!audioFile ? (
-        <label className="flex items-center justify-between px-3.5 py-2.5 bg-gray-900 border border-gray-800 hover:border-purple-500 rounded-xl cursor-pointer transition select-none">
-          <div className="flex items-center gap-2.5 text-xs text-gray-400">
-            <MusicNotes size={16} className="text-purple-400" />
-            <span>Upload soundtrack to sync animations to beat...</span>
+        <label className="w-full flex items-center justify-between px-3 py-3 bg-[#18181b] border border-dashed border-[#27272a] rounded-xl hover:bg-white/[0.02] transition-colors group cursor-pointer select-none">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center text-gray-600 group-hover:text-gray-400">
+              <MusicNotes size={16} />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-xs font-semibold text-gray-300">Select Audio</span>
+              <span className="text-[10px] text-gray-600">WAV, MP3, AAC — syncs to beat</span>
+            </div>
           </div>
           <input type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
-          <span className="text-[10px] bg-gray-950 px-2.5 py-1 rounded-lg border border-gray-800 text-gray-300 font-semibold">Browse File</span>
+          <span className="text-[10px] bg-[#18181b] px-2.5 py-1 rounded-lg border border-[#27272a] text-gray-400 font-semibold mr-1">Browse File</span>
         </label>
       ) : (
-        <div className="flex items-center justify-between px-3.5 py-2.5 bg-gray-900 border border-purple-500/60 rounded-xl text-xs select-none">
-          <div className="flex items-center gap-2.5">
-            <MusicNotes size={16} className="text-purple-400" />
-            <span className="text-white font-medium truncate max-w-[200px]">{audioFile.name}</span>
-            {isAnalyzing ? (
-              <span className="text-[10px] text-purple-400 font-mono animate-pulse">Running BeatNet AI...</span>
-            ) : (
-              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1 font-semibold">
-                <CheckCircle size={12} /> {beatCount} beats detected
+        <div className="flex items-center justify-between px-3 py-3 bg-[#18181b] border border-violet-500/30 rounded-xl select-none">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-violet-600/10 flex items-center justify-center">
+              <MusicNotes size={16} className="text-violet-400" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-semibold text-gray-200 truncate max-w-[180px]">{audioFile.name}</span>
+              <span className="text-[10px] font-mono font-semibold">
+                {isAnalyzing ? <span className="text-purple-400 animate-pulse">Running BeatNet AI...</span> : <span className="text-emerald-400 flex items-center gap-1"><CheckCircle size={12} /> {beatCount} beats detected</span>}
               </span>
-            )}
+            </div>
           </div>
-          <button
-            onClick={() => onSelectAudio(null)}
-            className="p-1 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-400 transition"
-            title="Remove soundtrack"
-          >
+          <button onClick={() => onSelectAudio(null)} className="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-500 hover:text-red-400 transition" title="Remove soundtrack">
             <Trash size={14} />
           </button>
         </div>

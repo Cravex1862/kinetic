@@ -14,6 +14,7 @@ import { PreviewWindow } from "@/renderer/components/PreviewWindow";
 import { ResizableSidebar } from "@/renderer/components/ResizableSidebar";
 import { MOCK_TOUR_PROJECT } from "@/renderer/constants";
 import { useGeneratorScaffold } from "../generatorScaffold";
+import { AudioUploadField } from "@/renderer/components/AudioUploadField";
 
 interface AnimationGeneratorProps {
   project: ProjectData | null;
@@ -411,61 +412,7 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                 Soundtrack
               </h3>
             </div>
-            {!audioFile ? (
-              <button
-                onClick={() => audioInputRef.current?.click()}
-                className="w-full flex items-center justify-between px-3 py-3 bg-[#18181b] border border-dashed border-[#27272a] rounded-xl hover:bg-white/[0.02] transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center text-gray-600 group-hover:text-gray-400">
-                    <Plus size={16} />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="text-xs font-semibold text-gray-300">
-                      Select Audio
-                    </span>
-                    <span className="text-[10px] text-gray-600">
-                      WAV, MP3, AAC — syncs to beat
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ) : (
-              <div className="flex items-center justify-between px-3 py-3 bg-[#18181b] border border-violet-500/30 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-violet-600/10 flex items-center justify-center">
-                    <span className="text-violet-400 text-xs">&#9835;</span>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-gray-200 truncate max-w-[180px]">
-                      {audioFile.name}
-                    </span>
-                    <span className="text-[10px] text-emerald-400 font-mono font-semibold">
-                      {isAnalyzingAudio
-                        ? "Analyzing..."
-                        : `${beatFrames.length} beats detected`}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleSelectAudio(null)}
-                  className="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-500 hover:text-red-400 transition"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-            <input
-              type="file"
-              ref={audioInputRef}
-              accept="audio/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleSelectAudio(file);
-                e.target.value = "";
-              }}
-              className="hidden"
-            />
+            <AudioUploadField audioFile={audioFile} beatCount={beatFrames.length} isAnalyzing={isAnalyzingAudio} onSelectAudio={handleSelectAudio} />
           </div>
 
           <div className="border-t border-[#27272a] p-4 space-y-4">
