@@ -323,25 +323,6 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4">
-            <div className="flex items-center gap-2 px-1">
-              <Sparkle size={12} className="text-violet-400" weight="fill" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">AI Assistant</span>
-            </div>
-            <div className="relative flex items-center bg-[#1a1a1e] border border-[#27272a] rounded-full p-2 justify-between gap-1 mt-2">
-              <input
-                type="text"
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Describe walkthrough flow..."
-                className="flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
-              />
-              <button onClick={handleRefinePrompt} disabled={isRefining || !instructions.trim()} className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30">
-                {isRefining ? <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg> : <ArrowRight size={14} weight="bold" />}
-              </button>
-            </div>
-          </div>
-
           <div className="border-t border-[#27272a] p-4 space-y-4">
             <div className="flex items-center gap-2"><span className="text-gray-400 text-sm font-bold">T</span><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Typography</h3></div>
             <div className="space-y-4">
@@ -398,10 +379,8 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
           </div>
 
           <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center gap-2"><Sparkle size={12} className="text-violet-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Repo Scan</h3></div>
-            <div className="rounded-xl bg-[#18181b] border border-[#27272a] p-3">
-              <AIsidebar instructions={instructions} setInstructions={setInstructions} state={pipelineState || { status: "idle", progress: 0 }} isRefining={isRefining} handleRefinePrompt={handleRefinePrompt} placeholder="Describe walkthrough flow..." StatusProps={StatusProps} />
-            </div>
+            <div className="flex items-center gap-2"><Sparkle size={12} className="text-violet-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Repo Scan & Prompt</h3></div>
+            <AIsidebar instructions={instructions} setInstructions={setInstructions} state={pipelineState || { status: "idle", progress: 0 }} isRefining={isRefining} handleRefinePrompt={handleRefinePrompt} placeholder="Describe walkthrough flow (e.g. show user signup, then render analytics page)..." StatusProps={StatusProps} />
           </div>
 
           <div className="border-t border-[#27272a] p-4 space-y-4">
