@@ -27,6 +27,7 @@ import { VoiceoverAudioField } from "@/renderer/components/VoiceoverAudioField";
 import { AudioUploadField } from "@/renderer/components/AudioUploadField";
 import { ResizableSidebar } from "@/renderer/components/ResizableSidebar";
 import { AIsidebar } from "@/renderer/components/AIsidebar";
+import { RepoScanStage } from "@/renderer/components/sidebar-components/RepoScanStage";
 import { FontSettings } from "@/renderer/components/BrandStylingPanel";
 import { useGeneratorScaffold } from "../generatorScaffold";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
@@ -399,6 +400,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
 
           <div className="border-t border-[#27272a] p-4 space-y-4">
             <div className="flex items-center gap-2"><Sparkle size={12} className="text-violet-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Repo Scan</h3></div>
+            <RepoScanStage repoLink={repoLink} setRepoLink={setRepoLink} scanning={scanning} selectedRepoPath={selectedRepoPath} scannedExports={scannedExports} packStats={repoPack} onScanGit={handleCloneAndScan} onSelectFolder={handleSelectFolder} onViewReport={() => setShowDetailedPanel(true)} onSkip={handleSkipRepoScan} onApprove={scaffold.approveCurrentStage} />
             <AIsidebar hidePrompt instructions={instructions} setInstructions={setInstructions} state={pipelineState || { status: "idle", progress: 0 }} isRefining={isRefining} handleRefinePrompt={handleRefinePrompt} placeholder="Describe walkthrough flow (e.g. show user signup, then render analytics page)..." StatusProps={StatusProps} />
           </div>
 
