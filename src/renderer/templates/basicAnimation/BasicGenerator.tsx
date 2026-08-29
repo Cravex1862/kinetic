@@ -555,66 +555,66 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
               }}
             />
 
-            <div className="relative z-10 w-full h-full flex flex-col overflow-hidden">
-              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/5 blur-[120px] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] pointer-events-none" />
+            <div className="relative z-10 w-full h-full flex flex-col overflow-hidden p-8 gap-6">
+              <div className="space-y-2">
+                <div className="w-12 h-1 rounded-full" style={{ backgroundColor: swatches["Primary"] || "#8b5cf6" }} />
+                <h2
+                  style={{
+                    fontFamily: fonts["Title Font"]?.fontFamily,
+                    color: fonts["Title Font"]?.color,
+                    fontSize: Math.min(32, (fonts["Title Font"]?.size || 48) * 0.7),
+                    fontWeight: fonts["Title Font"]?.bold ? 700 : 400,
+                    fontStyle: fonts["Title Font"]?.italic ? "italic" : "normal",
+                    textDecoration: fonts["Title Font"]?.underline ? "underline" : "none",
+                  }}
+                  className="tracking-tighter leading-none max-w-lg"
+                >
+                  {instructions.trim() ? instructions.slice(0, 56) : "Set your type and palette, see it live."}
+                </h2>
+                <h3
+                  style={{
+                    fontFamily: fonts["Heading"]?.fontFamily,
+                    color: fonts["Heading"]?.color,
+                    fontSize: Math.min(18, (fonts["Heading"]?.size || 32) * 0.6),
+                    fontWeight: fonts["Heading"]?.bold ? 700 : 500,
+                    fontStyle: fonts["Heading"]?.italic ? "italic" : "normal",
+                    textDecoration: fonts["Heading"]?.underline ? "underline" : "none",
+                  }}
+                >
+                  Heading style preview — clean and readable
+                </h3>
+                <p
+                  style={{
+                    fontFamily: fonts["Paragraph"]?.fontFamily,
+                    color: fonts["Paragraph"]?.color,
+                    fontSize: fonts["Paragraph"]?.size,
+                    fontWeight: fonts["Paragraph"]?.bold ? 700 : 400,
+                    fontStyle: fonts["Paragraph"]?.italic ? "italic" : "normal",
+                    textDecoration: fonts["Paragraph"]?.underline ? "underline" : "none",
+                  }}
+                  className="max-w-md leading-relaxed"
+                >
+                  Paragraph sample: this updates as you change fonts and colors. Background comes from your selection.
+                </p>
+              </div>
 
-              <div className="flex-1 flex flex-col p-12 space-y-8 z-10">
-                <div className="space-y-3">
-                  <div className="w-12 h-1 bg-violet-600 rounded-full" />
-                  <h2
-                    style={{
-                      fontFamily: fonts["Title Font"]?.fontFamily,
-                      color: fonts["Title Font"]?.color,
-                      fontSize: fonts["Title Font"]?.size,
-                      fontWeight: fonts["Title Font"]?.bold ? 700 : 400,
-                      fontStyle: fonts["Title Font"]?.italic
-                        ? "italic"
-                        : "normal",
-                      textDecoration: fonts["Title Font"]?.underline
-                        ? "underline"
-                        : "none",
-                    }}
-                    className="tracking-tighter max-w-lg"
-                  >
-                    The Future of Motion Graphics is Programmatic.
-                  </h2>
-                  <p
-                    style={{
-                      fontFamily: fonts["Paragraph"]?.fontFamily,
-                      color: fonts["Paragraph"]?.color,
-                      fontSize: fonts["Paragraph"]?.size,
-                    }}
-                    className="max-w-md leading-relaxed"
-                  >
-                    Combine AI with precision keyframing to create stunning
-                    visuals in minutes instead of hours.
-                  </p>
-                </div>
+              <div className="grid grid-cols-4 gap-2">
+                {Object.entries(swatches).map(([label, color]) => (
+                  <div key={label} className="rounded-xl border border-white/10 p-2 flex flex-col gap-1.5" style={{ backgroundColor: `${color}18`, borderColor: `${color}30` }}>
+                    <div className="h-8 rounded-lg border border-white/10" style={{ backgroundColor: color as string }} />
+                    <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: color as string }}>{label}</span>
+                    <span className="text-[9px] font-mono text-gray-400 truncate">{color as string}</span>
+                  </div>
+                ))}
+              </div>
 
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-2xl">
-                    <div className="text-violet-400 text-xl mb-3">&#9632;</div>
-                    <div className="text-lg font-bold text-white">128</div>
-                    <div className="text-[10px] text-gray-600 uppercase font-bold tracking-widest mt-1">
-                      Active Layers
-                    </div>
-                  </div>
-                  <div className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-2xl">
-                    <div className="text-emerald-400 text-xl mb-3">&#9881;</div>
-                    <div className="text-lg font-bold text-white">4.2ms</div>
-                    <div className="text-[10px] text-gray-600 uppercase font-bold tracking-widest mt-1">
-                      Render Time
-                    </div>
-                  </div>
-                  <div className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-2xl">
-                    <div className="text-blue-400 text-xl mb-3">&#9673;</div>
-                    <div className="text-lg font-bold text-white">Live</div>
-                    <div className="text-[10px] text-gray-600 uppercase font-bold tracking-widest mt-1">
-                      Status
-                    </div>
-                  </div>
-                </div>
+              <div className="flex gap-2 flex-wrap">
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: swatches["Primary"] || "#8b5cf6" }}>Primary button</span>
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold border" style={{ borderColor: swatches["Secondary"] || "#a78bfa", color: swatches["Secondary"] || "#a78bfa" }}>Secondary</span>
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: swatches["Accent"] || "#f59e0b" }}>Accent</span>
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: swatches["Error"] || "#ef4444" }}>Error</span>
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: swatches["Success"] || "#22c55e" }}>Success</span>
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold border" style={{ borderColor: swatches["Neutral"] || "#64748b", color: swatches["Neutral"] || "#64748b" }}>Neutral</span>
               </div>
             </div>
           </PreviewWindow>

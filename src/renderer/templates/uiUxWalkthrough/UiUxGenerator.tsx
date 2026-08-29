@@ -192,27 +192,89 @@ const UiUxGenerator: React.FC<UiUxGeneratorProps> = ({
       <main className="flex-1 flex flex-col bg-[#0a0c14] relative overflow-hidden">
         <div className="flex-1 flex flex-col items-center justify-center min-h-0 p-8">
           <PreviewWindow title="Walkthrough Preview">
-            <div className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden" style={{ backgroundColor: (bgSelection as any)?.color || "#09090b" }} />
-            <div className="relative z-10 w-full h-full flex flex-col overflow-hidden">
-              <div className="flex-1 flex flex-col p-12 space-y-8 z-10">
-                <div className="space-y-3">
-                  <div className="w-12 h-1 bg-violet-600 rounded-full" />
-                  <h2 style={{ fontFamily: (fonts as any)["Title Font"]?.fontFamily, color: (fonts as any)["Title Font"]?.color, fontSize: (fonts as any)["Title Font"]?.size, fontWeight: (fonts as any)["Title Font"]?.bold ? 700 : 400 }} className="tracking-tighter max-w-lg">
-                    {instructions.trim() ? instructions.slice(0, 48) : "Walk through your UI before you code it."}
-                  </h2>
-                  <p style={{ fontFamily: (fonts as any)["Paragraph"]?.fontFamily, color: (fonts as any)["Paragraph"]?.color, fontSize: (fonts as any)["Paragraph"]?.size }} className="max-w-md leading-relaxed">
-                    Describe screens and flows — onboarding, empty states, dashboard — and Kinetic will stitch a walkthrough.
-                  </p>
+            <div
+              className="absolute inset-0 z-0 transition-all duration-300 overflow-hidden"
+              style={{
+                ...(bgSelection?.color === "transparent"
+                  ? {
+                      backgroundImage:
+                        "linear-gradient(45deg, #18181b 25%, transparent 25%), linear-gradient(-45deg, #18181b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #18181b 75%), linear-gradient(-45deg, transparent 75%, #18181b 75%)",
+                      backgroundSize: "16px 16px",
+                      backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
+                      backgroundColor: "#09090b",
+                    }
+                  : (bgSelection as any)?.type === "image" && (bgSelection as any).imageUrl
+                    ? {
+                        backgroundImage: `url(${(bgSelection as any).imageUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        filter: `blur(${(bgSelection as any).blurPx || 0}px)`,
+                        transform: (bgSelection as any).blurPx ? "scale(1.08)" : "none",
+                      }
+                    : (bgSelection as any)?.type === "gradient" && (bgSelection as any).gradient
+                      ? { background: (bgSelection as any).gradient, filter: `blur(${(bgSelection as any).blurPx || 0}px)`, transform: (bgSelection as any).blurPx ? "scale(1.08)" : "none" }
+                      : { backgroundColor: (bgSelection as any)?.color || "#09090b" }),
+              }}
+            />
+            <div className="relative z-10 w-full h-full flex flex-col overflow-hidden p-6 gap-4">
+              <div className="space-y-1.5">
+                <div className="w-10 h-1 rounded-full" style={{ backgroundColor: swatches["Primary"] || "#8b5cf6" }} />
+                <h2
+                  style={{
+                    fontFamily: (fonts as any)["Title Font"]?.fontFamily,
+                    color: (fonts as any)["Title Font"]?.color,
+                    fontSize: Math.min(24, ((fonts as any)["Title Font"]?.size || 48) * 0.55),
+                    fontWeight: (fonts as any)["Title Font"]?.bold ? 700 : 400,
+                    fontStyle: (fonts as any)["Title Font"]?.italic ? "italic" : "normal",
+                    textDecoration: (fonts as any)["Title Font"]?.underline ? "underline" : "none",
+                  }}
+                  className="tracking-tighter leading-none max-w-lg"
+                >
+                  {instructions.trim() ? instructions.slice(0, 48) : "Walk through your UI before you code it."}
+                </h2>
+                <h3
+                  style={{
+                    fontFamily: (fonts as any)["Heading"]?.fontFamily,
+                    color: (fonts as any)["Heading"]?.color,
+                    fontSize: Math.min(16, ((fonts as any)["Heading"]?.size || 32) * 0.5),
+                    fontWeight: (fonts as any)["Heading"]?.bold ? 700 : 500,
+                    fontStyle: (fonts as any)["Heading"]?.italic ? "italic" : "normal",
+                    textDecoration: (fonts as any)["Heading"]?.underline ? "underline" : "none",
+                  }}
+                >
+                  Heading preview — shows your heading font and color
+                </h3>
+                <p
+                  style={{
+                    fontFamily: (fonts as any)["Paragraph"]?.fontFamily,
+                    color: (fonts as any)["Paragraph"]?.color,
+                    fontSize: (fonts as any)["Paragraph"]?.size,
+                    fontWeight: (fonts as any)["Paragraph"]?.bold ? 700 : 400,
+                    fontStyle: (fonts as any)["Paragraph"]?.italic ? "italic" : "normal",
+                    textDecoration: (fonts as any)["Paragraph"]?.underline ? "underline" : "none",
+                  }}
+                  className="max-w-md leading-relaxed text-sm"
+                >
+                  Paragraph sample updates live with your font and color choices.
+                </p>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {Object.entries(swatches).map(([label, color]) => (
+                  <div key={label} className="rounded-xl border p-2 flex flex-col gap-1" style={{ backgroundColor: `${color}18`, borderColor: `${color}30` }}>
+                    <div className="h-7 rounded-lg border border-white/10" style={{ backgroundColor: color as string }} />
+                    <span className="text-[8px] font-bold tracking-widest uppercase truncate" style={{ color: color as string }}>{label}</span>
+                    <span className="text-[8px] font-mono text-gray-500 truncate">{color as string}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border p-3 flex flex-col gap-2" style={{ backgroundColor: `${swatches["Primary"] || "#8b5cf6"}14`, borderColor: `${swatches["Primary"] || "#8b5cf6"}30` }}>
+                  <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: swatches["Primary"] || "#8b5cf6" }}>Onboarding</span>
+                  <div className="h-12 rounded-lg border border-white/10 flex items-center justify-center text-[10px]" style={{ backgroundColor: "#ffffff08", color: swatches["Secondary"] || "#a78bfa" }}>Flow step 1</div>
                 </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-2xl">
-                    <div className="h-20 rounded-lg border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center text-[10px] text-gray-600">Screen 1</div>
-                    <div className="text-[10px] text-gray-600 uppercase font-bold tracking-widest mt-3">Onboarding</div>
-                  </div>
-                  <div className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-2xl">
-                    <div className="h-20 rounded-lg border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center text-[10px] text-gray-600">Screen 2</div>
-                    <div className="text-[10px] text-gray-600 uppercase font-bold tracking-widest mt-3">Dashboard</div>
-                  </div>
+                <div className="rounded-xl border p-3 flex flex-col gap-2" style={{ backgroundColor: `${swatches["Accent"] || "#f59e0b"}14`, borderColor: `${swatches["Accent"] || "#f59e0b"}30` }}>
+                  <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: swatches["Accent"] || "#f59e0b" }}>Dashboard</span>
+                  <div className="h-12 rounded-lg border border-white/10 flex items-center justify-center text-[10px]" style={{ backgroundColor: "#ffffff08", color: swatches["Neutral"] || "#64748b" }}>Flow step 2</div>
                 </div>
               </div>
             </div>
