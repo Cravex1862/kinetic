@@ -15,6 +15,8 @@ import type { FontSettings } from "../components/BrandStylingPanel";
 import { runPipeline } from "../agents/pipeline";
 import type { PipelineState } from "../agents/types";
 import { getStoredConfig } from "../agents/llmClient";
+import { runSceneCreatorAgent } from "../agents/subagents/sceneCreator";
+import { sceneExportName, stripAllImports, normalizeSceneExportName, writeComposition } from "../agents/compositionStore";
 
 interface StudioPageProps {
     project: ProjectData;
@@ -51,6 +53,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
     const [instructions, setInstructions] = useState("");
     const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
     const [isRunning, setIsRunning] = useState(false);
+    const [selectedScene, setSelectedScene] = useState<number | null>(null);
 
     const [fonts, setFonts] = useState<Record<string, FontSettings>>(
         () => (project.fonts as Record<string, FontSettings>) || {},
@@ -72,16 +75,29 @@ export const StudioPage: React.FC<StudioPageProps> = ({
             },
     );
 
-    const durationInFrames = useMemo(() => {
-        const scenes = project.scenes as Array<{ duration?: number }> | undefined;
-        const total = Array.isArray(scenes)
-            ? scenes.reduce(
-                  (sum, s) => sum + (typeof s?.duration === "number" ? s.duration : 0),
-                  0,
-              )
-            : 0;
-        return total > 0 ? total : 150;
+    const scenesList = useMemo(() => {
+        const raw = project.scenes as Array<{ id?: string; purpose?: string; duration?: number; durationInFrames?: number }> | undefined;
+        if (Array.isArray(raw) && raw.length > 0) {
+            return raw.map((s, i) => ({
+                id: s.id || `scene${i + 1}`,
+                purpose: s.purpose || s.id || `Scene ${i + 1}`,
+                durationInFrames: s.durationInFrames || s.duration || 50,
+            }));
+        }
+        const total = 150;
+        const count = 3;
+        const per = Math.floor(total / count);
+        return Array.from({ length: count }, (_, i) => ({
+            id: `scene${i + 1}`,
+            purpose: `Scene ${i + 1}`,
+            durationInFrames: per,
+        }));
     }, [project.scenes]);
+
+    const durationInFrames = useMemo(() => {
+        const total = scenesList.reduce((sum, s) => sum + (s.durationInFrames || 0), 0);
+        return total > 0 ? total : 150;
+    }, [scenesList]);
 
     useEffect(() => {
         let raf: number;
@@ -125,6 +141,53 @@ export const StudioPage: React.FC<StudioPageProps> = ({
             await customAlert("Setup Required", "Please configure API key first using the settings menu");
             return;
         }
+
+        if (selectedScene !== null) {
+            const target = scenesList[selectedScene];
+            setIsRunning(true);
+            setPipelineState({ status: "sceneCreation", progress: 0.3 });
+            try {
+                const prompt = `Fix scene ${selectedScene + 1} (${target.id}): ${instructions}. Original purpose: ${target.purpose}. Keep duration ${target.durationInFrames} frames.`;
+                const sceneName = sceneExportName(selectedScene);
+                const raw = await runSceneCreatorAgent(config, prompt, undefined, sceneName);
+                if (!raw) {
+                    await customAlert("Generation failed", "The model returned empty code for this scene.");
+                    return;
+                }
+                const cleaned = normalizeSceneExportName(stripAllImports(raw), sceneName);
+                const oldCode = project.code || "";
+                let newCode: string;
+                if (oldCode.includes(sceneName)) {
+                    const re = new RegExp(`export\\s+const\\s+${sceneName}[\\s\\S]*?(?=export\\s+const\\s+Scene\\d+|export const VideoComposition)`, "g");
+                    if (re.test(oldCode)) {
+                        newCode = oldCode.replace(re, cleaned + "\n\n");
+                    } else {
+                        newCode = oldCode.replace(sceneName, cleaned);
+                    }
+                } else {
+                    newCode = oldCode ? oldCode + "\n\n" + cleaned : cleaned;
+                }
+                await writeComposition(newCode);
+                const nextScenes = [...scenesList];
+                onUpdateProject({
+                    ...project,
+                    code: newCode,
+                    scenes: nextScenes as any,
+                    prompt: instructions,
+                    unfinished: false,
+                });
+                setPipelineState({ status: "done", progress: 1 });
+                setTimeout(() => setPipelineState(null), 1500);
+            } catch (err: any) {
+                console.error(err);
+                await customAlert("Scene fix failed", String(err?.message || err));
+                setPipelineState({ status: "error", progress: 1, error: String(err) });
+            } finally {
+                setIsRunning(false);
+            }
+            return;
+        }
+
         let resolver: ((data?: unknown) => void) | null = null;
         const waitForApproval = () => new Promise<unknown>((resolve) => { resolver = resolve; });
         const approveStage = (data?: unknown) => { resolver?.(data); resolver = null; };
@@ -142,6 +205,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                     ...project,
                     prompt: instructions,
                     code: output.assembled,
+                    scenes: (output.blueprints as any) || scenesList,
                     unfinished: false,
                 });
             }
@@ -182,7 +246,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                         initialStates={[]}
                         instructions={instructions}
                         setInstructions={setInstructions}
-                        placeholder="Describe the changes you want to make..."
+                        placeholder={selectedScene !== null ? `Describe fix for ${scenesList[selectedScene].id}...` : "Describe the changes you want to make..."}
                         StatusProps={StatusProps}
                         state={pipelineState || ({ status: "idle", progress: 0 } as PipelineState)}
                     />
@@ -204,8 +268,16 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                     </svg>
-                    {isRunning ? "Working..." : "Edit Video"}
+                    {isRunning ? "Working..." : selectedScene !== null ? `Fix ${scenesList[selectedScene].id}` : "Edit Video"}
                 </button>
+                {selectedScene !== null && (
+                    <button
+                        onClick={() => setSelectedScene(null)}
+                        className="mt-1 w-full text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                        Clear selection — edit whole video
+                    </button>
+                )}
             </aside>
 
             <main className="flex min-w-0 flex-1 flex-col">
@@ -233,7 +305,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                     </span>
                 </header>
 
-                <div className="flex min-h-0 flex-1 items-center justify-center p-6">
+                <div className="flex min-h-0 flex-1 items-center justify-center p-6 pb-3">
                     <div className="h-full w-full overflow-hidden rounded-xl border border-gray-900 bg-black shadow-[0_0_60px_rgba(0,0,0,0.6)]">
                         <Player
                             ref={playerRef}
@@ -249,6 +321,23 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                             style={{ width: "100%", height: "100%" }}
                             acknowledgeRemotionLicense
                         />
+                    </div>
+                </div>
+
+                <div className="px-6 pb-2">
+                    <div className="flex items-center gap-2 overflow-x-auto">
+                        {scenesList.map((s, idx) => (
+                            <button
+                                key={s.id}
+                                onClick={() => setSelectedScene(idx)}
+                                className={`shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-semibold transition-colors ${selectedScene === idx ? "bg-violet-600 border-violet-500 text-white shadow-[0_0_10px_rgba(124,58,237,0.4)]" : "bg-[#18181b] border-[#27272a] text-gray-400 hover:text-white hover:border-gray-700"}`}
+                                title={s.purpose}
+                            >
+                                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedScene === idx ? "white" : "#8b5cf6" }} />
+                                {s.id} · {Math.round((s.durationInFrames || 50) / 30)}s
+                            </button>
+                        ))}
+                        <span className="ml-2 text-[10px] text-gray-600 whitespace-nowrap">Click a scene to fix just that part</span>
                     </div>
                 </div>
 
