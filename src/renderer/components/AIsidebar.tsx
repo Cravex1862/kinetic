@@ -39,6 +39,7 @@ interface InstructionProps {
   placeholder?: string;
   StatusProps: StatusRendererProps;
   initialStates?: PipelineState[];
+  hidePrompt?: boolean;
 }
 
 interface StageSectionProps {
@@ -203,6 +204,7 @@ export const AIsidebar: React.FC<InstructionProps> = ({
   placeholder = "Describe custom layout or animation instructions...",
   StatusProps,
   initialStates,
+  hidePrompt = false,
 }) => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const submitedAnswersRef = React.useRef<ClientInterViewAnswers[]>([]);
@@ -250,11 +252,13 @@ export const AIsidebar: React.FC<InstructionProps> = ({
       className="flex flex-col w-full h-full"
       id="sidebar"
     >
-      <div className="flex items-center justify-between pb-2">
-        <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-          Prompt
-        </h4>
-      </div>
+      {!hidePrompt && (
+        <div className="flex items-center justify-between pb-2">
+          <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+            Prompt
+          </h4>
+        </div>
+      )}
       <div className="grow m-2 overflow-y-auto">
         {states.length === 0 && (
           <p className="text-[10px] text-gray-600 leading-relaxed mt-1 mb-2 hidden">
@@ -281,56 +285,58 @@ export const AIsidebar: React.FC<InstructionProps> = ({
           />
         ))}
       </div>
-      <div className="relative w-full">
-        <div className="flex items-center gap-2 rounded-full bg-gray-950/60 border border-[#27272a] px-3 py-2 transition-all focus-within:border-gray-700">
-          <textarea
-            ref={textareaRef}
-            onChange={(e) => setInstructions(e.target.value)}
-            placeholder={placeholder}
-            value={instructions}
-            rows={1}
-            className={`flex-1 bg-transparent text-xs text-gray-200 placeholder-gray-600 resize-none outline-none min-h-[20px] max-h-[80px] font-sans transition-all overflow-hidden duration-300 ${
-              isRefining ? "animate-pulse" : ""
-            }`}
-            style={{ fieldSizing: "content" as React.CSSProperties["fieldSizing"] }}
-          />
-          {handleRefinePrompt && (
-            <button
-              onClick={handleRefinePrompt}
-              disabled={isRefining || !instructions.trim()}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8b5cf6] text-white transition-all hover:bg-[#7c3aed] disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Refine prompt with AI"
-            >
-              {isRefining ? (
-                <svg
-                  className="animate-spin h-3.5 w-3.5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-              )}
-            </button>
-          )}
+      {!hidePrompt && (
+        <div className="relative w-full">
+          <div className="flex items-center gap-2 rounded-full bg-gray-950/60 border border-[#27272a] px-3 py-2 transition-all focus-within:border-gray-700">
+            <textarea
+              ref={textareaRef}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder={placeholder}
+              value={instructions}
+              rows={1}
+              className={`flex-1 bg-transparent text-xs text-gray-200 placeholder-gray-600 resize-none outline-none min-h-[20px] max-h-[80px] font-sans transition-all overflow-hidden duration-300 ${
+                isRefining ? "animate-pulse" : ""
+              }`}
+              style={{ fieldSizing: "content" as React.CSSProperties["fieldSizing"] }}
+            />
+            {handleRefinePrompt && (
+              <button
+                onClick={handleRefinePrompt}
+                disabled={isRefining || !instructions.trim()}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8b5cf6] text-white transition-all hover:bg-[#7c3aed] disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Refine prompt with AI"
+              >
+                {isRefining ? (
+                  <svg
+                    className="animate-spin h-3.5 w-3.5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 };
