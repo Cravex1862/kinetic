@@ -34,6 +34,7 @@ import { FontSettings } from "@/renderer/components/BrandStylingPanel";
 import { useGeneratorScaffold } from "../generatorScaffold";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
 
+
 interface AnimationGeneratorProps {
   project: ProjectData | null;
   onBack: (updatedProject?: ProjectData) => void;
@@ -100,6 +101,11 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedRepoPath, setSelectedRepoPath] = useState("");
   const [showDetailedPanel, setShowDetailedPanel] = useState(false);
+  const [hasExpanded, setHasExpanded] = useState(false);
+  const [shake, setShake] = useState(false);
+  React.useEffect(() => {
+    if (pipelineState && pipelineState.status !== "idle") setHasExpanded(true);
+  }, [pipelineState]);
 
   useEffect(() => {
     const fetchFonts = async () => {
@@ -240,9 +246,23 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
 
   const handleSkipRepoScan = () => { scaffold.approveCurrentStage({ confirmed: false }); };
 
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
+  };
+  const handlePillSubmit = async () => {
+    if (!instructions.trim() && !narration.trim()) {
+      triggerShake();
+      return;
+    }
+    setHasExpanded(true);
+    await handleGenerate();
+  };
+
   const handleGenerate = async () => {
     if (isGenerating) return;
     if (!instructions.trim() && !narration.trim()) return;
+    setHasExpanded(true);
     const controller = scaffold.createController();
     if (!controller) { await customAlert("Setup Required", "Please configure API key first using the settings menu"); return; }
     setRepoPack(null); setScannedExports(null); setPipelineState(null); setIsGenerating(true);
@@ -327,40 +347,85 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
 
         <div className="flex-1 overflow-y-auto">
           <div className="p-4">
-            <div className="flex items-center gap-2 px-1">
-              <Sparkle size={12} className="text-violet-400" weight="fill" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">AI Assistant</span>
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" /> AI Assistant
+              </span>
             </div>
-            <div className="relative flex items-center bg-[#1a1a1e] border border-[#27272a] rounded-full p-2 justify-between gap-1 mt-2">
-              <input
-                type="text"
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Describe walkthrough flow..."
-                className="flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
-              />
-              <button onClick={handleRefinePrompt} disabled={isRefining || !instructions.trim()} className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30">
-                {isRefining ? <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg> : <ArrowRight size={14} weight="bold" />}
-              </button>
+            <div
+              className={`relative bg-[#1a1a1e] border border-[#27272a] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
+                hasExpanded
+                  ? "rounded-2xl p-3 flex flex-col gap-3 translate-y-1 shadow-xl shadow-violet-900/10"
+                  : "rounded-full p-2 flex items-center justify-between gap-1"
+              } ${shake ? "animate-shake border-red-500/50" : ""}`}
+            >
+              {!hasExpanded ? (
+                <>
+                  <input
+                    type="text"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handlePillSubmit();
+                      }
+                    }}
+                    placeholder="Describe walkthrough flow..."
+                    className="flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
+                  />
+                  <button
+                    onClick={handlePillSubmit}
+                    disabled={isRefining}
+                    className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 flex-shrink-0"
+                  >
+                    {isRefining ? (
+                      <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <AIsidebar
+                  instructions={instructions}
+                  setInstructions={setInstructions}
+                  state={pipelineState || { status: "idle", progress: 0 }}
+                  isRefining={isRefining}
+                  handleRefinePrompt={handleRefinePrompt}
+                  StatusProps={StatusProps}
+                />
+              )}
             </div>
           </div>
 
-          <DesignTokensPanel fonts={fonts} setFonts={setFonts} swatches={swatches} setSwatches={setSwatches} availableFonts={availableFonts} scannedFonts={scannedExports?.fonts || []} />
+          <div
+            className={`transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
+              hasExpanded ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "max-h-[4000px] opacity-100 translate-y-0"
+            }`}
+          >
+            <DesignTokensPanel fonts={fonts} setFonts={setFonts} swatches={swatches} setSwatches={setSwatches} availableFonts={availableFonts} scannedFonts={scannedExports?.fonts || []} />
 
-          <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center gap-2"><Sparkle size={12} className="text-violet-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Repo Scan</h3></div>
-            <RepoScanStage repoLink={repoLink} setRepoLink={setRepoLink} scanning={scanning} selectedRepoPath={selectedRepoPath} scannedExports={scannedExports} packStats={repoPack} onScanGit={handleCloneAndScan} onSelectFolder={handleSelectFolder} onViewReport={() => setShowDetailedPanel(true)} onSkip={handleSkipRepoScan} onApprove={scaffold.approveCurrentStage} />
-            <AIsidebar hidePrompt instructions={instructions} setInstructions={setInstructions} state={pipelineState || { status: "idle", progress: 0 }} isRefining={isRefining} handleRefinePrompt={handleRefinePrompt} placeholder="Describe walkthrough flow (e.g. show user signup, then render analytics page)..." StatusProps={StatusProps} />
-          </div>
+            <div className="border-t border-[#27272a] p-4 space-y-4">
+              <div className="flex items-center gap-2"><Sparkle size={12} className="text-violet-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Repo Scan</h3></div>
+              <RepoScanStage repoLink={repoLink} setRepoLink={setRepoLink} scanning={scanning} selectedRepoPath={selectedRepoPath} scannedExports={scannedExports} packStats={repoPack} onScanGit={handleCloneAndScan} onSelectFolder={handleSelectFolder} onViewReport={() => setShowDetailedPanel(true)} onSkip={handleSkipRepoScan} onApprove={scaffold.approveCurrentStage} />
+            </div>
 
-          <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center gap-2"><MusicNotes size={14} className="text-gray-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Voiceover</h3></div>
-            <VoiceoverAudioField mode={voiceoverMode} onModeChange={setVoiceoverMode} scriptText={narration} onScriptTextChange={setNarration} audioFile={voiceoverAudioFile} onAudioFileChange={handleVoiceoverAudioChange} isTranscribing={isTranscribingVoiceover} />
-          </div>
+            <div className="border-t border-[#27272a] p-4 space-y-4">
+              <div className="flex items-center gap-2"><MusicNotes size={14} className="text-gray-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Voiceover</h3></div>
+              <VoiceoverAudioField mode={voiceoverMode} onModeChange={setVoiceoverMode} scriptText={narration} onScriptTextChange={setNarration} audioFile={voiceoverAudioFile} onAudioFileChange={handleVoiceoverAudioChange} isTranscribing={isTranscribingVoiceover} />
+            </div>
 
-          <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center gap-2"><MusicNotes size={14} className="text-gray-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Soundtrack</h3></div>
-            <AudioUploadField audioFile={audioFile} beatCount={beatFrames.length} isAnalyzing={isAnalyzingAudio} onSelectAudio={handleSelectAudio} />
+            <div className="border-t border-[#27272a] p-4 space-y-4">
+              <div className="flex items-center gap-2"><MusicNotes size={14} className="text-gray-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Soundtrack</h3></div>
+              <AudioUploadField audioFile={audioFile} beatCount={beatFrames.length} isAnalyzing={isAnalyzingAudio} onSelectAudio={handleSelectAudio} />
+            </div>
           </div>
         </div>
       </ResizableSidebar>

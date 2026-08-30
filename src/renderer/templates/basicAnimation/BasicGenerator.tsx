@@ -2,10 +2,7 @@ import React from "react";
 import {
   Plus,
   X,
-  ArrowRight,
   ArrowLeft,
-  CaretDown,
-  Sparkle,
 } from "@phosphor-icons/react";
 import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
 import { runPipeline } from "@/renderer/agents/pipeline";
@@ -17,6 +14,7 @@ import { useGeneratorScaffold } from "../generatorScaffold";
 import { AudioUploadField } from "@/renderer/components/AudioUploadField";
 import { DesignTokensPanel } from "@/renderer/components/DesignTokensPanel";
 import { MusicNotes, Stack, File } from "@phosphor-icons/react";
+import { AIsidebar } from "@/renderer/components/AIsidebar";
 
 interface AnimationGeneratorProps {
   project: ProjectData | null;
@@ -89,6 +87,12 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
   } = scaffold;
 
   const audioInputRef = React.useRef<HTMLInputElement>(null);
+  const [hasExpanded, setHasExpanded] = React.useState(false);
+  const [shake, setShake] = React.useState(false);
+
+  React.useEffect(() => {
+    if (pipelineState && pipelineState.status !== "idle") setHasExpanded(true);
+  }, [pipelineState]);
 
   React.useEffect(() => {
     if (tourActive && !instructions) {
@@ -97,6 +101,20 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
       );
     }
   }, [tourActive]);
+
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
+  };
+
+  const handlePillSubmit = async () => {
+    if (!instructions.trim() && !narration.trim()) {
+      triggerShake();
+      return;
+    }
+    setHasExpanded(true);
+    await handleGenerate();
+  };
 
   const handleGenerate = async () => {
     if (tourActive) {
@@ -187,113 +205,129 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
 
         <div className="flex-1 overflow-y-auto">
           <div className="p-4">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 px-1">
-                <Sparkle size={12} className="text-violet-400" weight="fill" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                  AI Assistant
-                </span>
-              </div>
-              <div className="relative flex items-center bg-[#1a1a1e] border border-[#27272a] rounded-full p-2 justify-between gap-1">
-                <input
-                  type="text"
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="Describe your vision..."
-                  className="flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" /> AI Assistant
+              </span>
+            </div>
+            <div
+              className={`relative bg-[#1a1a1e] border border-[#27272a] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
+                hasExpanded
+                  ? "rounded-2xl p-3 flex flex-col gap-3 translate-y-1 shadow-xl shadow-violet-900/10"
+                  : "rounded-full p-2 flex items-center justify-between gap-1"
+              } ${shake ? "animate-shake border-red-500/50" : ""}`}
+            >
+              {!hasExpanded ? (
+                <>
+                  <input
+                    type="text"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handlePillSubmit();
+                      }
+                    }}
+                    placeholder="Describe your vision..."
+                    className="flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
+                  />
+                  <button
+                    onClick={handlePillSubmit}
+                    disabled={isRefining}
+                    className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 flex-shrink-0"
+                  >
+                    {isRefining ? (
+                      <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <AIsidebar
+                  instructions={instructions}
+                  setInstructions={setInstructions}
+                  state={pipelineState || { status: "idle", progress: 0 }}
+                  isRefining={isRefining}
+                  handleRefinePrompt={handleRefinePrompt}
+                  StatusProps={StatusProps}
                 />
-                <button
-                  onClick={handleRefinePrompt}
-                  disabled={isRefining || !instructions.trim()}
-                  className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  {isRefining ? (
-                    <svg
-                      className="animate-spin h-3.5 w-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                  ) : (
-                    <ArrowRight size={14} weight="bold" />
-                  )}
-                </button>
-              </div>
+              )}
             </div>
           </div>
 
-          <DesignTokensPanel fonts={fonts} setFonts={setFonts} swatches={swatches} setSwatches={setSwatches} availableFonts={availableFonts} />
+          <div
+            className={`transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
+              hasExpanded ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "max-h-[2000px] opacity-100 translate-y-0"
+            }`}
+          >
+            <DesignTokensPanel fonts={fonts} setFonts={setFonts} swatches={swatches} setSwatches={setSwatches} availableFonts={availableFonts} />
 
-          <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <MusicNotes size={14} className="text-gray-400" />
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
-                Soundtrack
-              </h3>
-            </div>
-            <AudioUploadField audioFile={audioFile} beatCount={beatFrames.length} isAnalyzing={isAnalyzingAudio} onSelectAudio={handleSelectAudio} />
-          </div>
-
-          <div className="border-t border-[#27272a] p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="border-t border-[#27272a] p-4 space-y-4">
               <div className="flex items-center gap-2">
-                <Stack size={14} className="text-gray-400" />
+                <MusicNotes size={14} className="text-gray-400" />
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
-                  Assets
+                  Soundtrack
                 </h3>
               </div>
-              <button
-                onClick={() => assetInputRef.current?.click()}
-                className="p-1 text-violet-400 hover:bg-violet-400/10 rounded"
-              >
-                <Plus size={14} />
-              </button>
-              <input
-                type="file"
-                ref={assetInputRef}
-                multiple
-                onChange={handleAssetUpload}
-                className="hidden"
-              />
+              <AudioUploadField audioFile={audioFile} beatCount={beatFrames.length} isAnalyzing={isAnalyzingAudio} onSelectAudio={handleSelectAudio} />
             </div>
-            {uploadedAssets.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {uploadedAssets.map((asset, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 px-2 py-1 bg-[#18181b] border border-[#27272a] rounded-md"
-                  >
-                    <File size={14} className="text-violet-400" weight="fill" />
-                    <span className="text-[10px] text-gray-300 font-medium truncate max-w-[80px]">
-                      {asset}
-                    </span>
-                    <button
-                      onClick={() =>
-                        setUploadedAssets((prev) =>
-                          prev.filter((_, i) => i !== index),
-                        )
-                      }
-                      className="text-gray-600 hover:text-red-400"
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
+
+            <div className="border-t border-[#27272a] p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Stack size={14} className="text-gray-400" />
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+                    Assets
+                  </h3>
+                </div>
+                <button
+                  onClick={() => assetInputRef.current?.click()}
+                  className="p-1 text-violet-400 hover:bg-violet-400/10 rounded"
+                >
+                  <Plus size={14} />
+                </button>
+                <input
+                  type="file"
+                  ref={assetInputRef}
+                  multiple
+                  onChange={handleAssetUpload}
+                  className="hidden"
+                />
               </div>
-            )}
+              {uploadedAssets.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {uploadedAssets.map((asset, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-2 py-1 bg-[#18181b] border border-[#27272a] rounded-md"
+                    >
+                      <File size={14} className="text-violet-400" weight="fill" />
+                      <span className="text-[10px] text-gray-300 font-medium truncate max-w-[80px]">
+                        {asset}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setUploadedAssets((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          )
+                        }
+                        className="text-gray-600 hover:text-red-400"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </ResizableSidebar>
