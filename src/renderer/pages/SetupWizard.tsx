@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, ArrowRight, ArrowLeft, UploadSimple, ArrowClockwise, Monitor, DeviceMobile, OpenAiLogo, HardDrive, ChatText, Lightning } from '@phosphor-icons/react';
 import logoIcon from '../../../kinetic_brand/logo_transparent_with_text.png';
 import { MODEL_PRESETS } from '../constants';
+import { useKineticSettings } from '../hooks/useKineticSettings';
 
 interface SetupWizardProps {
   onComplete: () => void;
@@ -12,31 +13,23 @@ interface SetupWizardProps {
 const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) => {
   const [step, setStep] = useState<number>(1);
 
-  // Step 1: Workspace Path
-  const [workspaceDir, setWorkspaceDir] = useState<string>(localStorage.getItem('kinetic-workspace-dir') || '');
-
-  // Step 2: AI Config
-  const [provider, setProvider] = useState<string>(localStorage.getItem('kinetic-provider') || 'openai');
-  const [apiKey, setApiKey] = useState<string>(localStorage.getItem('kinetic-api-key') || '');
-  const [model, setModel] = useState<string>(localStorage.getItem('kinetic-model') || 'gpt-4o-mini');
-
-  // Step 3: Render Config
-  const [resolution, setResolution] = useState<string>(localStorage.getItem('kinetic-default-resolution') || '1080p');
-  const [fps, setFps] = useState<number>(Number(localStorage.getItem('kinetic-default-fps')) || 30);
-  const [aspectRatio, setAspectRatio] = useState<string>(localStorage.getItem('kinetic-default-aspect-ratio') || '16:9');
+  const {
+    provider, setProvider,
+    apiKey, setApiKey,
+    model, setModel,
+    resolution, setResolution,
+    fps, setFps,
+    aspectRatio, setAspectRatio,
+    workspaceDir, setWorkspaceDir,
+    save: saveSettings,
+  } = useKineticSettings();
 
   // Key testing states
   const [testingKey, setTestingKey] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<{ success: boolean; msg: string } | null>(null);
 
 
-  // Automatically update model when provider changes
-  useEffect(() => {
-    const presets = MODEL_PRESETS[provider] || [];
-    if (!presets.includes(model)) {
-      setModel(presets[0] || '');
-    }
-  }, [provider]);
+
 
   const handleSelectWorkspace = async () => {
     if (!window.electronAPI?.selectDirectory) {
@@ -184,20 +177,12 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, customAlert }) =>
   };
 
   const handleFinish = () => {
-    // Generate default folder if folders storage is empty
     const existing = localStorage.getItem('kinetic-folders');
     if (!existing || existing === '[]') {
       const defaultFolders = [{ path: `${workspaceDir}${workspaceDir.includes('\\') ? '\\' : '/'}My SaaS Walkthroughs`, name: "My SaaS Walkthroughs", color: "purple", collapsed: false }];
       localStorage.setItem('kinetic-folders', JSON.stringify(defaultFolders));
     }
-
-    localStorage.setItem('kinetic-workspace-dir', workspaceDir);
-    localStorage.setItem('kinetic-provider', provider);
-    localStorage.setItem('kinetic-api-key', apiKey);
-    localStorage.setItem('kinetic-model', model);
-    localStorage.setItem('kinetic-default-resolution', resolution);
-    localStorage.setItem('kinetic-default-fps', String(fps));
-    localStorage.setItem('kinetic-default-aspect-ratio', aspectRatio);
+    saveSettings();
     localStorage.setItem('kinetic-setup-completed', 'true');
     onComplete();
   };

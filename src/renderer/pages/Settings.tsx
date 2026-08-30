@@ -3,6 +3,7 @@ import { ArrowLeft, Cpu, VideoCamera, Folder, Trash, Check, Sparkle, Flag, OpenA
 import logoIcon from '../../../kinetic_brand/logo_transparent.svg';
 import { MODEL_PRESETS } from '../constants';
 import { fetchAvailableModels } from '../agents/llmClient';
+import { useKineticSettings } from '../hooks/useKineticSettings';
 
 interface SettingsProps {
   onBack: () => void;
@@ -27,48 +28,28 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onBack]);
 
-  // AI Configurations State
-  const [provider, setProvider] = useState<string>(localStorage.getItem('kinetic-provider') || 'openai');
-  const [apiKey, setApiKey] = useState<string>(localStorage.getItem('kinetic-api-key') || '');
-  const [baseUrl, setBaseUrl] = useState<string>(localStorage.getItem('kinetic-base-url') || '');
-  const [model, setModel] = useState<string>('');
-  const [customModel, setCustomModel] = useState<string>('');
-  const [useCustomModel, setUseCustomModel] = useState<boolean>(false);
+  const {
+    provider, setProvider,
+    apiKey, setApiKey,
+    baseUrl, setBaseUrl,
+    model, setModel,
+    customModel, setCustomModel,
+    useCustomModel, setUseCustomModel,
+    resolution, setResolution,
+    fps, setFps,
+    aspectRatio, setAspectRatio,
+    workspaceDir, setWorkspaceDir,
+    save: saveSettings,
+  } = useKineticSettings();
 
   const [dynamicModels, setDynamicModels] = useState<string[]>([]);
   const [fetchingModels, setFetchingModels] = useState<boolean>(false);
   const [fetchStatus, setFetchStatus] = useState<{ success: boolean; msg: string } | null>(null);
 
-  // Video Configurations State
-  const [resolution, setResolution] = useState<string>(localStorage.getItem('kinetic-default-resolution') || '1080p');
-  const [fps, setFps] = useState<number>(Number(localStorage.getItem('kinetic-default-fps')) || 30);
-  const [aspectRatio, setAspectRatio] = useState<string>(localStorage.getItem('kinetic-default-aspect-ratio') || '16:9');
-
-  // Workspace Configuration State
-  const [workspaceDir, setWorkspaceDir] = useState<string>(localStorage.getItem('kinetic-workspace-dir') || '');
-
   // Load Model presets on mount/provider change
   useEffect(() => {
     setFetchStatus(null);
     setDynamicModels([]);
-    if (provider === 'ollama' && !baseUrl) {
-      setBaseUrl('http://localhost:11434');
-    } else if (provider === 'lmstudio' && !baseUrl) {
-      setBaseUrl('http://localhost:1234');
-    }
-
-    const savedModel = localStorage.getItem('kinetic-model') || '';
-    const presets = MODEL_PRESETS[provider] || [];
-    if (savedModel && presets.includes(savedModel)) {
-      setModel(savedModel);
-      setUseCustomModel(false);
-    } else if (savedModel) {
-      setCustomModel(savedModel);
-      setUseCustomModel(true);
-    } else {
-      setModel(presets[0] || '');
-      setUseCustomModel(false);
-    }
   }, [provider]);
 
   // Actions
@@ -105,31 +86,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
   };
 
   const handleSave = async () => {
-    // Save AI configs
-    localStorage.setItem('kinetic-provider', provider);
-    localStorage.setItem('kinetic-api-key', apiKey.trim());
-    if (baseUrl.trim()) {
-      localStorage.setItem('kinetic-base-url', baseUrl.trim());
-    } else {
-      localStorage.removeItem('kinetic-base-url');
-    }
-
-    const finalModel = useCustomModel ? customModel.trim() : model;
-    if (finalModel) {
-      localStorage.setItem('kinetic-model', finalModel);
-    } else {
-      localStorage.removeItem('kinetic-model');
-    }
-
-    // Save Video configs
-    localStorage.setItem('kinetic-default-resolution', resolution);
-    localStorage.setItem('kinetic-default-fps', String(fps));
-    localStorage.setItem('kinetic-default-aspect-ratio', aspectRatio);
-
-    // Save Workspace config
-    localStorage.setItem('kinetic-workspace-dir', workspaceDir);
-
-    // Show inline toast instead of modal
+    saveSettings();
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 2000);
   };
