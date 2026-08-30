@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { UploadSimple, Image as ImageIcon, Sparkle } from "@phosphor-icons/react";
+import { UploadSimple, ArrowLeft, Sparkle } from "@phosphor-icons/react";
 import logoIcon from "../../../../kinetic_brand/logo_transparent.svg";
 import { ProjectData } from "@/renderer/pages/AppRouter";
 import { PreviewWindow } from "@/renderer/components/PreviewWindow";
-import { BrandStylingPanel } from "@/renderer/components/BrandStylingPanel";
-import { CustomInstructionsPanel } from "@/renderer/components/CustomInstructionsPanel";
+import { DesignTokensPanel } from "@/renderer/components/DesignTokensPanel";
 import { ResizableSidebar } from "@/renderer/components/ResizableSidebar";
 import {
   runLogoPipeline,
@@ -12,10 +11,7 @@ import {
   LogoStylePreset,
 } from "./logoPipeline";
 import { getStoredConfig } from "@/renderer/agents/llmClient";
-import {
-  useGeneratorScaffold,
-  SidebarHeader,
-} from "../generatorScaffold";
+import { useGeneratorScaffold } from "../generatorScaffold";
 
 interface LogoGeneratorProps {
   project: ProjectData | null;
@@ -85,6 +81,12 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
   const [animKey, setAnimKey] = useState<number>(1);
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [hasExpanded, setHasExpanded] = useState<boolean>(false);
+  const [shake, setShake] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (pipelineState && pipelineState.status !== "idle") setHasExpanded(true);
+  }, [pipelineState]);
 
   useEffect(() => {
     triggerPreviewAnimation();
@@ -130,6 +132,20 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
   const handleRefineWithStyle = async () => {
     if (!instructions.trim()) return;
     await handleRefinePrompt();
+  };
+
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
+  };
+
+  const handlePillSubmit = async () => {
+    if (!instructions.trim()) {
+      triggerShake();
+      return;
+    }
+    setHasExpanded(true);
+    await handleGenerateClick();
   };
 
   const handleBackWithLogo = () => {
@@ -244,112 +260,173 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
       <ResizableSidebar
         initialWidth={380}
         minWidth={320}
-        maxWidth={650}
-        className="border-r border-gray-900 bg-gray-950 p-5 gap-4 overflow-y-auto"
+        maxWidth={500}
+        className="border-r border-[#27272a] bg-[#121212] overflow-y-auto"
       >
-        <SidebarHeader breadcrumb="Logo" onBack={handleBackWithLogo} />
+        <div className="p-4 border-b border-[#27272a] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackWithLogo}
+              className="text-gray-400 hover:text-white transition-colors"
+              title="Return to Dashboard"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex items-center gap-2">
+              <img src={logoIcon} alt="kinetic" className="w-5 h-5" />
+              <span className="text-sm tracking-tight text-white">kinetic</span>
+              <span className="text-[11px] text-gray-500">/ Logo Animator</span>
+            </div>
+          </div>
+          <span className="text-[10px] font-medium text-gray-500 bg-[#18181b] px-2 py-0.5 rounded border border-[#27272a]">v0.4.2</span>
+        </div>
 
-        <CustomInstructionsPanel
-          instructions={instructions}
-          setInstructions={setInstructions}
-          isRefining={isRefining}
-          handleRefinePrompt={handleRefineWithStyle}
-          placeholder="Describe logo reveal effects, particle colors, or motion directives..."
-        />
-
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-              <ImageIcon size={14} className="text-purple-400" />
-              Logo Asset
-            </h4>
-            {logoFileName && (
-              <span
-                className="text-[11px] text-gray-400 truncate max-w-[140px]"
-                title={logoFileName}
-              >
-                {logoFileName}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" /> AI Assistant
               </span>
-            )}
-          </div>
-          <input
-            type="file"
-            ref={logoInputRef}
-            onChange={handleLogoUpload}
-            accept=".svg,image/svg+xml"
-            className="hidden"
-          />
-          <div
-            onClick={() => logoInputRef.current?.click()}
-            className="flex flex-col items-center justify-center p-4 border border-dashed border-gray-800 rounded-lg bg-gray-950 hover:bg-gray-900 hover:border-purple-500 cursor-pointer transition-all gap-2 group"
-          >
-            {logoFileUrl ? (
-              <div className="flex flex-col items-center gap-2">
-                <img
-                  src={logoFileUrl}
-                  alt="Uploaded logo preview"
-                  className="h-12 w-auto max-w-[160px] object-contain drop-shadow-md"
-                />
-                <span className="text-[11px] text-purple-400 font-medium group-hover:underline">
-                  Change SVG logo
-                </span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-1.5 text-center">
-                <div className="h-9 w-9 rounded-full bg-gray-900 border border-purple-500/40 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform">
-                  <UploadSimple size={18} />
+            </div>
+            <div
+              className={`relative bg-[#1a1a1e] border border-[#27272a] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
+                hasExpanded
+                  ? "rounded-2xl p-3 flex flex-col gap-3 translate-y-1 shadow-xl shadow-violet-900/10"
+                  : "rounded-full p-2 flex items-center justify-between gap-1"
+              } ${shake ? "animate-shake border-red-500/50" : ""}`}
+            >
+              {!hasExpanded ? (
+                <>
+                  <input
+                    type="text"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handlePillSubmit();
+                      }
+                    }}
+                    placeholder="Describe logo reveal (e.g. glowing 3D spin, particle burst)..."
+                    className="flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
+                  />
+                  <button
+                    onClick={handlePillSubmit}
+                    disabled={isRefining}
+                    className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 flex-shrink-0"
+                  >
+                    {isRefining ? (
+                      <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-gray-400">
+                    <span>{pipelineState ? STATUS_LABELS[pipelineState.status] || pipelineState.status : "Ready"}</span>
+                    <span className="text-violet-400">{pipelineState ? `${Math.round((pipelineState.progress || 0) * 100)}%` : ""}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-[#18181b] rounded-full overflow-hidden border border-[#27272a]">
+                    <div
+                      className="h-full bg-violet-600 transition-all duration-500"
+                      style={{ width: `${(pipelineState?.progress || 0) * 100}%` }}
+                    />
+                  </div>
+                  {pipelineState?.error && <div className="text-xs text-red-400">{pipelineState.error}</div>}
+                  <div className="text-[10px] text-gray-500">{selectedStyle.label} • {logoFileName || "default logo"}</div>
                 </div>
-                <span className="text-xs font-semibold text-gray-300">
-                  Click or drop SVG vector logo
-                </span>
-                <span className="text-[10px] text-purple-400/90 font-medium">
-                  SVG Vector File Required (.svg)
-                </span>
-              </div>
+              )}
+            </div>
+            {hasExpanded && pipelineState?.status === "error" && (
+              <button onClick={() => setHasExpanded(false)} className="mt-2 text-xs text-violet-400 hover:text-violet-300 font-bold">
+                Dismiss
+              </button>
             )}
           </div>
-        </section>
 
-        <section className="flex flex-col gap-2.5">
-          <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-            <Sparkle size={14} className="text-purple-400" />
-            Animation Style
-          </h4>
-          <div className="flex flex-wrap gap-1.5">
-            {LOGO_STYLE_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                onClick={() => handleSelectStylePreset(preset)}
-                className={`flex items-center px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                  selectedStyle.id === preset.id
-                    ? "border-2 border-purple-500 text-purple-300 bg-transparent font-bold"
-                    : "border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-gray-300 bg-transparent"
-                }`}
-                title={preset.description}
+          <div
+            className={`transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
+              hasExpanded ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "max-h-[4000px] opacity-100 translate-y-0"
+            }`}
+          >
+            <div className="border-t border-[#27272a] p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                  Logo Asset
+                </h4>
+                {logoFileName && (
+                  <span className="text-[10px] text-gray-500 truncate max-w-[140px]" title={logoFileName}>
+                    {logoFileName}
+                  </span>
+                )}
+              </div>
+              <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept=".svg,image/svg+xml" className="hidden" />
+              <div
+                onClick={() => logoInputRef.current?.click()}
+                className="flex flex-col items-center justify-center p-4 border border-dashed border-[#27272a] rounded-xl bg-[#18181b] hover:bg-[#1a1a1e] hover:border-violet-500/50 cursor-pointer transition-all gap-2 group"
               >
-                <span>{preset.label}</span>
-              </button>
-            ))}
-          </div>
-          {selectedStyle && (
-            <p className="text-[10px] text-gray-500 leading-relaxed pl-1">
-              {selectedStyle.description}
-            </p>
-          )}
-        </section>
+                {logoFileUrl ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <img src={logoFileUrl} alt="Uploaded logo preview" className="h-12 w-auto max-w-[160px] object-contain" />
+                    <span className="text-[11px] text-violet-400 font-medium group-hover:underline">Change SVG</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5 text-center">
+                    <div className="h-9 w-9 rounded-xl bg-[#1a1a1e] border border-[#27272a] flex items-center justify-center text-violet-400 group-hover:scale-105 transition-transform">
+                      <UploadSimple size={18} />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-300">Click or drop SVG vector</span>
+                    <span className="text-[10px] text-gray-500">SVG required</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-        <BrandStylingPanel
-          fonts={fonts}
-          setFonts={setFonts}
-          swatches={swatches}
-          setSwatches={setSwatches}
-          availableFonts={availableFonts}
-          bgSelection={bgSelection}
-          onSelectBackground={setBgSelection}
-        />
+            <div className="border-t border-[#27272a] p-4 space-y-2.5">
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                <Sparkle size={12} className="text-violet-400" />
+                Animation Style
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {LOGO_STYLE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleSelectStylePreset(preset)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                      selectedStyle.id === preset.id
+                        ? "bg-violet-600 text-white border border-violet-500"
+                        : "bg-[#18181b] border border-[#27272a] text-gray-400 hover:border-gray-700 hover:text-gray-300"
+                    }`}
+                    title={preset.description}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-500 leading-relaxed">{selectedStyle.description}</p>
+            </div>
+
+            <DesignTokensPanel
+              fonts={fonts}
+              setFonts={setFonts}
+              swatches={swatches}
+              setSwatches={setSwatches}
+              availableFonts={availableFonts}
+            />
+          </div>
+        </div>
       </ResizableSidebar>
 
-      <main className="flex-grow flex flex-col p-6 gap-5 overflow-y-auto bg-gray-950 justify-between h-full">
+      <main className="flex-1 flex flex-col bg-[#0a0c14] relative overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0 p-8">
         <PreviewWindow title="Logo Reveal Canvas">
           <style>{`
             @keyframes logo-3d-spin {
@@ -570,64 +647,27 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             )}
           </div>
         </PreviewWindow>
-
-        <div className="w-full">
-          <CustomInstructionsPanel
-            instructions={instructions}
-            setInstructions={setInstructions}
-            isRefining={isRefining}
-            handleRefinePrompt={handleRefineWithStyle}
-            placeholder="Describe your logo animation (e.g., 3D spin, glowing particle reveal, stroke draw-in)..."
-          />
         </div>
 
-        <footer className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl p-4 gap-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-transparent text-purple-300 border border-purple-500/50">
-              5s @ 30 FPS
-            </span>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium bg-transparent text-gray-400 border border-gray-800">
-              {selectedStyle.label}
-            </span>
+        <footer className="flex items-center justify-between bg-[#18181b] border-t border-[#27272a] px-8 py-3 gap-4">
+          <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500">
+            <span className="px-2.5 py-1 rounded-md border border-[#27272a] bg-[#121212] text-gray-400">5s @ 30 FPS</span>
+            <span className="px-2.5 py-1 rounded-md border border-[#27272a] bg-[#121212] text-gray-500">{selectedStyle.label}</span>
           </div>
 
-          <div className="flex items-center gap-4 flex-grow justify-end">
-            {pipelineState && pipelineState.status !== "idle" && (
-              <div className="flex flex-col gap-1 w-52">
-                <div className="flex justify-between text-[10px] text-gray-400">
-                  <span>
-                    {STATUS_LABELS[pipelineState.status] ||
-                      pipelineState.status}
-                  </span>
-                  <span>
-                    {Math.round((pipelineState.progress || 0) * 100)}%
-                  </span>
-                </div>
-                <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-500 to-violet-400 transition-all duration-500 ease-out"
-                    style={{
-                      width: `${(pipelineState.progress || 0) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={handleGenerateClick}
-              disabled={
-                !!pipelineState &&
-                pipelineState.status !== "done" &&
-                pipelineState.status !== "error" &&
-                pipelineState.status !== "idle"
-              }
-              className="premium-button-primary flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-semibold text-sm shadow-lg shadow-purple-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Sparkle size={16} className="text-purple-200" />
-              <span>Generate</span>
-            </button>
-          </div>
+          <button
+            onClick={handleGenerateClick}
+            disabled={
+              !!pipelineState &&
+              pipelineState.status !== "done" &&
+              pipelineState.status !== "error" &&
+              pipelineState.status !== "idle"
+            }
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-lg shadow-violet-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Sparkle size={14} className="text-white" weight="fill" />
+            Generate
+          </button>
         </footer>
       </main>
     </div>
