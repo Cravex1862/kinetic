@@ -24,3 +24,4 @@ testing/
 
 # Research repos (cloned externally, not part of source)
 research/
+.playwright-mcp/
