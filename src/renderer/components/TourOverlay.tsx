@@ -47,26 +47,34 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ steps, currentStep, onNext, o
     });
   }, [step]);
 
-  // Measure on step change, with slight delay for page transitions
+  // Measure after paint, not fixed timeout
   useEffect(() => {
     setVisible(false);
     setRect(null);
-    const t1 = setTimeout(() => {
-      measureTarget();
-    }, 350);
-    const t2 = setTimeout(() => {
-      setVisible(true);
-    }, 450);
+    let raf1 = 0, raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        measureTarget();
+        requestAnimationFrame(() => setVisible(true));
+      });
+    });
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
     };
   }, [currentStep, measureTarget]);
 
-  // Re-measure on window resize
+  // Re-measure on resize + element changes
   useEffect(() => {
+    const ro = new ResizeObserver(() => measureTarget());
+    ro.observe(document.documentElement);
     window.addEventListener('resize', measureTarget);
-    return () => window.removeEventListener('resize', measureTarget);
+    window.addEventListener('scroll', measureTarget, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measureTarget);
+      window.removeEventListener('scroll', measureTarget, true);
+    };
   }, [measureTarget]);
 
   if (!step) return null;

@@ -305,6 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             className="w-full max-w-3xl space-y-4"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
+              if ((e.target as HTMLElement).closest('[data-folder-drop]')) return;
               const projectPath = e.dataTransfer.getData('projectPath');
               if (projectPath) {
                 onMoveProject(projectPath, null);
@@ -347,9 +348,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                             return (
                               <div
                                 key={index}
+                                data-folder-drop
                                 className={`rounded-xl border bg-gray-900/10 p-3 transition-colors ${colorInfo.border} hover:border-purple-500/30`}
-                                onDragOver={(e) => e.preventDefault()}
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                 onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   const projectPath = e.dataTransfer.getData('projectPath');
                                   if (projectPath) {
                                     onMoveProject(projectPath, f.path);
