@@ -342,7 +342,6 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
               <span className="text-[11px] text-gray-500">/ SaaS Demo</span>
             </div>
           </div>
-          <span className="text-[10px] font-medium text-gray-500 bg-[#18181b] px-2 py-0.5 rounded border border-[#27272a]">v0.4.2</span>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -413,11 +412,6 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
             <DesignTokensPanel fonts={fonts} setFonts={setFonts} swatches={swatches} setSwatches={setSwatches} availableFonts={availableFonts} scannedFonts={scannedExports?.fonts || []} />
 
             <div className="border-t border-[#27272a] p-4 space-y-4">
-              <div className="flex items-center gap-2"><Sparkle size={12} className="text-violet-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Repo Scan</h3></div>
-              <RepoScanStage repoLink={repoLink} setRepoLink={setRepoLink} scanning={scanning} selectedRepoPath={selectedRepoPath} scannedExports={scannedExports} packStats={repoPack} onScanGit={handleCloneAndScan} onSelectFolder={handleSelectFolder} onViewReport={() => setShowDetailedPanel(true)} onSkip={handleSkipRepoScan} onApprove={scaffold.approveCurrentStage} />
-            </div>
-
-            <div className="border-t border-[#27272a] p-4 space-y-4">
               <div className="flex items-center gap-2"><MusicNotes size={14} className="text-gray-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Voiceover</h3></div>
               <VoiceoverAudioField mode={voiceoverMode} onModeChange={setVoiceoverMode} scriptText={narration} onScriptTextChange={setNarration} audioFile={voiceoverAudioFile} onAudioFileChange={handleVoiceoverAudioChange} isTranscribing={isTranscribingVoiceover} />
             </div>
@@ -425,6 +419,18 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
             <div className="border-t border-[#27272a] p-4 space-y-4">
               <div className="flex items-center gap-2"><MusicNotes size={14} className="text-gray-400" /><h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Soundtrack</h3></div>
               <AudioUploadField audioFile={audioFile} beatCount={beatFrames.length} isAnalyzing={isAnalyzingAudio} onSelectAudio={handleSelectAudio} />
+            </div>
+
+            <div className="border-t border-[#27272a] p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Assets</span>
+                </div>
+                <button onClick={() => assetInputRef.current?.click()} className="p-1 text-violet-400 hover:bg-violet-400/10 rounded">
+                  <span className="text-[11px] font-bold">+</span>
+                </button>
+                <input type="file" multiple ref={assetInputRef} onChange={handleAssetUpload} className="hidden" />
+              </div>
             </div>
           </div>
         </div>
@@ -527,16 +533,6 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
               </div>
             </div>
           </PreviewWindow>
-        </div>
-
-        <div className="px-8 pb-3 flex items-center justify-between gap-4">
-          <button onClick={() => assetInputRef.current?.click()} className="flex items-center gap-2 text-[11px] text-gray-500 hover:text-white transition-colors">
-            <UploadSimple size={14} /> Upload assets
-          </button>
-          <input type="file" multiple ref={assetInputRef} onChange={handleAssetUpload} className="hidden" />
-          <button onClick={handleGenerate} disabled={!!pipelineState && pipelineState.status !== "idle" && pipelineState.status !== "done" && pipelineState.status !== "error" || isGenerating || scanning} className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-lg shadow-violet-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-            {isGenerating ? "Generating..." : "Generate"}
-          </button>
         </div>
 
         {pipelineState && pipelineState.status !== "idle" ? (

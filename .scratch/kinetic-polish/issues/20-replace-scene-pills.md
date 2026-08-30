@@ -1,0 +1,5 @@
+Status: completed
+Title: Replace scene pills (scene1·2s) with intentional timeline affordance
+Description: Image 7 shows `scene1·2s  scene2·2s  scene3·2s` pill strip — likely the timeline/scene selector after generation. User dislikes the pills and wants a different, more intentional method. Generic numbered pills (01/02/03) are template defaults per frontend-design; they should encode real information about content, not just decorate.
+Files: src/experimental/studio/MultiTrackTimeline.tsx, src/renderer/scenes/timeline.ts, src/renderer/components/TimelineComment.tsx, src/renderer/scenes/VideoComposition.tsx
+Fix: Per frontend-design skill: brainstorm layout concept + signature. Replace pills with a quiet, structured timeline — e.g. horizontal track with thumbnails + duration labels, or labeled strips with eyebrow + purpose text from SceneBlueprint.purpose. Use numbering only if order carries meaning; otherwise use scene purpose titles. Apply spring motion on selection, keep everything around it quiet.

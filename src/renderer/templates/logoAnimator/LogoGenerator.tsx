@@ -281,7 +281,6 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
               <span className="text-[11px] text-gray-500">/ Logo Animator</span>
             </div>
           </div>
-          <span className="text-[10px] font-medium text-gray-500 bg-[#18181b] px-2 py-0.5 rounded border border-[#27272a]">v0.4.2</span>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -652,25 +651,10 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
         </PreviewWindow>
         </div>
 
-        <footer className="flex items-center justify-between bg-[#18181b] border-t border-[#27272a] px-8 py-3 gap-4">
-          <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500">
-            <span className="px-2.5 py-1 rounded-md border border-[#27272a] bg-[#121212] text-gray-400">5s @ 30 FPS</span>
-            <span className="px-2.5 py-1 rounded-md border border-[#27272a] bg-[#121212] text-gray-500">{selectedStyle.label}</span>
-          </div>
-
-          <button
-            onClick={handleGenerateClick}
-            disabled={
-              !!pipelineState &&
-              pipelineState.status !== "done" &&
-              pipelineState.status !== "error" &&
-              pipelineState.status !== "idle"
-            }
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-lg shadow-violet-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <Sparkle size={14} className="text-white" weight="fill" />
-            Generate
-          </button>
+        <footer className="flex items-center justify-center bg-[#18181b] border-t border-[#27272a] px-8 py-3 gap-2">
+          <span className="px-2.5 py-1 rounded-md border border-[#27272a] bg-[#121212] text-gray-400 text-[10px] font-medium">5s @ 30 FPS</span>
+          <span className="px-2.5 py-1 rounded-md border border-[#27272a] bg-[#121212] text-gray-500 text-[10px] font-medium">{selectedStyle.label}</span>
+          <span className="ml-2 text-[10px] text-gray-600">Use the pill above to generate</span>
         </footer>
       </main>
     </div>

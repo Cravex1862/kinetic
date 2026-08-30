@@ -128,7 +128,6 @@ const UiUxGenerator: React.FC<UiUxGeneratorProps> = ({
               <span className="text-[11px] text-gray-500">/ UI/UX Walkthrough</span>
             </div>
           </div>
-          <span className="text-[10px] font-medium text-gray-500 bg-[#18181b] px-2 py-0.5 rounded border border-[#27272a]">v0.4.2</span>
         </div>
 
         <div className="flex-1 overflow-y-auto">

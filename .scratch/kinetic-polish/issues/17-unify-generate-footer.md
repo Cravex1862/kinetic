@@ -1,0 +1,5 @@
+Status: completed
+Title: Generate footer inconsistent across templates
+Description: SaaS and Logo have a bottom bar with `Upload assets` (left) and purple `Generate` button (right) (Image 4). Basic and UI/UX Walkthrough lack this footer — they rely only on the pill's arrow or no footer at all. Inconsistent CTAs confuse flow: users expect same Generate affordance everywhere. Previous pill morph already triggers generation via pill, so footer may be redundant.
+Files: src/renderer/templates/saasVideoDemo/SaaSGenerator.tsx:484, src/renderer/templates/logoAnimator/LogoGenerator.tsx:652, src/renderer/templates/basicAnimation/BasicGenerator.tsx:434, src/renderer/templates/uiUxWalkthrough/UiUxGenerator.tsx:247
+Fix: Decide per frontend-design: either add unified footer to Basic/UIUX matching SaaS/Logo (same spacing, border-t, violet button, disabled states) OR remove footer from SaaS/Logo and rely solely on pill morph (since we made pill the sole Generate trigger). Pick one intentional pattern and apply to all 4. Recommend keep footer only where pipeline expects repo context, otherwise remove.

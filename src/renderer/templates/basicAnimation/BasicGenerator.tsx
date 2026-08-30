@@ -13,6 +13,7 @@ import { MOCK_TOUR_PROJECT } from "@/renderer/constants";
 import { useGeneratorScaffold } from "../generatorScaffold";
 import { AudioUploadField } from "@/renderer/components/AudioUploadField";
 import { DesignTokensPanel } from "@/renderer/components/DesignTokensPanel";
+import { VoiceoverAudioField } from "@/renderer/components/VoiceoverAudioField";
 import { MusicNotes, Stack, File } from "@phosphor-icons/react";
 import { AIsidebar } from "@/renderer/components/AIsidebar";
 
@@ -198,9 +199,6 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
               <span className="text-sm tracking-tight text-white">kinetic</span>
             </div>
           </div>
-          <span className="text-[10px] font-medium text-gray-500 bg-[#18181b] px-2 py-0.5 rounded border border-[#27272a]">
-            v0.4.2
-          </span>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -269,6 +267,22 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
             }`}
           >
             <DesignTokensPanel fonts={fonts} setFonts={setFonts} swatches={swatches} setSwatches={setSwatches} availableFonts={availableFonts} />
+
+            <div className="border-t border-[#27272a] p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <MusicNotes size={14} className="text-gray-400" />
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Voiceover</h3>
+              </div>
+              <VoiceoverAudioField
+                mode={voiceoverMode}
+                onModeChange={setVoiceoverMode}
+                scriptText={narration}
+                onScriptTextChange={setNarration}
+                audioFile={voiceoverAudioFile}
+                onAudioFileChange={handleVoiceoverAudioChange}
+                isTranscribing={isTranscribingVoiceover}
+              />
+            </div>
 
             <div className="border-t border-[#27272a] p-4 space-y-4">
               <div className="flex items-center gap-2">

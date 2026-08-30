@@ -242,8 +242,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={key}
                         onClick={() => setProvider(key)}
                         className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${provider === key
-                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
-                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-900/20'
+                          : 'border-[#27272a] bg-[#18181b] text-gray-500 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {key === 'openai' && (
@@ -364,8 +364,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                       <button
                         onClick={() => setUseCustomModel(!useCustomModel)}
                         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${useCustomModel
-                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
-                          : 'border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                          ? 'bg-violet-600 border-violet-600 text-white shadow'
+                          : 'border-[#27272a] bg-[#18181b] text-gray-500 hover:border-gray-700 hover:text-gray-300'
                           }`}
                         aria-label="Toggle custom model input"
                       >
@@ -427,8 +427,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setResolution(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${resolution === val
-                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
-                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-900/20'
+                          : 'border-[#27272a] bg-[#18181b] text-gray-500 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {val === '4k' && '4K (3840x2160)'}
@@ -449,8 +449,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setAspectRatio(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${aspectRatio === val
-                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
-                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-900/20'
+                          : 'border-[#27272a] bg-[#18181b] text-gray-500 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {val === '16:9' && '16:9 Horizontal (YouTube, Demos)'}
@@ -469,8 +469,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack, customAlert, customConfirm 
                         key={val}
                         onClick={() => setFps(val)}
                         className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all text-center ${fps === val
-                          ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
-                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:border-gray-700 hover:text-gray-300'
+                          ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-900/20'
+                          : 'border-[#27272a] bg-[#18181b] text-gray-500 hover:border-gray-700 hover:text-gray-300'
                           }`}
                       >
                         {val} Frames Per Second

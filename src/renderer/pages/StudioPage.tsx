@@ -240,46 +240,6 @@ export const StudioPage: React.FC<StudioPageProps> = ({
 
     return (
         <div className="flex h-screen w-full overflow-hidden bg-[#07070d] text-white">
-            <aside className="flex w-[360px] shrink-0 flex-col border-r border-gray-900 bg-[#0b0b14] p-3">
-                <div className="min-h-0 grow">
-                    <AIsidebar
-                        initialStates={[]}
-                        instructions={instructions}
-                        setInstructions={setInstructions}
-                        placeholder={selectedScene !== null ? `Describe fix for ${scenesList[selectedScene].id}...` : "Describe the changes you want to make..."}
-                        StatusProps={StatusProps}
-                        state={pipelineState || ({ status: "idle", progress: 0 } as PipelineState)}
-                    />
-                </div>
-                <button
-                    onClick={handleRun}
-                    disabled={isRunning || !instructions.trim()}
-                    className="mt-2 flex h-9 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-600 text-xs font-bold text-white shadow-[0_0_18px_rgba(139,92,246,0.35)] transition-all hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                    <svg
-                        className={`h-3.5 w-3.5 ${isRunning ? "animate-spin" : ""}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                    </svg>
-                    {isRunning ? "Working..." : selectedScene !== null ? `Fix ${scenesList[selectedScene].id}` : "Edit Video"}
-                </button>
-                {selectedScene !== null && (
-                    <button
-                        onClick={() => setSelectedScene(null)}
-                        className="mt-1 w-full text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
-                    >
-                        Clear selection — edit whole video
-                    </button>
-                )}
-            </aside>
-
             <main className="flex min-w-0 flex-1 flex-col">
                 <header className="flex h-12 shrink-0 items-center gap-3 border-b border-gray-900 px-4">
                     <button
@@ -324,20 +284,31 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                     </div>
                 </div>
 
-                <div className="px-6 pb-2">
-                    <div className="flex items-center gap-2 overflow-x-auto">
-                        {scenesList.map((s, idx) => (
-                            <button
-                                key={s.id}
-                                onClick={() => setSelectedScene(idx)}
-                                className={`shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-semibold transition-colors ${selectedScene === idx ? "bg-violet-600 border-violet-500 text-white shadow-[0_0_10px_rgba(124,58,237,0.4)]" : "bg-[#18181b] border-[#27272a] text-gray-400 hover:text-white hover:border-gray-700"}`}
-                                title={s.purpose}
-                            >
-                                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedScene === idx ? "white" : "#8b5cf6" }} />
-                                {s.id} · {Math.round((s.durationInFrames || 50) / 30)}s
-                            </button>
-                        ))}
-                        <span className="ml-2 text-[10px] text-gray-600 whitespace-nowrap">Click a scene to fix just that part</span>
+                <div className="px-6 pb-3">
+                    <div className="rounded-xl border border-[#27272a] bg-[#0b0b14] p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Timeline — {scenesList.length} scenes</span>
+                            <span className="text-[10px] font-mono text-gray-600">{formatTime(durationInFrames)} total</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                            {scenesList.map((s, idx) => {
+                                const pct = durationInFrames > 0 ? (s.durationInFrames / durationInFrames) * 100 : 0;
+                                const isActive = selectedScene === idx;
+                                return (
+                                    <button
+                                        key={s.id}
+                                        onClick={() => setSelectedScene(isActive ? null : idx)}
+                                        className={`flex-1 flex flex-col gap-1 px-3 py-2.5 rounded-lg border text-left transition-all ${isActive ? "bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-900/20" : "bg-[#18181b] border-[#27272a] hover:border-gray-700 hover:bg-[#1a1a1e] text-gray-400"}`}
+                                        style={{ flexBasis: `${pct}%` }}
+                                        title={s.purpose}
+                                    >
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isActive ? "text-violet-200" : "text-gray-500"}`}>{s.id}</span>
+                                        <span className={`text-xs font-semibold leading-tight truncate ${isActive ? "text-white" : "text-gray-300"}`}>{s.purpose.slice(0, 36)}</span>
+                                        <span className={`text-[10px] font-mono ${isActive ? "text-violet-200" : "text-gray-500"}`}>{Math.round((s.durationInFrames || 50) / 30)}s · {s.durationInFrames}f</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
