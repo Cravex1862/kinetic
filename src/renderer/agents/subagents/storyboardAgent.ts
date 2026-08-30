@@ -114,7 +114,8 @@ export async function runStoryboardClientInterview(
     false,
   );
 
-  const rawOutput = response.content || response.error || "";
+  if (response.error) throw new Error(response.error);
+  const rawOutput = response.content || "";
   const parsed = safeParseJson<{ questions?: ClientInterviewQuestion[] }>(
     rawOutput,
     {},
@@ -287,6 +288,7 @@ Create the overarching master video plan now. Valid JSON ONLY.`;
     masterUserPrompt,
     false,
   );
+  if (masterRes.error) throw new Error(masterRes.error);
   const masterParsed = safeParseJson<any>(masterRes.content || "", {});
 
   const sceneSummaries =
@@ -335,6 +337,7 @@ Detail EVERYTHING for this specific scene now. Valid JSON ONLY.`;
       subagentUserPrompt,
       false,
     );
+    if (subRes.error) throw new Error(subRes.error);
     const subParsed = safeParseJson<DetailedPerSceneStoryboard>(
       subRes.content || "",
       {

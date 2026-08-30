@@ -77,6 +77,7 @@ export interface PipelineState {
   sceneCodes?: SceneCode[];
   assembled?: string;
   finalCode?: string;
+  designTokens?: DesignTokens;
 }
 
 export interface PipelineController {

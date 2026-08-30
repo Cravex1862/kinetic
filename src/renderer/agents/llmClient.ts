@@ -45,17 +45,45 @@ abstract class BaseLLMClient implements ILLMClient {
     return this.callWithParts(systemPrompt, parts);
   }
 
+  private formatError(status: number, body: string): string {
+    const snippet = body.slice(0, 400);
+    if (status === 401) return `401 Unauthorized: Invalid API key for ${this.config.provider}. Check Settings. ${snippet}`;
+    if (status === 403) return `403 Forbidden: ${this.config.provider} rejected the request. ${snippet}`;
+    if (status === 429) return `429 Rate limited by ${this.config.provider}. The model is busy — wait 30s or switch model/provider in Settings. ${snippet}`;
+    if (status === 402) return `402 Payment required: ${this.config.provider} quota exceeded. ${snippet}`;
+    if (status >= 500) return `${status} Server error from ${this.config.provider}. Try again. ${snippet}`;
+    return `${status}: ${snippet}`;
+  }
+
+  private formatNetworkError(err: unknown): string {
+    const msg = err instanceof Error ? err.message : String(err);
+    const lower = msg.toLowerCase();
+    const isLocal = this.config.provider === 'ollama' || this.config.provider === 'lmstudio' || this.config.provider === 'local';
+    if (lower.includes('failed to fetch') || lower.includes('networkerror') || lower.includes('econnrefused') || lower.includes('load failed')) {
+      if (this.config.provider === 'ollama') return `Ollama not reachable at ${this.getUrl()}. Is Ollama installed and running? Try: ollama serve. (${msg})`;
+      if (this.config.provider === 'lmstudio') return `LM Studio not reachable at ${this.getUrl()}. Is the local server turned on? (${msg})`;
+      if (isLocal) return `Local model not reachable at ${this.getUrl()}. Check baseUrl and that the server is running. (${msg})`;
+      return `Network error: could not reach ${this.config.provider}. Check internet / firewall. (${msg})`;
+    }
+    if (lower.includes('aborted') || lower.includes('timeout')) return `Request timed out for ${this.config.provider}. The model may be overloaded — try again or switch provider. (${msg})`;
+    return msg;
+  }
+
   private async callWithParts(systemPrompt: string, parts: LLMPart[]): Promise<LLMResponse> {
     const maxRetries = this.overrides.maxRetries ?? 6;
     let retryDelay = 2000;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
       try {
         const response = await fetch(this.getUrl(), {
           method: 'POST',
           headers: this.getHeaders(),
           body: JSON.stringify(this.buildRequestBody(systemPrompt, parts)),
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
 
         if (!response.ok) {
           if (response.status === 429 && attempt < maxRetries) {
@@ -65,24 +93,28 @@ abstract class BaseLLMClient implements ILLMClient {
             continue;
           }
           const body = await response.text();
-          return { content: '', error: `${response.status}: ${body}` };
+          return { content: '', error: this.formatError(response.status, body) };
         }
 
         const raw = await response.json();
         const content = this.extractContent(raw);
+        if (!content) return { content: '', error: `Empty response from ${this.config.provider}. Model returned no content — try a different model.` };
         return { content };
       } catch (err: unknown) {
-        if (attempt < maxRetries) {
-          console.warn(`Network fetch failed. Retrying attempt ${attempt}/${maxRetries} in ${retryDelay}ms...`);
+        clearTimeout(timeout);
+        const isAbort = err instanceof Error && err.name === 'AbortError';
+        const human = isAbort ? `Request timed out for ${this.config.provider} (30s).` : this.formatNetworkError(err);
+        if (attempt < maxRetries && !isAbort) {
+          console.warn(`Network fetch failed (${human}). Retrying attempt ${attempt}/${maxRetries} in ${retryDelay}ms...`);
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
           retryDelay = Math.min(retryDelay * 2, 15000);
           continue;
         }
-        return { content: '', error: err instanceof Error ? err.message : String(err) };
+        return { content: '', error: human };
       }
     }
 
-    return { content: '', error: 'Max API retry attempts exceeded due to rate limits.' };
+    return { content: '', error: `Rate limited by ${this.config.provider} — max retries exceeded. Wait 30s or switch model/provider.` };
   }
 }
 

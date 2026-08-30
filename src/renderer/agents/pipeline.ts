@@ -244,7 +244,6 @@ export async function runTSXPipeline(
 
   let designTokens: DesignTokens;
   try {
-    // Check if the prompt references a known brand (Stripe, Vercel, etc.)
     const siteKey = detectSiteKeyFromPrompt(prompt);
     let seedColors: Partial<DesignTokens> | undefined;
 
@@ -264,25 +263,31 @@ export async function runTSXPipeline(
 
     designTokens = await runDesignAgent(config, prompt, seedColors);
     console.log(" [Manager] Design tokens:", designTokens);
+    onState({ status: "designing", progress: 0.15, designTokens } as PipelineState);
   } catch (err) {
-    console.warn("[Manager] Design Agent threw, using defaults:", err);
-    designTokens = {
-      fontFamily: "Inter",
-      primaryColor: "#6366f1",
-      backgroundColor: "#09090b",
-      accentColor: "#a78bfa",
-      textColor: "#f4f4f5",
-      surfaceColor: "#18181b",
-      theme: "dark",
-    };
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[Manager] Design Agent failed:", msg);
+    onState({
+      status: "error",
+      progress: 0.15,
+      error: msg,
+    });
+    return "";
   }
 
   await waitForApproval();
 
   // ── Step 2.1 : Interview ──────────────────────────
   console.log("[Manager] Conducting Interview");
-  const { questions } = await runStoryboardClientInterview(config, prompt);
-  onState({ status: "interviewing", progress: 0.2, questions });
+  try {
+    const res = await runStoryboardClientInterview(config, prompt);
+    onState({ status: "interviewing", progress: 0.2, questions: res.questions });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[Manager] Interview Agent failed:", msg);
+    onState({ status: "error", progress: 0.2, error: msg });
+    return "";
+  }
 
   const approvedInterviewAnswers: ClientInterViewAnswers[] =
     ((await waitForApproval()) as ClientInterViewAnswers[]) || [];
@@ -306,6 +311,11 @@ export async function runTSXPipeline(
       ),
     );
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("not reachable") || msg.includes("Rate limited") || msg.includes("Unauthorized") || msg.includes("timed out")) {
+      onState({ status: "error", progress: 0.3, error: msg });
+      return "";
+    }
     console.warn("[Manager] Storyboard Agent threw, using defaults:", err);
     blueprints = [
       {

@@ -54,8 +54,14 @@ Synthesize the final JSON design tokens now.`;
 
     const response = await callLLM(config, DESIGN_AGENT_SYSTEM, userPrompt, true);
 
-    const rawOutput = response.content || response.error || '';
+    if (response.error) {
+        throw new Error(response.error);
+    }
+    const rawOutput = response.content || '';
     const parsed = safeParseJson<Partial<DesignTokens>>(rawOutput, {});
+    if (!rawOutput || Object.keys(parsed).length === 0) {
+        throw new Error(`Design AI returned empty response from ${config.provider}. Try again or switch model.`);
+    }
 
     return {
         fontFamily: parsed.fontFamily || DEFAULT_TOKENS.fontFamily,
