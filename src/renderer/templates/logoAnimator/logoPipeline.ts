@@ -42,24 +42,6 @@ export function isSvgFile(fileName: string): boolean {
   return fileName.toLowerCase().endsWith('.svg');
 }
 
-// ─── File Reading Helpers ────────────────────────────────────
-
-async function blobUrlToBase64(blobUrl: string): Promise<{ base64: string; mimeType: string }> {
-  const response = await fetch(blobUrl);
-  const blob = await response.blob();
-  const mimeType = blob.type || 'image/png';
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      const base64 = dataUrl.split(',')[1];
-      resolve({ base64, mimeType });
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
 async function readSvgTextFromBlobUrl(blobUrl: string): Promise<string> {
   const response = await fetch(blobUrl);
   return await response.text();
@@ -79,41 +61,25 @@ async function runLogoAnimatorAgent(
   config: AgentConfig,
   prompt: string,
   stylePreset: LogoStylePreset,
-  logoData: { svgText?: string; imageBase64?: string; mimeType?: string; fileName: string },
+  logoData: { svgText?: string; fileName: string },
   brandConfig: LogoBrandConfig
 ): Promise<{ tsxCode?: string; error?: string }> {
+  if (!isSvgFile(logoData.fileName)) {
+    return { error: `Only SVG files are supported. Received: ${logoData.fileName}` };
+  }
+  if (!logoData.svgText) {
+    return { error: "SVG source is empty. Please upload a valid .svg file." };
+  }
 
-  const isSvg = isSvgFile(logoData.fileName);
-  const multimodal = isMultimodalCapable(config.provider, config.model);
-
-  // Build the logo context section based on what data is available
-  let logoSection: string;
-  if (isSvg && logoData.svgText) {
-    logoSection = `
-LOGO FORMAT: SVG (inline source code provided below)
+  const logoSection = `
+LOGO FORMAT: SVG (inline source code provided below) — SVG ONLY MODE
 You MUST embed this SVG markup directly inline in your component JSX and animate individual paths, groups, circles, rects, etc.
 Do NOT use <Img> for SVG logos — render the SVG elements directly so you can animate each path.
 
 SVG SOURCE:
 ${logoData.svgText}`;
-  } else if (multimodal && logoData.imageBase64) {
-    logoSection = `
-LOGO FORMAT: Raster image (${logoData.fileName})
-An image of the logo has been attached to this message. Analyze its shape, colors, and composition.
-Render the logo using a base64 data URL embedded directly in an <img> tag:
-<img src="data:${logoData.mimeType};base64,${logoData.imageBase64.substring(0, 40)}..." />
-IMPORTANT: The full base64 string for the logo src is:
-data:${logoData.mimeType};base64,${logoData.imageBase64}`;
-  } else {
-    logoSection = `
-LOGO FORMAT: Raster image (${logoData.fileName}) — no image data available (text-only model)
-Create a stylized text-based logo placeholder using the project title or brand name.
-Style it with gradient text, glow effects, and premium typography using the brand fonts.`;
-  }
 
-  // Vector morphing guidance — only relevant when real SVG path data is available
-  const flubberSection = isSvg
-    ? `
+  const flubberSection = `
 ═══════════════════════════════════════════════════
 VECTOR MORPH TOOLBOX (flubber — PRE-IMPORTED for this SVG logo):
 ═══════════════════════════════════════════════════
@@ -137,8 +103,7 @@ KEY HELPERS:
   - flubber.separate(compoundPathD) — split a compound path into individual shapes before morphing
 
 RULES: morph progress MUST stay within [0, 1] (always clamp); both path strings must come from the SVG SOURCE above
-(or primitives created via toCircle/toRectangle); use maxSegmentLength: 2 for smooth curves; memoize interpolators.`
-    : '';
+(or primitives created via toCircle/toRectangle); use maxSegmentLength: 2 for smooth curves; memoize interpolators.`;
 
   // Compact brand config for the prompt
   const fontSummary = Object.entries(brandConfig.fonts)
@@ -230,20 +195,7 @@ OUTPUT: Return ONLY the raw TSX component code. No markdown fences, no explanati
     ? `Animation prompt from user: "${prompt}"\n\nGenerate a complete 5-second (150-frame) logo animation based strictly on the user's prompt.`
     : `Animation prompt from user: "${prompt}"\n\nGenerate the complete, production-quality Scene1 component for a 5-second (150-frame) "${stylePreset.label}" logo reveal animation. Make it cinematic.`;
 
-  // Route to multimodal or text-only call
-  if (!isSvg && multimodal && logoData.imageBase64 && logoData.mimeType) {
-    console.log('[LogoPipeline] Using multimodal call — sending logo image to AI');
-    const client = LLMClientFactory.create(config, { temperature: 0.4 });
-    const response = await client.callMultimodal(systemPrompt, [
-      { type: 'text', text: userPrompt },
-      { type: 'image', mimeType: logoData.mimeType, base64: logoData.imageBase64 },
-    ]);
-    if (response.error) return { error: response.error };
-    const cleaned = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
-    return { tsxCode: cleaned };
-  }
-
-  console.log(`[LogoPipeline] Using text-only call — ${isSvg ? 'SVG source embedded in prompt' : 'no image data'}`);
+  console.log('[LogoPipeline] SVG-only mode — embedding SVG source in prompt');
   const response = await callLLM(config, systemPrompt, userPrompt);
   if (response.error) return { error: response.error };
   const cleaned = response.content.replace(/```tsx/gi, '').replace(/```/gi, '').trim();
@@ -339,29 +291,37 @@ export async function runLogoPipeline(input: LogoPipelineInput): Promise<string>
   onState({ status: 'storyboarding', progress: 0.05 });
   console.log(`[LogoPipeline] Starting logo pipeline — style: "${stylePreset.label}", file: "${logoFileName}"`);
 
-  const isSvg = isSvgFile(logoFileName);
-  const multimodal = isMultimodalCapable(config.provider, config.model);
+  if (logoFileName && !isSvgFile(logoFileName)) {
+    onState({ status: 'error', progress: 0.05, error: `Only SVG files are supported. You uploaded: ${logoFileName}` });
+    return '';
+  }
 
-  const logoData: { svgText?: string; imageBase64?: string; mimeType?: string; fileName: string } = {
-    fileName: logoFileName
+  const logoData: { svgText?: string; fileName: string } = {
+    fileName: logoFileName || 'logo.svg'
   };
 
   if (logoFileUrl) {
     try {
-      if (isSvg) {
-        logoData.svgText = await readSvgTextFromBlobUrl(logoFileUrl);
-        console.log(`[LogoPipeline] Read SVG source — ${logoData.svgText.length} chars`);
-      } else if (multimodal) {
-        const { base64, mimeType } = await blobUrlToBase64(logoFileUrl);
-        logoData.imageBase64 = base64;
-        logoData.mimeType = mimeType;
-        console.log(`[LogoPipeline] Converted logo to base64 — ${base64.length} chars, type: ${mimeType}`);
-      } else {
-        console.warn('[LogoPipeline] Non-SVG logo with non-multimodal model — AI will use text-only fallback');
-      }
+      logoData.svgText = await readSvgTextFromBlobUrl(logoFileUrl);
+      console.log(`[LogoPipeline] Read SVG source — ${logoData.svgText.length} chars`);
     } catch (err) {
-      console.error('[LogoPipeline] Failed to read logo file:', err);
+      console.error('[LogoPipeline] Failed to read SVG file:', err);
+      onState({ status: 'error', progress: 0.05, error: 'Failed to read SVG file. Ensure it is a valid .svg.' });
+      return '';
     }
+  } else {
+    console.warn('[LogoPipeline] No SVG uploaded — using default kinetic logo');
+    try {
+      const fallbackUrl = new URL('../../../../kinetic_brand/logo_transparent.svg', import.meta.url).href;
+      logoData.svgText = await readSvgTextFromBlobUrl(fallbackUrl);
+    } catch {
+      logoData.svgText = '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#8b5cf6"/></svg>';
+    }
+  }
+
+  if (!logoData.svgText) {
+    onState({ status: 'error', progress: 0.05, error: 'SVG source is empty. Upload a valid .svg file.' });
+    return '';
   }
 
   // ── Save initial checkpoint ──

@@ -110,22 +110,25 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setLogoFileUrl(url);
-      setLogoFileName(file.name);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (typeof event.target?.result === "string") {
-          setCustomSvgContent(event.target.result);
-        }
-      };
-      reader.readAsText(file);
-      if (selectedStyle.id !== "custom") {
-        triggerPreviewAnimation();
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".svg")) {
+      await customAlert("Invalid File", "Only SVG files are supported. Please upload a .svg vector file.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setLogoFileUrl(url);
+    setLogoFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === "string") {
+        setCustomSvgContent(event.target.result);
       }
+    };
+    reader.readAsText(file);
+    if (selectedStyle.id !== "custom") {
+      triggerPreviewAnimation();
     }
   };
 
