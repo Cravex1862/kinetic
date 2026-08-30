@@ -229,9 +229,44 @@ export function useGeneratorScaffold({
     }
   }, [instructions, customAlert, refineSystemPrompt]);
 
+  const lastAppliedTokensRef = useRef<string | null>(null);
+
   const capturePipelineState = useCallback(
     (s: PipelineState) => {
       setPipelineState(s);
+      if (s.designTokens) {
+        const key = JSON.stringify(s.designTokens);
+        if (lastAppliedTokensRef.current !== key) {
+          lastAppliedTokensRef.current = key;
+          const t = s.designTokens;
+          setSwatches((prev: Record<string, string>) => ({
+            ...prev,
+            Primary: t.primaryColor || prev.Primary,
+            Secondary: t.secondaryColor || prev.Secondary,
+            Accent: t.accentColor || prev.Accent,
+            Background: t.backgroundColor || prev.Background,
+            Neutral: t.neutralColor || prev.Neutral,
+            Semantic: t.semanticColor || prev.Semantic,
+            Error: t.errorColor || prev.Error,
+            Success: t.successColor || prev.Success,
+          }));
+          if (t.fontFamily) {
+            setFonts((prev: Record<string, FontSettings>) => {
+              const next: Record<string, FontSettings> = { ...prev };
+              for (const row of Object.keys(next) as FontRow[]) {
+                if (next[row]) next[row] = { ...next[row], fontFamily: t.fontFamily };
+              }
+              return next;
+            });
+          }
+          if (t.backgroundColor) {
+            setBgSelection((prev: BackgroundSelection) => ({ ...prev, color: t.backgroundColor }));
+          }
+        }
+      }
+      if (s.status === "idle") {
+        lastAppliedTokensRef.current = null;
+      }
     },
     [],
   );

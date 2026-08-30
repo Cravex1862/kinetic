@@ -1,0 +1,5 @@
+Status: completed
+Title: AI design tokens never appear in Brand Styling panel
+Description: AI returns design tokens (colors) but Brand Styling / DesignTokensPanel stays on defaults. Designing stage auto-opens before tokens arrive, so even if tokens later set they are not visible. Either update races after initial render or tokens are not wired to swatches/fonts state. User cannot tell what AI generated.
+Files: src/renderer/agents/subagents/designAgent.ts, src/renderer/components/BrandStylingPanel.tsx, src/renderer/components/DesignTokensPanel.tsx, src/renderer/components/sidebar-components/DesigningStage.tsx, src/renderer/templates/generatorScaffold.tsx, src/renderer/templates/saasVideoDemo/SaaSGenerator.tsx
+Fix: Wait for designAgent to return tokens, then setSwatches/setFonts (and bgSelection) atomically, then open/highlight DesigningStage with the AI tokens. Ensure scaffold state update triggers re-render; add loading skeleton until tokens arrive, then flash/highlight changed swatches.

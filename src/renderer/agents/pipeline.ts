@@ -239,7 +239,6 @@ export async function runTSXPipeline(
     : "";
 
   // ── Step 1: Design Agent ──────────────────────────────────────────────────
-  onState({ status: "designing", progress: repoContext ? 0.02 : 0.03 });
   console.log("[Manager] Design Agent starting...");
 
   let designTokens: DesignTokens;
