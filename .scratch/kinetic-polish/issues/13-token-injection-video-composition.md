@@ -1,0 +1,5 @@
+Status: completed
+Title: Design tokens not injected into VideoComposition
+Description: AI generates flawless scene code that references token variables (primaryColor, backgroundColor, surfaceColor, neutralColor, textColor, accentColor, successColor, etc.) but compositionStore / VideoComposition.tsx never receives the actual token values as variables. Scenes render with undefined / defaults. VideoComposition.tsx uses 10 vars (backgroundColor, surfaceColor, primaryColor, secondaryColor, accentColor, neutralColor, textColor, successColor, semanticColor, fontFamily) with no definitions.
+Files: src/renderer/scenes/VideoComposition.tsx:52, src/renderer/agents/compositionStore.ts, src/renderer/agents/subagents/sceneAgent.ts, src/renderer/Root.tsx
+Fix: Ensure compositionStore assembles final file with injected const definitions at top (e.g. `const primaryColor = '#7c3aed';`) from swatches, before scenes. Verify AI prompt requires using those exact variable names, and verify assembled code is written and reloaded. Add verification step that greps for undefined vars.
