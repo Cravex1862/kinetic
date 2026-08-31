@@ -241,7 +241,7 @@ export const StudioPage: React.FC<StudioPageProps> = ({
     return (
         <div className="flex h-screen w-full overflow-hidden bg-[#07070d] text-white">
             <aside className="flex w-[360px] shrink-0 flex-col border-r border-gray-900 bg-[#0b0b14] p-3">
-                <div className="min-h-0 grow">
+                <div className="min-h-0 grow overflow-y-auto">
                     <AIsidebar
                         initialStates={[]}
                         instructions={instructions}
@@ -249,7 +249,28 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                         placeholder={selectedScene !== null ? `Describe fix for ${scenesList[selectedScene].id}...` : "Describe the changes you want to make..."}
                         StatusProps={StatusProps}
                         state={pipelineState || ({ status: "idle", progress: 0 } as PipelineState)}
+                        hidePrompt
                     />
+                </div>
+                <div className="mt-3 relative flex items-center gap-1 rounded-full bg-[#1a1a1e] border border-[#27272a] p-1 focus-within:border-violet-500/50 transition-colors">
+                    <input
+                        value={instructions}
+                        onChange={(e) => setInstructions(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !isRunning && instructions.trim()) handleRun(); }}
+                        placeholder={selectedScene !== null ? `Describe fix for ${scenesList[selectedScene].id}...` : "Describe the changes you want to make..."}
+                        className="flex-1 bg-transparent border-none pl-3 py-1 text-xs text-gray-200 placeholder-gray-600 focus:outline-none"
+                    />
+                    <button
+                        onClick={handleRun}
+                        disabled={isRunning || !instructions.trim()}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-900/20 transition-all hover:bg-violet-500 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Send"
+                    >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                    </button>
                 </div>
                 <button
                     onClick={handleRun}
