@@ -5,7 +5,7 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { ArrowLeft, Pause, Play, ArrowsClockwise } from "@phosphor-icons/react";
+import { ArrowLeft, Pause, Play, ArrowsClockwise, DownloadSimple } from "@phosphor-icons/react";
 import { Player, PlayerRef } from "@remotion/player";
 import { SafeComposition } from "../scenes/SafeComposition";
 import type { ProjectData } from "./AppRouter";
@@ -54,6 +54,8 @@ export const StudioPage: React.FC<StudioPageProps> = ({
     const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
     const [isRunning, setIsRunning] = useState(false);
     const [selectedScene, setSelectedScene] = useState<number | null>(null);
+    const [isRendering, setIsRendering] = useState(false);
+    const [renderProgress, setRenderProgress] = useState<{ frame: number; total: number; status?: string } | null>(null);
 
     const [fonts, setFonts] = useState<Record<string, FontSettings>>(
         () => (project.fonts as Record<string, FontSettings>) || {},
@@ -111,6 +113,12 @@ export const StudioPage: React.FC<StudioPageProps> = ({
         };
         raf = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(raf);
+    }, []);
+
+    useEffect(() => {
+        if (!window.electronAPI?.onRenderProgress) return;
+        const off = window.electronAPI.onRenderProgress((p: any) => setRenderProgress(p as any));
+        return () => (off as any)?.();
     }, []);
 
     const togglePlay = useCallback(() => {
@@ -223,6 +231,42 @@ export const StudioPage: React.FC<StudioPageProps> = ({
         }
     };
 
+    const handleRenderMP4 = async () => {
+        if (isRendering) return;
+        if (!window.electronAPI?.selectDirectory || !window.electronAPI?.exportVideo) {
+            await customAlert("Not available", "MP4 export is only available in the desktop app.");
+            return;
+        }
+        const dir = await window.electronAPI.selectDirectory();
+        if (!dir) return;
+        const safeDir = dir.replace(/\\/g, "/").replace(/\/$/, "");
+        const outPath = `${safeDir}/kinetic-${Date.now()}.mp4`;
+        setIsRendering(true);
+        setRenderProgress({ frame: 0, total: durationInFrames, status: "rendering" });
+        try {
+            const res = await window.electronAPI.exportVideo({
+                compositionId: "VideoComposition",
+                outputPath: outPath,
+                framesPerScene: scenesList.map((s) => s.durationInFrames),
+                fps: FPS,
+                width: 1920,
+                height: 1080,
+                props: { bgSelection } as any,
+            });
+            if (res?.success) {
+                await customAlert("Render complete", `MP4 saved to ${outPath}`);
+                await window.electronAPI.showItemInFolder?.(outPath);
+            } else {
+                await customAlert("Render failed", res?.error || "Unknown error");
+            }
+        } catch (e: any) {
+            await customAlert("Render failed", String(e?.message || e));
+        } finally {
+            setIsRendering(false);
+            setRenderProgress(null);
+        }
+    };
+
     const StatusProps = {
         fonts,
         setFonts,
@@ -312,6 +356,15 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                     <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-gray-600">
                         {formatTime(durationInFrames)} · {FPS} fps · 1920×1080
                     </span>
+                    <button
+                        onClick={handleRenderMP4}
+                        disabled={isRendering}
+                        className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold shadow-lg shadow-violet-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title="Render MP4 with Remotion"
+                    >
+                        <DownloadSimple size={14} weight="bold" />
+                        {isRendering ? (renderProgress ? `Rendering ${Math.round((renderProgress.frame / Math.max(renderProgress.total, 1)) * 100)}%` : "Rendering…") : "Render MP4"}
+                    </button>
                 </header>
 
                 <div className="flex min-h-0 flex-1 items-center justify-center p-6 pb-3">
@@ -333,20 +386,31 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                     </div>
                 </div>
 
-                <div className="px-6 pb-2">
-                    <div className="flex items-center gap-2 overflow-x-auto">
-                        {scenesList.map((s, idx) => (
-                            <button
-                                key={s.id}
-                                onClick={() => setSelectedScene(idx)}
-                                className={`shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-semibold transition-colors ${selectedScene === idx ? "bg-violet-600 border-violet-500 text-white shadow-[0_0_10px_rgba(124,58,237,0.4)]" : "bg-[#18181b] border-[#27272a] text-gray-400 hover:text-white hover:border-gray-700"}`}
-                                title={s.purpose}
-                            >
-                                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedScene === idx ? "white" : "#8b5cf6" }} />
-                                {s.id} · {Math.round((s.durationInFrames || 50) / 30)}s
-                            </button>
-                        ))}
-                        <span className="ml-2 text-[10px] text-gray-600 whitespace-nowrap">Click a scene to fix just that part</span>
+                <div className="px-6 pb-3">
+                    <div className="rounded-xl border border-[#27272a] bg-[#0b0b14] p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Timeline — {scenesList.length} scenes</span>
+                            <span className="text-[10px] font-mono text-gray-600">{formatTime(durationInFrames)} total</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                            {scenesList.map((s, idx) => {
+                                const pct = durationInFrames > 0 ? (s.durationInFrames / durationInFrames) * 100 : 0;
+                                const isActive = selectedScene === idx;
+                                return (
+                                    <button
+                                        key={s.id}
+                                        onClick={() => setSelectedScene(isActive ? null : idx)}
+                                        className={`flex-1 flex flex-col gap-1 px-3 py-2.5 rounded-lg border text-left transition-all ${isActive ? "bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-900/20" : "bg-[#18181b] border-[#27272a] hover:border-gray-700 hover:bg-[#1a1a1e] text-gray-400"}`}
+                                        style={{ flexBasis: `${pct}%` }}
+                                        title={s.purpose}
+                                    >
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isActive ? "text-violet-200" : "text-gray-500"}`}>{s.id}</span>
+                                        <span className={`text-xs font-semibold leading-tight truncate ${isActive ? "text-white" : "text-gray-300"}`}>{s.purpose.slice(0, 36)}</span>
+                                        <span className={`text-[10px] font-mono ${isActive ? "text-violet-200" : "text-gray-500"}`}>{Math.round((s.durationInFrames || 50) / 30)}s · {s.durationInFrames}f</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
