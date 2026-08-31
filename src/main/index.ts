@@ -49,8 +49,8 @@ function createWindow(): void { // creates a desktop window
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html')); //load the html file
   }
 
-  mainWindow.on('destroyed', () => { // when closed
-    mainWindow = null; // close the window
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 }
 
@@ -144,8 +144,8 @@ function registerIpcHandlers(): void {
           }
         };
 
-        renderProcess.stdout.on('data', (data: string) => handleChunk(data));
-        renderProcess.stderr.on('data', (data: string) => handleChunk(data));
+        renderProcess.stdout?.on('data', (data: string) => handleChunk(data));
+        renderProcess.stderr?.on('data', (data: string) => handleChunk(data));
       });
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : String(err) };

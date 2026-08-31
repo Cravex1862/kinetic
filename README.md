@@ -1,93 +1,73 @@
-# Kinetic — Desktop Motion-Graphics Video Engine
+# Kinetic
 
-Kinetic is a desktop motion-graphics studio that programmatically generates After-Effects-style videos, SaaS product walkthroughs, and beat-synced animated clips using **Electron, React, and Remotion**.
+Kinetic is a desktop app that makes motion graphics videos by writing React code and rendering it frame by frame. No generative video models. The text stays sharp because it is just React.
 
-![Kinetic Logo](kinetic_brand/logo_with_text.png)
+I built it because I wanted a way to make clean SaaS demos and logo animations without opening After Effects. It runs on Electron, the UI is React, and Remotion does the actual rendering. That combination is stubborn but it works.
 
----
+![Kinetic logo](kinetic_brand/logo_with_text.png)
 
-## 🚀 Quick Start
+## Quick start
 
-Run Kinetic locally on your machine:
+You need Node 20 and npm.
 
 ```bash
-# 1. Install dependencies
+# install
 npm install
 
-# 2. Run automated test suite
+# run tests
 npm test
 
-# 3. Launch Electron Studio
+# open the desktop app
 npm run dev
 ```
 
----
+`npm run build` creates the installers in `releases`. The GitHub workflow builds on tag push.
 
-## 🎯 Architectural Overview
+## How it works
 
-Unlike traditional AI video generators that output blurry, warping pixels with corrupted text, Kinetic writes **deterministic React component code** compiled frame-by-frame by Remotion. This guarantees 4K crisp typography, sharp UI chrome, and hardware-accelerated rendering.
+Each video is a set of React components. Remotion asks React for frame 0, then frame 1, and so on, up to 30 frames per second. Because it is code, a 4K export still has crisp type.
+
+Electron has two sides. The main process can read and write files. The renderer process cannot. Every file operation goes through `window.electronAPI`, which is exposed in `src/main/preload.ts` and handled in `src/main/index.ts`. The types for that bridge live in `src/shared/ipc-types.ts`.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                             KINETIC ENGINE                                  │
-├───────────────────┬─────────────────────────────┬───────────────────────────┤
-│ ELECTRON MAIN     │ REACT STUDIO UI             │ REMOTION VIDEO COMPILER   │
-│ - IPC File System │ - MultiTrack Timeline       │ - 60 FPS Canvas Preview   │
-│ - MP4 Exporter    │ - Targeted AI Comment Pins  │ - Monotonic Keyframe AST  │
-│ - Native Audio    │ - DaVinci Audio Waveforms   │ - Hardware Render Pipeline│
-└───────────────────┴─────────────────────────────┴───────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      BEATNET AI MUSIC RHYTHM ENGINE                         │
-│  STFT Spectrogram -> Song Loudness Normalization -> Frame Ooomph Ratings    │
-└─────────────────────────────────────────────────────────────────────────────┘
+Electron main  ->  handles files, runs Remotion render, talks to the OS
+React studio   ->  timeline, sidebar, preview, asks main to do the heavy work
+Remotion       ->  takes the TSX scenes and draws each frame
 ```
 
----
+For music, the app can run a small BeatNet model in the browser with ONNX. It reads the soundtrack, makes a spectrogram, and gives each beat a strength score. Those scores become keyframe timings.
 
-## ⚡ Core Features
+## What it can make
 
-* **BeatNet AI Music Beat & Ooomph Sync**: Automatically extracts STFT spectrogram magnitude features from audio soundtracks. Calculates song-relative loudness normalization to assign 10%–100% "Ooomph" impact ratings (Heavy, Medium, Subtle) to video keyframe transitions.
-* **Targeted Comment-to-Edit Loop**: Pin feedback comments directly to specific frames on the timeline to scope AI edits exclusively to targeted visual elements.
-* **DaVinci Resolve-Style Audio Track**: Integrated timeline audio track featuring vertical spectrum peak bar lines, mute controls (`M`), and beat marker overlays.
-* **Hardware-Accelerated Morph Engine**: Interpolates numbers, hex colors, 3D perspective transforms, opacity, and vector bounds without writing manual math.
-* **Primitives SDK**:
-  - **12 UI Chrome**: `BrowserFrame`, `SidebarLayout`, `TopNavbar`, `MobileDevice`, etc.
-  - **9 Transition Wrappers**: `SpringEnter`, `FadeBlur`, `SlideInOut`, `PerspectiveFlip`, etc.
-  - **8 SVG Charts**: `Bar`, `Line`, `Pie`, `Area`, `Donut`, `Funnel`, `Scatter`, `Sparkline`.
-  - **10 Card SDKs**: `GlassmorphicCard`, `PricingPlan`, `Kanban`, `CustomCard`, etc.
+Kinetic has a few starter flows. Each one writes its own `VideoComposition.tsx`.
 
----
+* SaaS demo. Give it a repo path or a GitHub URL. The scanner reads routes, components, colors and fonts, then the pipeline writes a product walkthrough.
+* Basic animation. A sandbox for any short clip. You set the prompt, colors, fonts, and optional voiceover or music.
+* Logo animation. SVG only. Pick a preset like 3D spin or particle burst, upload an SVG, and it builds a 5 second reveal. It can use flubber for true SVG morphs.
+* Studio. After a video is generated you can preview it, scrub the timeline, and fix a single scene.
 
-## 🧪 Automated Testing Suite
+The scenes use a small primitive kit in `src/renderer/primitives`. That kit has things like `BrowserFrame`, `SidebarLayout`, `BarChartCard`, `Cursor`, and a few wrappers for entering and exiting. The generated scenes import only `react` and `remotion`, plus `flubber` and icons where needed.
 
-Kinetic includes a zero-dependency TypeScript test suite under `testing/`:
+## Tests
+
+There is a tiny test suite with no extra test framework.
 
 ```bash
 npm test
 ```
 
-### Test Coverage:
-1. **`testing/beatDetector.test.ts`**: Tests STFT spectrogram windowing, frame hop calculations, and song-relative loudness normalization (10%–100% intensity scale).
-2. **`testing/semanticParser.test.ts`**: Tests Remotion keyframe frame deduplication (ensuring `f0 < f1 < f2` to prevent rendering crashes), property extraction, and TSX serialization.
-3. **`testing/MorphSDK.test.ts`**: Tests numeric interpolation, hex color blending, and hardware-accelerated 3D transform generation.
+It checks three things:
 
----
+* Beat detection calculates frame hops and normalizes loudness to a 10 to 100 scale.
+* The parser removes duplicate keyframes so `f0 < f1 < f2` and the export does not crash.
+* The helpers blend numbers and hex colors and build 3D transforms.
 
-## 🛠 Tech Stack
+The tests live in `testing/`. They run with the Node test runner through `tsx`.
 
-* **Desktop Application**: Electron & Node.js IPC
-* **Frontend UI**: React 18, Tailwind CSS, Phosphor Icons
-* **Video Rendering**: Remotion Engine & FFmpeg
-* **Audio Analysis**: ONNX Runtime Web & Web Audio STFT
-* **Testing**: Node Native Test Runner & `tsx`
+## Stack
 
----
+Electron 30, React 18, TypeScript in strict mode, Tailwind with utility classes only, Remotion 4. Audio runs with `onnxruntime-web` and `@xenova/transformers`. Icons are Phosphor.
 
-## 📜 Credits
+## Credits
 
-* [Remotion](https://www.remotion.dev) for rendering React components into video frames.
-* [Electron](https://www.electronjs.org) for desktop application window management.
-* [ONNX Runtime](https://onnxruntime.ai) & BeatNet for audio beat detection.
-* [Phosphor Icons](https://phosphoricons.com) for interface iconography.
+Remotion does the rendering. Electron makes it a desktop app. BeatNet provides the rhythm model. Phosphor provides the icons. I stitched them together and fixed the parts that broke at 2 a.m.
