@@ -33,7 +33,7 @@ export const VoiceoverModal: React.FC<VoiceoverModalProps> = ({ isOpen, onClose,
             const float32Array = await extractAudioFeatures(file);
 
             setStatusMessage('Initializing Whisper AI (WebWorker)...');
-            const worker = new Worker(new URL('../../agents/whisperWorker.ts', import.meta.url), { type: 'module' });
+            const worker = new Worker(new URL('../../renderer/agents/whisperWorker.ts', import.meta.url), { type: 'module' });
 
             worker.onmessage = (e) => {
                 const { status, data, result, error: workerError } = e.data;

@@ -141,7 +141,7 @@ export function useGeneratorScaffold({
     try {
       const float32Array = await extractAudioFeatures(file);
       const worker = new Worker(
-        new URL("../../agents/whisperWorker.ts", import.meta.url),
+        new URL("../agents/whisperWorker.ts", import.meta.url),
         { type: "module" },
       );
       worker.onmessage = (e) => {
