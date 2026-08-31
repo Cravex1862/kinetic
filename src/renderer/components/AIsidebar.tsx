@@ -287,14 +287,14 @@ export const AIsidebar: React.FC<InstructionProps> = ({
       </div>
       {!hidePrompt && (
         <div className="relative w-full">
-          <div className="flex items-center gap-2 rounded-full bg-gray-950/60 border border-[#27272a] px-3 py-2 transition-all focus-within:border-gray-700">
+          <div className="relative flex items-center bg-[#1a1a1e] border border-[#27272a] rounded-full p-2 gap-1 transition-all focus-within:border-violet-500/50">
             <textarea
               ref={textareaRef}
               onChange={(e) => setInstructions(e.target.value)}
               placeholder={placeholder}
               value={instructions}
               rows={1}
-              className={`flex-1 bg-transparent text-xs text-gray-200 placeholder-gray-600 resize-none outline-none min-h-[20px] max-h-[80px] font-sans transition-all overflow-hidden duration-300 ${
+              className={`flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 resize-none outline-none rounded-full font-sans overflow-hidden ${
                 isRefining ? "animate-pulse" : ""
               }`}
               style={{ fieldSizing: "content" as React.CSSProperties["fieldSizing"] }}
@@ -303,7 +303,7 @@ export const AIsidebar: React.FC<InstructionProps> = ({
               <button
                 onClick={handleRefinePrompt}
                 disabled={isRefining || !instructions.trim()}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8b5cf6] text-white transition-all hover:bg-[#7c3aed] disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-600 hover:bg-violet-500 text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Refine prompt with AI"
               >
                 {isRefining ? (
