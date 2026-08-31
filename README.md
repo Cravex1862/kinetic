@@ -70,4 +70,46 @@ Electron 30, React 18, TypeScript in strict mode, Tailwind with utility classes 
 
 ## Credits
 
-Remotion does the rendering. Electron makes it a desktop app. BeatNet provides the rhythm model. Phosphor provides the icons. I stitched them together and fixed the parts that broke at 2 a.m.
+I did not build this alone. These are the pieces Kinetic stands on, with links so you can check them yourself.
+
+**Core**
+
+* [Remotion](https://www.remotion.dev) — renders React components into video frames. Every scene is just React.
+* [Electron](https://www.electronjs.org) — turns the web studio into a desktop app and handles files and exports.
+* [React](https://react.dev) and [Tailwind CSS](https://tailwindcss.com) — UI, utility classes only.
+* [TypeScript](https://www.typescriptlang.org) — strict mode everywhere.
+* [Phosphor Icons](https://phosphoricons.com) — interface icons.
+* [Flubber](https://github.com/veltman/flubber) — SVG path morphs for logo reveals. Already imported for generated scenes.
+* [Vite](https://vitejs.dev) — dev server for the studio.
+* [FFmpeg](https://ffmpeg.org) — used by Remotion to write the final MP4.
+
+**Audio and local models**
+
+* [ONNX Runtime Web](https://onnxruntime.ai) — runs models in the browser.
+* [@xenova/transformers](https://huggingface.co/docs/transformers.js) — loads Whisper locally for voiceover transcription.
+* [Whisper small](https://huggingface.co/Xenova/whisper-small) via `src/renderer/agents/whisperWorker.ts` — transcribes uploaded voiceover audio to timestamped script.
+* [BeatNet ONNX](https://github.com/mir-aid/beatnet) — model file `public/models/beatnet.onnx` gives each beat an oomph score.
+* [all-mpnet-base-v2](https://huggingface.co/Xenova/all-mpnet-base-v2) — embedding model in `public/models/Xenova/all-mpnet-base-v2/` that powers the skill RAG search.
+* [Vader Sentiment](https://github.com/cjhutto/vaderSentiment) (`vader-sentiment`) — used in `src/renderer/utils/vaderSentiment.ts` for quick sentiment hints.
+
+**Design specs and brand data**
+
+* [Awesome Design.md](https://github.com/gztchan/awesome-design) — 70+ brand design files in `src/renderer/design-specs/awesome-design-md/` (e.g. `design-md/apple/DESIGN.md`, `design-md/figma/DESIGN.md`). The design agent reads these for palette and type hints.
+* [GitHub Primer Primitives](https://primer.style/primitives) — token set in `src/renderer/design-specs/github/primer-primitives/` (`src/tokens/functional/color`, `typography`, `spacing`). Used as a fallback seed palette.
+* [Example composition](src/renderer/design-specs/exampleComposition.tsx) — a hand-written reference scene for layout.
+* Local brand assets in `kinetic_brand/` — logo and type used in the studio shell.
+
+**Skills**
+
+All prompts and motion recipes live in `skills/` and are indexed in `skills/skills-index.json`:
+
+* [frontend-design](skills/frontend-design/SKILL.md) — how I tried to keep the UI from looking templated.
+* [ad-video-skills](skills/ad-video-skills/skills/ad-creative-video/SKILL.md), [launch-video](skills/ad-video-skills/skills/launch-video/SKILL.md), [data-animation-skills](skills/data-animation-skills/skills/chart-animation/SKILL.md), [explainer-video-skills](skills/explainer-video-skills/skills/diagram-animation/SKILL.md), [ecommerce-video-skills](skills/ecommerce-video-skills/skills/product-demo-video/SKILL.md), [manim-skills](skills/manim-skills/skills/manim/SKILL.md), [map-animation-skills](skills/map-animation-skills/skills/map-animation/SKILL.md), [motion-design-skills](skills/motion-design-skills/skills/motion-art-direction/SKILL.md), [kinetic-typography-skills](skills/kinetic-typography-skills/skills/kinetic-typography/SKILL.md), [tiktok-video-skills](skills/tiktok-video-skills/skills/short-form-video/SKILL.md), [webgl-animation-skills](skills/webgl-animation-skills/skills/threejs-animation/SKILL.md), [youtube-video-skills](skills/youtube-video-skills/skills/youtube-intro-outro/SKILL.md) and the rest of the video, motion, and generative illustration packs. Each `SKILL.md` says when to use it and what variables the scene can rely on.
+
+**Other bits I reused**
+
+* [Model Context Protocol SDK](https://github.com/modelcontextprotocol/typescript-sdk) (`@modelcontextprotocol/sdk`) — experimental MCP server in `src/experimental/mcp/`.
+* [Repomix](https://github.com/yamadashy/repomix) — packs a target repo into one XML file for the scanner (`packRepo` in `src/main/index.ts`).
+* Local system fonts via `getSystemFonts` in `src/main/index.ts` and `queryLocalFonts` in the renderer.
+
+I stitched these together and fixed the parts that broke at 2 a.m. If I missed a credit, open an issue and I will add it.
