@@ -94,14 +94,14 @@ I did not build this alone. These are the pieces Kinetic stands on, with links s
 
 **Design specs and brand data**
 
-* [Awesome Design.md](https://github.com/gztchan/awesome-design) — 70+ brand design files in `src/renderer/design-specs/awesome-design-md/` (e.g. `design-md/apple/DESIGN.md`, `design-md/figma/DESIGN.md`). The design agent reads these for palette and type hints.
+* [Awesome Design.md](https://github.com/VoltAgent/awesome-design-md/tree/main) — 70+ brand design files in `src/renderer/design-specs/awesome-design-md/` (e.g. `design-md/apple/DESIGN.md`, `design-md/figma/DESIGN.md`). The design agent reads these for palette and type hints.
 * [GitHub Primer Primitives](https://primer.style/primitives) — token set in `src/renderer/design-specs/github/primer-primitives/` (`src/tokens/functional/color`, `typography`, `spacing`). Used as a fallback seed palette.
 * [Example composition](src/renderer/design-specs/exampleComposition.tsx) — a hand-written reference scene for layout.
 * Local brand assets in `kinetic_brand/` — logo and type used in the studio shell.
 
 **Skills**
 
-All prompts and motion recipes live in `skills/` and are indexed in `skills/skills-index.json`:
+All prompts and motion recipes come from [iart-ai/motion-skills](https://github.com/iart-ai/motion-skills), copied into `skills/` and indexed in `skills/skills-index.json`:
 
 * [frontend-design](skills/frontend-design/SKILL.md) — how I tried to keep the UI from looking templated.
 * [ad-video-skills](skills/ad-video-skills/skills/ad-creative-video/SKILL.md), [launch-video](skills/ad-video-skills/skills/launch-video/SKILL.md), [data-animation-skills](skills/data-animation-skills/skills/chart-animation/SKILL.md), [explainer-video-skills](skills/explainer-video-skills/skills/diagram-animation/SKILL.md), [ecommerce-video-skills](skills/ecommerce-video-skills/skills/product-demo-video/SKILL.md), [manim-skills](skills/manim-skills/skills/manim/SKILL.md), [map-animation-skills](skills/map-animation-skills/skills/map-animation/SKILL.md), [motion-design-skills](skills/motion-design-skills/skills/motion-art-direction/SKILL.md), [kinetic-typography-skills](skills/kinetic-typography-skills/skills/kinetic-typography/SKILL.md), [tiktok-video-skills](skills/tiktok-video-skills/skills/short-form-video/SKILL.md), [webgl-animation-skills](skills/webgl-animation-skills/skills/threejs-animation/SKILL.md), [youtube-video-skills](skills/youtube-video-skills/skills/youtube-intro-outro/SKILL.md) and the rest of the video, motion, and generative illustration packs. Each `SKILL.md` says when to use it and what variables the scene can rely on.
