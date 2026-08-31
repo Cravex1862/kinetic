@@ -355,7 +355,7 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
               className={`relative bg-[#1a1a1e] border border-[#27272a] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
                 hasExpanded
                   ? "rounded-2xl p-3 flex flex-col gap-3 translate-y-1 shadow-xl shadow-violet-900/10"
-                  : "rounded-full p-2 flex items-center justify-between gap-1"
+                  : "rounded-full p-1 flex items-center justify-between gap-1"
               } ${shake ? "animate-shake border-red-500/50" : ""}`}
             >
               {!hasExpanded ? (
@@ -371,12 +371,12 @@ const SaaSGenerator: React.FC<AnimationGeneratorProps> = ({
                       }
                     }}
                     placeholder="Describe walkthrough flow..."
-                    className="flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
+                    className="flex-1 bg-transparent border-none pl-3 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
                   />
                   <button
                     onClick={handlePillSubmit}
                     disabled={isRefining}
-                    className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 flex-shrink-0"
+                    className="w-7 h-7 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 flex-shrink-0"
                   >
                     {isRefining ? (
                       <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
