@@ -294,7 +294,7 @@ export const AIsidebar: React.FC<InstructionProps> = ({
               placeholder={placeholder}
               value={instructions}
               rows={1}
-              className={`flex-1 bg-transparent border-none pl-3 py-1.5 text-xs text-gray-200 placeholder-gray-600 resize-none outline-none rounded-full font-sans overflow-hidden ${
+              className={`flex-1 bg-transparent border-none pl-3 py-1 text-xs text-gray-200 placeholder-gray-600 resize-none outline-none rounded-full font-sans overflow-hidden leading-none ${
                 isRefining ? "animate-pulse" : ""
               }`}
               style={{ fieldSizing: "content" as React.CSSProperties["fieldSizing"] }}
@@ -303,7 +303,7 @@ export const AIsidebar: React.FC<InstructionProps> = ({
               <button
                 onClick={handleRefinePrompt}
                 disabled={isRefining || !instructions.trim()}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-600 hover:bg-violet-500 text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-600 hover:bg-violet-500 text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Refine prompt with AI"
               >
                 {isRefining ? (

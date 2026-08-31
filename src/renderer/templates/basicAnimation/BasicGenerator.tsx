@@ -228,12 +228,12 @@ const AnimationGenerator: React.FC<AnimationGeneratorProps> = ({
                       }
                     }}
                     placeholder="Describe your vision..."
-                    className="flex-1 bg-transparent border-none pl-3 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
+                    className="flex-1 bg-transparent border-none pl-3 py-1 text-xs text-gray-200 placeholder-gray-600 focus:outline-none rounded-full"
                   />
                   <button
                     onClick={handlePillSubmit}
                     disabled={isRefining}
-                    className="w-7 h-7 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 flex-shrink-0"
+                    className="w-6 h-6 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-violet-900/20 disabled:opacity-30 flex-shrink-0"
                   >
                     {isRefining ? (
                       <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
