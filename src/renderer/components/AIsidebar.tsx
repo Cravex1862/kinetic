@@ -287,14 +287,14 @@ export const AIsidebar: React.FC<InstructionProps> = ({
       </div>
       {!hidePrompt && (
         <div className="relative w-full">
-          <div className="relative flex items-center bg-[#1a1a1e] border border-[#27272a] rounded-full p-2 gap-1 transition-all focus-within:border-violet-500/50">
+          <div className="relative flex items-center bg-[#1a1a1e] border border-[#27272a] rounded-full p-1.5 gap-1 transition-all focus-within:border-violet-500/50">
             <textarea
               ref={textareaRef}
               onChange={(e) => setInstructions(e.target.value)}
               placeholder={placeholder}
               value={instructions}
               rows={1}
-              className={`flex-1 bg-transparent border-none pl-4 py-2.5 text-xs text-gray-200 placeholder-gray-600 resize-none outline-none rounded-full font-sans overflow-hidden ${
+              className={`flex-1 bg-transparent border-none pl-4 py-2 text-xs text-gray-200 placeholder-gray-600 resize-none outline-none rounded-full font-sans overflow-hidden ${
                 isRefining ? "animate-pulse" : ""
               }`}
               style={{ fieldSizing: "content" as React.CSSProperties["fieldSizing"] }}
